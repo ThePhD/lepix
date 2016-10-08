@@ -1,0 +1,12 @@
+\subsection{Math Expressions}
+
+Math expressions are the use of defined operators to indicate the want to perform some form of computation between types. There are several operators built into the language to support various kinds of operations.
+
+% TODO: Disambiguate
+
+\begin{grammar}
+	<math-expr> ::= <binary-expr> | <unary-expr>
+	<binary-expr> ::= <expr> <binary-op> <expr> | ( <expr> <binary-op> <expr> )
+	<binary-op> ::= * | / | + | - | ^ | %
+	<unary-op> ::= + | -
+\end{grammar}

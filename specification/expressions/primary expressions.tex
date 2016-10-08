@@ -1,5 +1,12 @@
 \section{Primary Expressions}
 
+A primary expression is one that does not need to be preceded by an existing expression to work. In general, this means identifiers (of functions or variables), anonymous closures (lambdas) and literal expressions. An expression takes the following form:
+
+\begin{grammar}
+	<expr> ::= <literal> | <name-id> | <lambda-expr>
+\end{grammar} 
+
+
 \input{"expressions/literals.tex"}
 \input{"expressions/names.tex"}
 \input{"expressions/lambdas.tex"}
