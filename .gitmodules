@@ -1,3 +1,0 @@
-[submodule "source/vendor/SPIRV-LLVM"]
-	path = source/vendor/SPIRV-LLVM
-	url = https://github.com/KhronosGroup/SPIRV-LLVM.git
