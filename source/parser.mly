@@ -49,9 +49,10 @@ cond:
 | cond ELSE LPAREN stmnt RPAREN 		{ Else($1,$4) }
 
 expr:
-  INT		     { Int($1) }
-| TRUE		     { BoolList(true) }
-| FALSE	             { BoolList(false) }
+  INTLITERAL		     { IntLit($1) }
+| TRUE		     { BoolLit(true) }
+| FALSE	             { BoolLit(false) }
+| FLOATLITERAL	     { FloatLit($1) }
 | ID		     { Id($1) } 
 | expr PLUS   expr   { Binop($1, Add, $3) }
 | expr MINUS  expr   { Binop($1, Sub, $3) }

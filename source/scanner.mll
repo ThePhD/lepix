@@ -47,8 +47,8 @@ rule token = parse
 | "mutable" { MUTE }
 | "const"   { CONST }
 | "fun"	    { FUN }
-| ['0'-'9']+ as lxm { INT(int_of_string lxm) }
-| '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOAT(float_of_string lxm) }
+| ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
+| '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOAT(float_of_string lxm) } 
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
