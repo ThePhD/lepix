@@ -5,54 +5,53 @@ import os, sys, glob, re
 import itertools
 import argparse
 
-# utilities
-def flags(*args):
-	return ' '.join(itertools.chain(*args))
-
-def includes(l):
-	return ['-I"{}"'.format(x) for x in l]
-
-def library_includes(l):
-	return ['-L"{}"'.format(x) for x in l]
-
-def libraries(l):
-	return ['-l{}'.format(x) for x in l]
-
-def dependencies(l):
-	return ['-isystem"{}"'.format(x) for x in l]
-
-def object_file(f):
-	(root, ext) = os.path.splitext(f)
-	return os.path.join(objdir, root + '.o')
-
-def replace_extension(f, e):
-	(root, ext) = os.path.splitext(f)
-	return root + e
-
-# Default install dir
-install_dir = os.path.join('/usr', 'bin') if 'linux' in sys.platform else './bin/'
-
+# whether or not we're on a 64-bit system
 is_x64 = sys.maxsize > 2**32
+is_nix = 'linux' in sys.platform
+is_windows = 'win32' in sys.platform
 
-# Compiler: Read from environment or defaulted
-ocamlc = os.environ.get('OCAMLC', "ocamlc") 
-ocamllink = ocamlc
-ocamllex = os.environ.get('OCAMLLEX', "ocamllex") 
-ocamlmenhir = os.environ.get('MENHIR', "menhir") 
-
+default_install_dir = os.path.join('/usr', 'bin') if 'linux' in sys.platform else './bin/'
 
 # command line stuff
 parser = argparse.ArgumentParser()
 parser.add_argument('--debug', action='store_true', help='compile with debug flags')
 parser.add_argument('--ci', action='store_true', help=argparse.SUPPRESS)
 parser.add_argument('--testing', action='store_true', help=argparse.SUPPRESS)
-parser.add_argument('--install-dir', metavar='<dir>', help='directory to install the headers to', default=install_dir);
+parser.add_argument('--install-dir', metavar='<dir>', help='directory to install the headers to', default=default_install_dir)
 parser.epilog = """In order to install sol, administrative privileges might be required.
 Note that installation is done through the 'ninja install' command. To uninstall, the
 command used is 'ninja uninstall'. The default installation directory for this
-system is {}""".format(install_dir)
+system is {}""".format(default_install_dir)
 
 args = parser.parse_args()
+
+# Default Directories
+platform = 'x64' if is_x64 else 'x86' 
+configuration = 'debug' if args.debug else 'release' 
+output_dir = os.path.join(platform, configuration)
+obj_dir = os.path.join(platform, configuration, 'obj')
+install_dir = args.install_dir
+
+# Compiler: Read from environment or defaulted
+ocamlc = os.environ.get('OCAMLC', "ocamlc") 
+ocamllink = ocamlc
+ocamllex = os.environ.get('OCAMLLEX', "ocamllex") 
+ocamlmenhir = os.environ.get('MENHIR', "menhir")
+
+# utilities
+def flags(*args):
+	return ' '.join(itertools.chain(*args))
+
+def ocaml_object_file(f):
+	(root, ext) = os.path.splitext(f)
+	return os.path.join(objdir, root + '.cmo')
+
+def replace_extension(f, e):
+	(root, ext) = os.path.splitext(f)
+	return root + e
+
+def copy_directory( d ):
+	return ''
 
 # general variables
 include = [ '.', './include' ]
