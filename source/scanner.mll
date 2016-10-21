@@ -4,7 +4,8 @@
 
 rule token = parse
   [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
-| "/*"     { comment lexbuf }           (* Comments *)
+| "/*"     { mcomment 0 lexbuf }           (* Mult-iline Comments *)
+| "//"	   { scomment lexbuf }		(* Single-line Comments *)
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
@@ -49,7 +50,12 @@ rule token = parse
 | eof { EOF }
 | _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
 
-and comment = parse
-  "*/" { token lexbuf }
-| _    { comment lexbuf }
+and mcomment level = parse
+  "*/" { if level = 0 then token lexbuf else comments (level-1) lexbuf }
+|  "/*" { mcomment (level+1) lexbuf }
+| _    { mcomment level  lexbuf }
+
+and scomment = parse
+  "\n" { token lexbuf }
+| _    { scomment lexbuf }
 
