@@ -33,8 +33,11 @@ rule token = parse
 | "else"   { ELSE }
 | "for"    { FOR }
 | "while"  { WHILE }
+| "by"     { BY }
+| "to"     { TO }
 | "return" { RETURN }
 | "int"    { INT }
+| "float"  { FLOAT }
 | "bool"   { BOOL }
 | "void"   { VOID }
 | "true"   { TRUE }
@@ -43,6 +46,7 @@ rule token = parse
 | "var"    { VAR }
 | "mutable" { MUTE }
 | "const"   { CONST }
+| "fun"	    { FUN }
 | ['0'-'9']+ as lxm { INT(int_of_string lxm) }
 | '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOAT(float_of_string lxm) }
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOAT(float_of_string lxm) } 
