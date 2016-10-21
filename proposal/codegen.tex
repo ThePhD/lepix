@@ -1,9 +1,0 @@
-\chapter{Codegen}
-
-\section{LLVM IR}
-The current goal for generating the code for this language is to use LLVM and serialize to LLVM IR. This will allow our language to work on a multiple of platforms that LLVM supports, provided we can successfully connect our AST / DAG with the our code generator.
-
-\section{SPIR-V}
-For the GPU, we still want to compile to LLVM IR. But, with the caveat that we make it work to push out to SPIR-V code using the Khronos LLVM <-> SPIR-V Bidirectional Translator\cite{spirv-llvm}\footnote{Available here: https://github.com/KhronosGroup/SPIRV-LLVM}. The good news is that everything from our source code processing steps to our DAG / AST generation can be done in OCaml. However, SPIR-V is new and OCaml bindings for this relatively new project are not something that is quite established: it is conceivable that our code generator will be written in C++ as opposed to any other language, simply because of the library power behind what is already present is written in C and C++, and interfacing that with OCaml might be exceptionally difficult. Granted, we could also write an OCaml Code Generator for SPIR-V from scratch, but this does not seem like a prudent use of our time.
-
-It is also very important to note that the LLVM IR <-> SPIR-V Translator produces SPIR-V, which by itself cannot be run on anything. We would need a C or C++ compiled Vulkan Driver to take that bit of our program and run it in SPIR-V land. Furthermore, many operations -- such as data reading -- are not instructions we can exactly slot into SPIR-V code, and would require a bootstrapper of some sort nontheless.
