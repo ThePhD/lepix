@@ -1,3 +1,4 @@
+\documentclass[11pt,letterpaper]{report}
 \usepackage[utf8x]{inputenc}
 \usepackage{ucs}
 \usepackage{amsmath}
@@ -6,11 +7,9 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{changepage}
-\usepackage[unicode,hidelinks]{hyperref}
+\usepackage{hyperref}
 \usepackage{listings}
 \usepackage{color}
-\usepackage{syntax}
-\usepackage{microtype}
 
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
@@ -45,5 +44,40 @@
 	morekeywords={lib, super, function, uint, pixel, image, vec, mat, matrix, vector, unit, elseif}
 }
 
-\renewcommand{\arraystretch}{1.1}
-\newcommand{\lepix}{LéPiX}
+\author{
+	Fatima Koly (fak2116)\\
+	Manager\\
+	\texttt{fak2116@barnard.edu}
+	\and
+	Gabrielle Taylor (gat2118)\\
+	Tester\\
+	\texttt{gat2118@columbia.edu}
+	\and
+	Jackie Lin (jl4162)\\
+	Tester\\
+	\texttt{jl4162@columbia.edu}
+	\and
+	Akshaan Kakar (ak3808)\\ 
+	Codegen \& Language Guru\\
+	\texttt{ak3808@columbia.edu}
+	\and
+	ThePhD (jm3689)\\
+	Codegen \& Language Guru\\
+	\texttt{jm3689@columbia.edu}
+	\\\\
+	\url{https://github.com/ThePhD/lepix}
+}
+\title{LéPiX - Ceci n'est pas un Photoshop}
+\begin{document}
+	\renewcommand{\arraystretch}{1.1}
+	\newcommand{\lepix}{LéPiX}
+	\maketitle
+	\tableofcontents
+	\pagebreak
+	\input{overview}
+	\input{language}
+	\input{examples}
+	\input{codegen}
+	\input{stretch}
+	\input{cited}
+\end{document}
