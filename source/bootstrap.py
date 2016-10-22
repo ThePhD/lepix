@@ -10,7 +10,50 @@ is_x64 = sys.maxsize > 2**32
 is_nix = 'linux' in sys.platform
 is_windows = 'win32' in sys.platform
 
-default_install_dir = os.path.join('/usr', 'bin') if 'linux' in sys.platform else './bin/'
+# utilities
+def flags(*args):
+	return ' '.join(itertools.chain(*args))
+
+def replace_extension(f, e):
+	(root, ext) = os.path.splitext(f)
+	return root + e
+
+def ocaml_object_file(f, e):
+	return replace_extension(f, '.cmo')
+
+def copy_directory_command( f, t = None ):
+	if t is None:
+		t = '$in'
+	if is_windows:
+		return 'robocopy /COPYALL /E {} {}'.format(f, t)
+	else:
+		return 'cp -rf {} {}'.format(f, t)
+
+def copy_file_command( f, t = None ):
+	if t is None:
+		t = '$in'
+	if is_windows:
+		return 'robocopy /COPYALL {} {}'.format(f, t)
+	else:
+		return 'cp -f {} {}'.format(f, t)
+
+def remove_directory_command( t = None ):
+	if t is None:
+		t = '$in'
+	if is_windows:
+		return 'rmdir /S /Q {}'.format(t)
+	else:
+		return 'rm -rf {}'.format(t)
+
+def remove_file_command( t = None ):
+	if t is None:
+		t = '$in'
+	if is_windows:
+		return 'erase /F /S /Q /A {}'.format(t)
+	else:
+		return 'rm -f {}'.format(t)
+
+default_install_dir = os.path.join('/usr', 'bin') if is_nix else './bin/'
 
 # command line stuff
 parser = argparse.ArgumentParser()
@@ -36,93 +79,51 @@ install_dir = args.install_dir
 ocamlc = os.environ.get('OCAMLC', "ocamlc") 
 ocamllink = ocamlc
 ocamllex = os.environ.get('OCAMLLEX', "ocamllex") 
-ocamlmenhir = os.environ.get('MENHIR', "menhir")
-
-# utilities
-def flags(*args):
-	return ' '.join(itertools.chain(*args))
-
-def ocaml_object_file(f):
-	(root, ext) = os.path.splitext(f)
-	return os.path.join(objdir, root + '.cmo')
-
-def replace_extension(f, e):
-	(root, ext) = os.path.splitext(f)
-	return root + e
-
-def copy_directory( d ):
-	return ''
+ocamlparse = os.environ.get('MENHIR', "menhir")
 
 # general variables
 include = [ '.', './include' ]
-ocamlcflags = [ ]
-ocamllexflags = [ ]
-ocamlmenhirflags = [ ]
-ocamllinkflags = [ ]
-
-copy_command = 'cp -rf {} $in && cp -f {} $in'.format(sol_dir, sol_file)
-remove_command = 'rm -rf {} && rm -f {}'.format(os.path.join(args.install_dir, 'sol'), os.path.join(args.install_dir, 'sol.hpp'))
-if sys.platform == 'win32':
-	copy_command = 'robocopy /COPYALL /E {} $in && robocopy /COPYALL {} $in'.format(sol_dir, sol_file)
-	remove_command = 'rmdir /S /Q {} && erase /F /S /Q /A {}'.format(os.path.join(args.install_dir, 'sol'),
-																	 os.path.join(args.install_dir, 'sol.hpp'))
+ocamlc_flags = [ '-c' ]
+ocamllex_flags = [ ]
+ocamlparse_flags = [ ]
+ocamllink_flags = [ ]
 
 if args.debug:
 	# debug flags and config go here
-	ocamlcflags.extend(['-g', '-O0'])
+	ocamlcflags.extend(['-g'])
 
-if 'linux' in sys.platform:
-	ldflags.extend(libraries(['dl']))
-
-builddir = 'x64/bin' if is_x64 else 'x86/bin'
-objdir = 'x64/obj' if is_x64 else 'x86/obj'
-
-#if 'win32' in sys.platform:
-#	 tests = os.path.join(builddir, 'tests.exe')
-#else:
-#	 tests = os.path.join(builddir, 'tests')
-
-#tests_inputs = []
-#tests_object_files = []
-#for f in glob.glob('test*.ocaml'):
-#	obj = object_file(f)
-#	tests_inputs.append(f)
-#	tests_object_files.append(obj)
-
-#examples = []
-#examples_input = []
-#for f in glob.glob('examples/*.lepix'):
-#	if 'win32' in sys.platform:
-#		example = os.path.join(builddir, replace_extension(f, '.exe'))
-#	else:
-#		example = os.path.join(builddir, replace_extension(f, ''))
-#	examples_input.append(f)
-#	examples.append(example)
-
-
-# ninja file
+# ninja file constructions
+# write the default ninja file
 ninja = ninja_syntax.Writer(open('build.ninja', 'w'))
 
 # variables
 ninja.variable('ninja_required_version', '1.3')
-ninja.variable('builddir', 'bin')
-ninja.variable('cxx', args.cxx)
-ninja.variable('cxxflags', flags(cxxflags + includes(include) + dependencies(depends)))
-ninja.variable('example_cxxflags', flags(example_cxxflags + includes(include) + dependencies(depends)))
-ninja.variable('ldflags', flags(ldflags))
+
+ninja.variable('ocamlc', ocamlc)
+ninja.variable('ocamllink', ocamllink)
+ninja.variable('ocamllex', ocamllex)
+ninja.variable('ocamlparse', ocamlparse)
+
+ninja.variable('ocamlc_flags', flags(ocamlc_flags))
+ninja.variable('ocamllink_flags', flags(ocamllink_flags))
+ninja.variable('ocamllex_flags', flags(ocamllex_flags))
+ninja.variable('ocamlparse_flags', flags(ocamlparse_flags))
+
+ninja.variable('output_dir', output_dir)
+ninja.variable('obj_dir', obj_dir)
+ninja.variable('install_dir', install_dir)
+
 ninja.newline()
 
 # rules
 ninja.rule('bootstrap', command = ' '.join(['python'] + sys.argv), generator = True)
-ninja.rule('compile', command = '$cxx -MMD -MF $out.d -c $cxxflags -Werror $in -o $out',
+ninja.rule('lexer', command = '$ocamllex -MMD -MF $out.d -c $cxxflags -Werror $in -o $out',
 					  deps = 'gcc', depfile = '$out.d',
-					  description = 'compiling $in to $out')
+					  description = 'Compiling $in to $out')
+ninja.rule('compile', command = '$ocamlc -MMD -MF $out.d -c $cxxflags -Werror $in -o $out',
+					  deps = 'gcc', depfile = '$out.d',
+					  description = 'Compiling $in to $out')
 ninja.rule('link', command = '$cxx $cxxflags $in -o $out $ldflags', description = 'creating $out')
-#ninja.rule('tests_runner', command = tests)
-#ninja.rule('examples_runner', command = 'cmd /c ' + (' && '.join(examples)) if 'win32' in sys.platform else ' && '.join(examples) )
-#ninja.rule('example', command = '$cxx $example_cxxflags -MMD -MF $out.d $in -o $out $ldflags',
-#					  deps = 'gcc', depfile = '$out.d',
-#					  description = 'compiling example $in to $out')
 ninja.rule('installer', command = copy_command)
 ninja.rule('uninstaller', command = remove_command)
 ninja.newline()
