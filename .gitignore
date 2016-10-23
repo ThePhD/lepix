@@ -11,3 +11,6 @@ source/preprocessor/pp_parser.ml
 source/preprocessor/pp_ast.cmi
 source/preprocessor/pp_lexer.ml
 source/preprocessor/pp_parser.mli
+source/preprocessor/lexer.ml
+source/preprocessor/parser.ml
+source/preprocessor/parser.mli
