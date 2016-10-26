@@ -5,3 +5,5 @@
 *.out
 *.gz
 *.toc
+source/.vs/bootstrap/v14/.suo
+source/__pycache__/ninja_syntax.cpython-35.pyc
