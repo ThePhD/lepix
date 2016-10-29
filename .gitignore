@@ -8,3 +8,13 @@
 source/.vs/bootstrap/v14/.suo
 source/__pycache__/ninja_syntax.cpython-35.pyc
 *.exe
+source/preprocessor/ast.cmi
+source/preprocessor/lexer.cmi
+source/preprocessor/lexer.cmo
+source/preprocessor/lexer.ml
+source/preprocessor/parser.cmi
+source/preprocessor/parser.cmo
+source/preprocessor/parser.ml
+source/preprocessor/parser.mli
+source/preprocessor/pp.cmi
+source/preprocessor/pp.cmo
