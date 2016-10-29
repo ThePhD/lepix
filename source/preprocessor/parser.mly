@@ -1,20 +1,22 @@
-%{ open Pp_ast %}
+%{ open Ast %}
 
-%token EOF EOL
-%token <string> TEXT
+%token EOF 
 %token IMPORT STRINGS CONTINUE
+%token <string> EOL
+%token <string> TEXT
+%token <char> CHARACTER
 %token <string> STRING_LITERAL
 %token <string> NAME
 
-%start main
-%type < Pp_ast.expr> main
-
+%start text
+%type < Ast.text> text
+%type < Ast.preprocessor> preprocessor
 %%
 
-main:
-	| preprocessor { $1 }
+text:
 	| TEXT { Text($1) }
-	| EOL { Newline }
+	| CHARACTER { Character($1) }
+	| EOL { Newline($1) }
 	| EOF { Eof }
 
 preprocessor:

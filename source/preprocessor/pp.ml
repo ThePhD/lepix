@@ -21,25 +21,29 @@ let write_text text filename =
 	close_out chan
 ;; 
 
+let string_of_chars chars = 
+	let buf = Buffer.create 16 in
+	List.iter (Buffer.add_char buf) chars;
+	Buffer.contents buf
+;;
 
 let rec preprocess = function
-	| Continue(x) -> ""
+	| Continue -> ""
 	| ImportSource(target) -> read_text target 
 	| ImportString(target) -> "\"" ^ (read_text target) ^ "\""
 	| Import(target) -> "{{__UNIMPLEMENTED__}}"
-	| _ -> "{{ preprocess: BAD DEFAULT CASE }}"
 ;;
 
 let rec process = function 
 	| Text(x) -> x
+	| Character(x) -> string_of_chars [x] 
 	| Newline(x) -> x
 	| Eof -> ""
 	| Preprocessor(x) -> preprocess(x)
-	| _ -> "{{ process: BAD DEFAULT CASE }}"
 ;;
 
 let result =
 	let lexbuf = Lexing.from_channel stdin in
-	let expr = Parser.expr Lexer.token lexbuf in
-	process expr
+	let ppmain = Parser.text Lexer.token lexbuf in
+	process ppmain
 ;;
