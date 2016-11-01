@@ -7,8 +7,9 @@ fun main () : int {
 	];
 	int sum = 0;
 	parallel {
-		for (var x : int = 0 to values.size() / thread_count) {
-			var i : int = x * thread_index;
+		var size : int = values.size() / lang.thread_count;
+		for (var x : int = 0 to size) {
+			var i : int = x + (lang.thread_index * size);
 			atomic {
 				sum = sum + values[i];
 			}

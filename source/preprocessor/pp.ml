@@ -10,7 +10,7 @@ let lines_in_file f filename =
 let read_text filename =
 	(* well shit *)
 	let result = ref "" in
-	lines_in_file (fun line -> result := !result ^ line );
+	lines_in_file (fun line -> result := (!result ^ line) );
 	!result
 ;;
 
