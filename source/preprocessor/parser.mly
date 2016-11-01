@@ -1,7 +1,9 @@
 %{ open Ast %}
 
 %token EOF 
-%token IMPORT STRINGS CONTINUE
+%token IMPORT
+%token STRINGS 
+%token CONTINUE
 %token <string> EOL
 %token <string> TEXT
 %token <char> CHARACTER
