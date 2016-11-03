@@ -1,4 +1,4 @@
-%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA DOT LSQUARE RSQUARE COLON FUN
+%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA DOT LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY 
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR TILDE AS VAR
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID FLOAT
 %token <int> INTLITERAL
@@ -17,8 +17,8 @@
 %left TIMES DIVIDE
 %right NOT NEG
 
-%start decl
-%type<string> decl
+%start statement
+%type<string> statement
 %%
 
 primary_expr:
@@ -100,3 +100,44 @@ params_list: { 0 }
 | ID COLON type_name { 0 }
 | ID COLON type_name COMMA params_list { 0 }
 
+statement:
+| expr_statement { 0 }
+| branch_statement { 0 }
+| iter_statement { 0 }
+| ret_statement { 0 }
+| jump_statement { 0 }
+| fun_statement { 0 }
+
+expr_statement:
+| assign_expr SEMI {0}
+
+compound_statement : { 0 }
+| decl { 0 }
+| compound_statement SEMI decl SEMI { 0 }
+| compound_statement SEMI statement SEMI { 0 }
+
+block:
+LBRACE compound_statement RBRACE { 0 }
+| LBRACE block RBRACE { 0 }
+
+parallel_block:
+PARALLEL LPAREN args_list RPAREN block { 0 }
+
+branch_statement:
+IF LPAREN assign_expr RPAREN parallel_block %prec NOELSE { 0 }
+| IF LPAREN assign_expr RPAREN parallel_block ELSE parallel_block { 0 }
+
+iter_statement:
+WHILE LPAREN assign_expr RPAREN parallel_block { 0 }
+|  FOR LPAREN assign_expr TO assign_expr BY assign_expr RPAREN parallel_block { 0 }
+|  FOR LPAREN assign_expr SEMI assign_expr SEMI assign_expr RPAREN parallel_block { 0 }
+
+ret_statement:
+RETURN expr_statement { 0 }
+
+jump_statement:
+BREAK SEMI { 0 }
+| CONTINUE SEMI { 0 }
+
+fun_statement:
+fun_decl block { 0 }

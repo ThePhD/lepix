@@ -1,0 +1,1704 @@
+   0  $accept : %entry% $end
+
+   1  primary_expr : ID
+   2               | INTLITERAL
+   3               | FLOATLITERAL
+
+   4  postfix_expr : primary_expr
+   5               | postfix_expr LSQUARE args_list RSQUARE
+   6               | postfix_expr LPAREN args_list RPAREN
+
+   7  args_list :
+   8            | postfix_expr
+   9            | args_list COMMA postfix_expr
+
+  10  unary_operator : TILDE
+  11                 | NOT
+  12                 | MINUS
+  13                 | TIMES
+
+  14  unary_expr : unary_operator postfix_expr
+
+  15  cast_expr : unary_expr AS type_name
+
+  16  type_name : INT
+  17            | FLOAT
+  18            | BOOL
+  19            | VOID
+
+  20  mult_expr : cast_expr
+  21            | mult_expr TIMES cast_expr
+  22            | mult_expr DIVIDE cast_expr
+
+  23  add_expr : mult_expr
+  24           | add_expr PLUS mult_expr
+  25           | add_expr MINUS mult_expr
+
+  26  rel_expr : add_expr
+  27           | rel_expr LT add_expr
+  28           | rel_expr GT add_expr
+  29           | rel_expr LEQ add_expr
+  30           | rel_expr GEQ add_expr
+
+  31  eq_expr : rel_expr
+  32          | eq_expr NEQ rel_expr
+  33          | eq_expr EQ rel_expr
+
+  34  and_expr : eq_expr
+  35           | and_expr AND eq_expr
+
+  36  or_expr : and_expr
+  37          | or_expr OR and_expr
+
+  38  assign_expr : or_expr
+  39              | assign_expr ASSIGN unary_expr
+
+  40  decl : VAR ID COLON type_name ASSIGN assign_expr
+
+  41  fun_decl : FUN ID LPAREN params_list RPAREN COLON type_name
+
+  42  params_list :
+  43              | ID COLON type_name
+  44              | ID COLON type_name COMMA params_list
+
+  45  statement : expr_statement
+  46            | branch_statement
+  47            | iter_statement
+  48            | ret_statement
+  49            | jump_statement
+  50            | fun_statement
+
+  51  expr_statement : assign_expr SEMI
+
+  52  compound_statement :
+  53                     | decl
+  54                     | compound_statement SEMI decl SEMI
+  55                     | compound_statement SEMI statement SEMI
+
+  56  block : LBRACE compound_statement RBRACE
+  57        | LBRACE block RBRACE
+
+  58  parallel_block : PARALLEL LPAREN args_list RPAREN block
+
+  59  branch_statement : IF LPAREN assign_expr RPAREN parallel_block
+  60                   | IF LPAREN assign_expr RPAREN parallel_block ELSE parallel_block
+
+  61  iter_statement : WHILE LPAREN assign_expr RPAREN parallel_block
+  62                 | FOR LPAREN assign_expr TO assign_expr BY assign_expr RPAREN parallel_block
+  63                 | FOR LPAREN assign_expr SEMI assign_expr SEMI assign_expr RPAREN parallel_block
+
+  64  ret_statement : RETURN expr_statement
+
+  65  jump_statement : BREAK SEMI
+  66                 | CONTINUE SEMI
+
+  67  fun_statement : fun_decl block
+
+  68  %entry% : '\001' statement
+
+state 0
+	$accept : . %entry% $end  (0)
+
+	'\001'  shift 1
+	.  error
+
+	%entry%  goto 2
+
+
+state 1
+	%entry% : '\001' . statement  (68)
+
+	FUN  shift 3
+	CONTINUE  shift 4
+	BREAK  shift 5
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	RETURN  shift 10
+	IF  shift 11
+	FOR  shift 12
+	WHILE  shift 13
+	.  error
+
+	statement  goto 14
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 24
+	fun_decl  goto 25
+	expr_statement  goto 26
+	branch_statement  goto 27
+	iter_statement  goto 28
+	ret_statement  goto 29
+	jump_statement  goto 30
+	fun_statement  goto 31
+
+
+state 2
+	$accept : %entry% . $end  (0)
+
+	$end  accept
+
+
+state 3
+	fun_decl : FUN . ID LPAREN params_list RPAREN COLON type_name  (41)
+
+	ID  shift 32
+	.  error
+
+
+state 4
+	jump_statement : CONTINUE . SEMI  (66)
+
+	SEMI  shift 33
+	.  error
+
+
+state 5
+	jump_statement : BREAK . SEMI  (65)
+
+	SEMI  shift 34
+	.  error
+
+
+state 6
+	unary_operator : MINUS .  (12)
+
+	.  reduce 12
+
+
+state 7
+	unary_operator : TIMES .  (13)
+
+	.  reduce 13
+
+
+state 8
+	unary_operator : NOT .  (11)
+
+	.  reduce 11
+
+
+state 9
+	unary_operator : TILDE .  (10)
+
+	.  reduce 10
+
+
+state 10
+	ret_statement : RETURN . expr_statement  (64)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 24
+	expr_statement  goto 35
+
+
+state 11
+	branch_statement : IF . LPAREN assign_expr RPAREN parallel_block  (59)
+	branch_statement : IF . LPAREN assign_expr RPAREN parallel_block ELSE parallel_block  (60)
+
+	LPAREN  shift 36
+	.  error
+
+
+state 12
+	iter_statement : FOR . LPAREN assign_expr TO assign_expr BY assign_expr RPAREN parallel_block  (62)
+	iter_statement : FOR . LPAREN assign_expr SEMI assign_expr SEMI assign_expr RPAREN parallel_block  (63)
+
+	LPAREN  shift 37
+	.  error
+
+
+state 13
+	iter_statement : WHILE . LPAREN assign_expr RPAREN parallel_block  (61)
+
+	LPAREN  shift 38
+	.  error
+
+
+state 14
+	%entry% : '\001' statement .  (68)
+
+	.  reduce 68
+
+
+state 15
+	unary_expr : unary_operator . postfix_expr  (14)
+
+	INTLITERAL  shift 39
+	FLOATLITERAL  shift 40
+	ID  shift 41
+	.  error
+
+	primary_expr  goto 42
+	postfix_expr  goto 43
+
+
+state 16
+	cast_expr : unary_expr . AS type_name  (15)
+
+	AS  shift 44
+	.  error
+
+
+state 17
+	mult_expr : cast_expr .  (20)
+
+	.  reduce 20
+
+
+state 18
+	mult_expr : mult_expr . TIMES cast_expr  (21)
+	mult_expr : mult_expr . DIVIDE cast_expr  (22)
+	add_expr : mult_expr .  (23)
+
+	TIMES  shift 45
+	DIVIDE  shift 46
+	SEMI  reduce 23
+	RPAREN  reduce 23
+	RBRACE  reduce 23
+	TO  reduce 23
+	BY  reduce 23
+	PLUS  reduce 23
+	MINUS  reduce 23
+	ASSIGN  reduce 23
+	EQ  reduce 23
+	NEQ  reduce 23
+	LT  reduce 23
+	LEQ  reduce 23
+	GT  reduce 23
+	GEQ  reduce 23
+	AND  reduce 23
+	OR  reduce 23
+
+
+state 19
+	add_expr : add_expr . PLUS mult_expr  (24)
+	add_expr : add_expr . MINUS mult_expr  (25)
+	rel_expr : add_expr .  (26)
+
+	PLUS  shift 47
+	MINUS  shift 48
+	SEMI  reduce 26
+	RPAREN  reduce 26
+	RBRACE  reduce 26
+	TO  reduce 26
+	BY  reduce 26
+	ASSIGN  reduce 26
+	EQ  reduce 26
+	NEQ  reduce 26
+	LT  reduce 26
+	LEQ  reduce 26
+	GT  reduce 26
+	GEQ  reduce 26
+	AND  reduce 26
+	OR  reduce 26
+
+
+state 20
+	rel_expr : rel_expr . LT add_expr  (27)
+	rel_expr : rel_expr . GT add_expr  (28)
+	rel_expr : rel_expr . LEQ add_expr  (29)
+	rel_expr : rel_expr . GEQ add_expr  (30)
+	eq_expr : rel_expr .  (31)
+
+	LT  shift 49
+	LEQ  shift 50
+	GT  shift 51
+	GEQ  shift 52
+	SEMI  reduce 31
+	RPAREN  reduce 31
+	RBRACE  reduce 31
+	TO  reduce 31
+	BY  reduce 31
+	ASSIGN  reduce 31
+	EQ  reduce 31
+	NEQ  reduce 31
+	AND  reduce 31
+	OR  reduce 31
+
+
+state 21
+	eq_expr : eq_expr . NEQ rel_expr  (32)
+	eq_expr : eq_expr . EQ rel_expr  (33)
+	and_expr : eq_expr .  (34)
+
+	EQ  shift 53
+	NEQ  shift 54
+	SEMI  reduce 34
+	RPAREN  reduce 34
+	RBRACE  reduce 34
+	TO  reduce 34
+	BY  reduce 34
+	ASSIGN  reduce 34
+	AND  reduce 34
+	OR  reduce 34
+
+
+state 22
+	and_expr : and_expr . AND eq_expr  (35)
+	or_expr : and_expr .  (36)
+
+	AND  shift 55
+	SEMI  reduce 36
+	RPAREN  reduce 36
+	RBRACE  reduce 36
+	TO  reduce 36
+	BY  reduce 36
+	ASSIGN  reduce 36
+	OR  reduce 36
+
+
+state 23
+	or_expr : or_expr . OR and_expr  (37)
+	assign_expr : or_expr .  (38)
+
+	OR  shift 56
+	SEMI  reduce 38
+	RPAREN  reduce 38
+	RBRACE  reduce 38
+	TO  reduce 38
+	BY  reduce 38
+	ASSIGN  reduce 38
+
+
+state 24
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	expr_statement : assign_expr . SEMI  (51)
+
+	SEMI  shift 57
+	ASSIGN  shift 58
+	.  error
+
+
+state 25
+	fun_statement : fun_decl . block  (67)
+
+	LBRACE  shift 59
+	.  error
+
+	block  goto 60
+
+
+state 26
+	statement : expr_statement .  (45)
+
+	.  reduce 45
+
+
+state 27
+	statement : branch_statement .  (46)
+
+	.  reduce 46
+
+
+state 28
+	statement : iter_statement .  (47)
+
+	.  reduce 47
+
+
+state 29
+	statement : ret_statement .  (48)
+
+	.  reduce 48
+
+
+state 30
+	statement : jump_statement .  (49)
+
+	.  reduce 49
+
+
+state 31
+	statement : fun_statement .  (50)
+
+	.  reduce 50
+
+
+state 32
+	fun_decl : FUN ID . LPAREN params_list RPAREN COLON type_name  (41)
+
+	LPAREN  shift 61
+	.  error
+
+
+state 33
+	jump_statement : CONTINUE SEMI .  (66)
+
+	.  reduce 66
+
+
+state 34
+	jump_statement : BREAK SEMI .  (65)
+
+	.  reduce 65
+
+
+state 35
+	ret_statement : RETURN expr_statement .  (64)
+
+	.  reduce 64
+
+
+state 36
+	branch_statement : IF LPAREN . assign_expr RPAREN parallel_block  (59)
+	branch_statement : IF LPAREN . assign_expr RPAREN parallel_block ELSE parallel_block  (60)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 62
+
+
+state 37
+	iter_statement : FOR LPAREN . assign_expr TO assign_expr BY assign_expr RPAREN parallel_block  (62)
+	iter_statement : FOR LPAREN . assign_expr SEMI assign_expr SEMI assign_expr RPAREN parallel_block  (63)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 63
+
+
+state 38
+	iter_statement : WHILE LPAREN . assign_expr RPAREN parallel_block  (61)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 64
+
+
+state 39
+	primary_expr : INTLITERAL .  (2)
+
+	.  reduce 2
+
+
+state 40
+	primary_expr : FLOATLITERAL .  (3)
+
+	.  reduce 3
+
+
+state 41
+	primary_expr : ID .  (1)
+
+	.  reduce 1
+
+
+state 42
+	postfix_expr : primary_expr .  (4)
+
+	.  reduce 4
+
+
+state 43
+	postfix_expr : postfix_expr . LSQUARE args_list RSQUARE  (5)
+	postfix_expr : postfix_expr . LPAREN args_list RPAREN  (6)
+	unary_expr : unary_operator postfix_expr .  (14)
+
+	LPAREN  shift 65
+	LSQUARE  shift 66
+	SEMI  reduce 14
+	RPAREN  reduce 14
+	RBRACE  reduce 14
+	TO  reduce 14
+	BY  reduce 14
+	ASSIGN  reduce 14
+	AS  reduce 14
+
+
+state 44
+	cast_expr : unary_expr AS . type_name  (15)
+
+	INT  shift 67
+	BOOL  shift 68
+	VOID  shift 69
+	FLOAT  shift 70
+	.  error
+
+	type_name  goto 71
+
+
+state 45
+	mult_expr : mult_expr TIMES . cast_expr  (21)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 72
+
+
+state 46
+	mult_expr : mult_expr DIVIDE . cast_expr  (22)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 73
+
+
+state 47
+	add_expr : add_expr PLUS . mult_expr  (24)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 74
+
+
+state 48
+	add_expr : add_expr MINUS . mult_expr  (25)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 75
+
+
+state 49
+	rel_expr : rel_expr LT . add_expr  (27)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 76
+
+
+state 50
+	rel_expr : rel_expr LEQ . add_expr  (29)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 77
+
+
+state 51
+	rel_expr : rel_expr GT . add_expr  (28)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 78
+
+
+state 52
+	rel_expr : rel_expr GEQ . add_expr  (30)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 79
+
+
+state 53
+	eq_expr : eq_expr EQ . rel_expr  (33)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 80
+
+
+state 54
+	eq_expr : eq_expr NEQ . rel_expr  (32)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 81
+
+
+state 55
+	and_expr : and_expr AND . eq_expr  (35)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 82
+
+
+state 56
+	or_expr : or_expr OR . and_expr  (37)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 83
+
+
+state 57
+	expr_statement : assign_expr SEMI .  (51)
+
+	.  reduce 51
+
+
+state 58
+	assign_expr : assign_expr ASSIGN . unary_expr  (39)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 84
+
+
+state 59
+	block : LBRACE . compound_statement RBRACE  (56)
+	block : LBRACE . block RBRACE  (57)
+	compound_statement : .  (52)
+
+	LBRACE  shift 59
+	VAR  shift 85
+	SEMI  reduce 52
+	RBRACE  reduce 52
+
+	decl  goto 86
+	compound_statement  goto 87
+	block  goto 88
+
+
+state 60
+	fun_statement : fun_decl block .  (67)
+
+	.  reduce 67
+
+
+state 61
+	fun_decl : FUN ID LPAREN . params_list RPAREN COLON type_name  (41)
+	params_list : .  (42)
+
+	ID  shift 89
+	RPAREN  reduce 42
+
+	params_list  goto 90
+
+
+state 62
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	branch_statement : IF LPAREN assign_expr . RPAREN parallel_block  (59)
+	branch_statement : IF LPAREN assign_expr . RPAREN parallel_block ELSE parallel_block  (60)
+
+	RPAREN  shift 91
+	ASSIGN  shift 58
+	.  error
+
+
+state 63
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	iter_statement : FOR LPAREN assign_expr . TO assign_expr BY assign_expr RPAREN parallel_block  (62)
+	iter_statement : FOR LPAREN assign_expr . SEMI assign_expr SEMI assign_expr RPAREN parallel_block  (63)
+
+	SEMI  shift 92
+	TO  shift 93
+	ASSIGN  shift 58
+	.  error
+
+
+state 64
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	iter_statement : WHILE LPAREN assign_expr . RPAREN parallel_block  (61)
+
+	RPAREN  shift 94
+	ASSIGN  shift 58
+	.  error
+
+
+state 65
+	postfix_expr : postfix_expr LPAREN . args_list RPAREN  (6)
+	args_list : .  (7)
+
+	INTLITERAL  shift 39
+	FLOATLITERAL  shift 40
+	ID  shift 41
+	RPAREN  reduce 7
+	COMMA  reduce 7
+
+	primary_expr  goto 42
+	postfix_expr  goto 95
+	args_list  goto 96
+
+
+state 66
+	postfix_expr : postfix_expr LSQUARE . args_list RSQUARE  (5)
+	args_list : .  (7)
+
+	INTLITERAL  shift 39
+	FLOATLITERAL  shift 40
+	ID  shift 41
+	COMMA  reduce 7
+	RSQUARE  reduce 7
+
+	primary_expr  goto 42
+	postfix_expr  goto 95
+	args_list  goto 97
+
+
+state 67
+	type_name : INT .  (16)
+
+	.  reduce 16
+
+
+state 68
+	type_name : BOOL .  (18)
+
+	.  reduce 18
+
+
+state 69
+	type_name : VOID .  (19)
+
+	.  reduce 19
+
+
+state 70
+	type_name : FLOAT .  (17)
+
+	.  reduce 17
+
+
+state 71
+	cast_expr : unary_expr AS type_name .  (15)
+
+	.  reduce 15
+
+
+state 72
+	mult_expr : mult_expr TIMES cast_expr .  (21)
+
+	.  reduce 21
+
+
+state 73
+	mult_expr : mult_expr DIVIDE cast_expr .  (22)
+
+	.  reduce 22
+
+
+state 74
+	mult_expr : mult_expr . TIMES cast_expr  (21)
+	mult_expr : mult_expr . DIVIDE cast_expr  (22)
+	add_expr : add_expr PLUS mult_expr .  (24)
+
+	TIMES  shift 45
+	DIVIDE  shift 46
+	SEMI  reduce 24
+	RPAREN  reduce 24
+	RBRACE  reduce 24
+	TO  reduce 24
+	BY  reduce 24
+	PLUS  reduce 24
+	MINUS  reduce 24
+	ASSIGN  reduce 24
+	EQ  reduce 24
+	NEQ  reduce 24
+	LT  reduce 24
+	LEQ  reduce 24
+	GT  reduce 24
+	GEQ  reduce 24
+	AND  reduce 24
+	OR  reduce 24
+
+
+state 75
+	mult_expr : mult_expr . TIMES cast_expr  (21)
+	mult_expr : mult_expr . DIVIDE cast_expr  (22)
+	add_expr : add_expr MINUS mult_expr .  (25)
+
+	TIMES  shift 45
+	DIVIDE  shift 46
+	SEMI  reduce 25
+	RPAREN  reduce 25
+	RBRACE  reduce 25
+	TO  reduce 25
+	BY  reduce 25
+	PLUS  reduce 25
+	MINUS  reduce 25
+	ASSIGN  reduce 25
+	EQ  reduce 25
+	NEQ  reduce 25
+	LT  reduce 25
+	LEQ  reduce 25
+	GT  reduce 25
+	GEQ  reduce 25
+	AND  reduce 25
+	OR  reduce 25
+
+
+state 76
+	add_expr : add_expr . PLUS mult_expr  (24)
+	add_expr : add_expr . MINUS mult_expr  (25)
+	rel_expr : rel_expr LT add_expr .  (27)
+
+	PLUS  shift 47
+	MINUS  shift 48
+	SEMI  reduce 27
+	RPAREN  reduce 27
+	RBRACE  reduce 27
+	TO  reduce 27
+	BY  reduce 27
+	ASSIGN  reduce 27
+	EQ  reduce 27
+	NEQ  reduce 27
+	LT  reduce 27
+	LEQ  reduce 27
+	GT  reduce 27
+	GEQ  reduce 27
+	AND  reduce 27
+	OR  reduce 27
+
+
+state 77
+	add_expr : add_expr . PLUS mult_expr  (24)
+	add_expr : add_expr . MINUS mult_expr  (25)
+	rel_expr : rel_expr LEQ add_expr .  (29)
+
+	PLUS  shift 47
+	MINUS  shift 48
+	SEMI  reduce 29
+	RPAREN  reduce 29
+	RBRACE  reduce 29
+	TO  reduce 29
+	BY  reduce 29
+	ASSIGN  reduce 29
+	EQ  reduce 29
+	NEQ  reduce 29
+	LT  reduce 29
+	LEQ  reduce 29
+	GT  reduce 29
+	GEQ  reduce 29
+	AND  reduce 29
+	OR  reduce 29
+
+
+state 78
+	add_expr : add_expr . PLUS mult_expr  (24)
+	add_expr : add_expr . MINUS mult_expr  (25)
+	rel_expr : rel_expr GT add_expr .  (28)
+
+	PLUS  shift 47
+	MINUS  shift 48
+	SEMI  reduce 28
+	RPAREN  reduce 28
+	RBRACE  reduce 28
+	TO  reduce 28
+	BY  reduce 28
+	ASSIGN  reduce 28
+	EQ  reduce 28
+	NEQ  reduce 28
+	LT  reduce 28
+	LEQ  reduce 28
+	GT  reduce 28
+	GEQ  reduce 28
+	AND  reduce 28
+	OR  reduce 28
+
+
+state 79
+	add_expr : add_expr . PLUS mult_expr  (24)
+	add_expr : add_expr . MINUS mult_expr  (25)
+	rel_expr : rel_expr GEQ add_expr .  (30)
+
+	PLUS  shift 47
+	MINUS  shift 48
+	SEMI  reduce 30
+	RPAREN  reduce 30
+	RBRACE  reduce 30
+	TO  reduce 30
+	BY  reduce 30
+	ASSIGN  reduce 30
+	EQ  reduce 30
+	NEQ  reduce 30
+	LT  reduce 30
+	LEQ  reduce 30
+	GT  reduce 30
+	GEQ  reduce 30
+	AND  reduce 30
+	OR  reduce 30
+
+
+state 80
+	rel_expr : rel_expr . LT add_expr  (27)
+	rel_expr : rel_expr . GT add_expr  (28)
+	rel_expr : rel_expr . LEQ add_expr  (29)
+	rel_expr : rel_expr . GEQ add_expr  (30)
+	eq_expr : eq_expr EQ rel_expr .  (33)
+
+	LT  shift 49
+	LEQ  shift 50
+	GT  shift 51
+	GEQ  shift 52
+	SEMI  reduce 33
+	RPAREN  reduce 33
+	RBRACE  reduce 33
+	TO  reduce 33
+	BY  reduce 33
+	ASSIGN  reduce 33
+	EQ  reduce 33
+	NEQ  reduce 33
+	AND  reduce 33
+	OR  reduce 33
+
+
+state 81
+	rel_expr : rel_expr . LT add_expr  (27)
+	rel_expr : rel_expr . GT add_expr  (28)
+	rel_expr : rel_expr . LEQ add_expr  (29)
+	rel_expr : rel_expr . GEQ add_expr  (30)
+	eq_expr : eq_expr NEQ rel_expr .  (32)
+
+	LT  shift 49
+	LEQ  shift 50
+	GT  shift 51
+	GEQ  shift 52
+	SEMI  reduce 32
+	RPAREN  reduce 32
+	RBRACE  reduce 32
+	TO  reduce 32
+	BY  reduce 32
+	ASSIGN  reduce 32
+	EQ  reduce 32
+	NEQ  reduce 32
+	AND  reduce 32
+	OR  reduce 32
+
+
+state 82
+	eq_expr : eq_expr . NEQ rel_expr  (32)
+	eq_expr : eq_expr . EQ rel_expr  (33)
+	and_expr : and_expr AND eq_expr .  (35)
+
+	EQ  shift 53
+	NEQ  shift 54
+	SEMI  reduce 35
+	RPAREN  reduce 35
+	RBRACE  reduce 35
+	TO  reduce 35
+	BY  reduce 35
+	ASSIGN  reduce 35
+	AND  reduce 35
+	OR  reduce 35
+
+
+state 83
+	and_expr : and_expr . AND eq_expr  (35)
+	or_expr : or_expr OR and_expr .  (37)
+
+	AND  shift 55
+	SEMI  reduce 37
+	RPAREN  reduce 37
+	RBRACE  reduce 37
+	TO  reduce 37
+	BY  reduce 37
+	ASSIGN  reduce 37
+	OR  reduce 37
+
+
+state 84
+	assign_expr : assign_expr ASSIGN unary_expr .  (39)
+
+	.  reduce 39
+
+
+state 85
+	decl : VAR . ID COLON type_name ASSIGN assign_expr  (40)
+
+	ID  shift 98
+	.  error
+
+
+state 86
+	compound_statement : decl .  (53)
+
+	.  reduce 53
+
+
+state 87
+	compound_statement : compound_statement . SEMI decl SEMI  (54)
+	compound_statement : compound_statement . SEMI statement SEMI  (55)
+	block : LBRACE compound_statement . RBRACE  (56)
+
+	SEMI  shift 99
+	RBRACE  shift 100
+	.  error
+
+
+state 88
+	block : LBRACE block . RBRACE  (57)
+
+	RBRACE  shift 101
+	.  error
+
+
+state 89
+	params_list : ID . COLON type_name  (43)
+	params_list : ID . COLON type_name COMMA params_list  (44)
+
+	COLON  shift 102
+	.  error
+
+
+state 90
+	fun_decl : FUN ID LPAREN params_list . RPAREN COLON type_name  (41)
+
+	RPAREN  shift 103
+	.  error
+
+
+state 91
+	branch_statement : IF LPAREN assign_expr RPAREN . parallel_block  (59)
+	branch_statement : IF LPAREN assign_expr RPAREN . parallel_block ELSE parallel_block  (60)
+
+	PARALLEL  shift 104
+	.  error
+
+	parallel_block  goto 105
+
+
+state 92
+	iter_statement : FOR LPAREN assign_expr SEMI . assign_expr SEMI assign_expr RPAREN parallel_block  (63)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 106
+
+
+state 93
+	iter_statement : FOR LPAREN assign_expr TO . assign_expr BY assign_expr RPAREN parallel_block  (62)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 107
+
+
+state 94
+	iter_statement : WHILE LPAREN assign_expr RPAREN . parallel_block  (61)
+
+	PARALLEL  shift 104
+	.  error
+
+	parallel_block  goto 108
+
+
+state 95
+	postfix_expr : postfix_expr . LSQUARE args_list RSQUARE  (5)
+	postfix_expr : postfix_expr . LPAREN args_list RPAREN  (6)
+	args_list : postfix_expr .  (8)
+
+	LPAREN  shift 65
+	LSQUARE  shift 66
+	RPAREN  reduce 8
+	COMMA  reduce 8
+	RSQUARE  reduce 8
+
+
+state 96
+	postfix_expr : postfix_expr LPAREN args_list . RPAREN  (6)
+	args_list : args_list . COMMA postfix_expr  (9)
+
+	RPAREN  shift 109
+	COMMA  shift 110
+	.  error
+
+
+state 97
+	postfix_expr : postfix_expr LSQUARE args_list . RSQUARE  (5)
+	args_list : args_list . COMMA postfix_expr  (9)
+
+	COMMA  shift 110
+	RSQUARE  shift 111
+	.  error
+
+
+state 98
+	decl : VAR ID . COLON type_name ASSIGN assign_expr  (40)
+
+	COLON  shift 112
+	.  error
+
+
+state 99
+	compound_statement : compound_statement SEMI . decl SEMI  (54)
+	compound_statement : compound_statement SEMI . statement SEMI  (55)
+
+	FUN  shift 3
+	CONTINUE  shift 4
+	BREAK  shift 5
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	VAR  shift 85
+	RETURN  shift 10
+	IF  shift 11
+	FOR  shift 12
+	WHILE  shift 13
+	.  error
+
+	statement  goto 113
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 24
+	decl  goto 114
+	fun_decl  goto 25
+	expr_statement  goto 26
+	branch_statement  goto 27
+	iter_statement  goto 28
+	ret_statement  goto 29
+	jump_statement  goto 30
+	fun_statement  goto 31
+
+
+state 100
+	block : LBRACE compound_statement RBRACE .  (56)
+
+	.  reduce 56
+
+
+state 101
+	block : LBRACE block RBRACE .  (57)
+
+	.  reduce 57
+
+
+state 102
+	params_list : ID COLON . type_name  (43)
+	params_list : ID COLON . type_name COMMA params_list  (44)
+
+	INT  shift 67
+	BOOL  shift 68
+	VOID  shift 69
+	FLOAT  shift 70
+	.  error
+
+	type_name  goto 115
+
+
+state 103
+	fun_decl : FUN ID LPAREN params_list RPAREN . COLON type_name  (41)
+
+	COLON  shift 116
+	.  error
+
+
+state 104
+	parallel_block : PARALLEL . LPAREN args_list RPAREN block  (58)
+
+	LPAREN  shift 117
+	.  error
+
+
+state 105
+	branch_statement : IF LPAREN assign_expr RPAREN parallel_block .  (59)
+	branch_statement : IF LPAREN assign_expr RPAREN parallel_block . ELSE parallel_block  (60)
+
+	ELSE  shift 118
+	$end  reduce 59
+	SEMI  reduce 59
+
+
+state 106
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	iter_statement : FOR LPAREN assign_expr SEMI assign_expr . SEMI assign_expr RPAREN parallel_block  (63)
+
+	SEMI  shift 119
+	ASSIGN  shift 58
+	.  error
+
+
+state 107
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	iter_statement : FOR LPAREN assign_expr TO assign_expr . BY assign_expr RPAREN parallel_block  (62)
+
+	BY  shift 120
+	ASSIGN  shift 58
+	.  error
+
+
+state 108
+	iter_statement : WHILE LPAREN assign_expr RPAREN parallel_block .  (61)
+
+	.  reduce 61
+
+
+state 109
+	postfix_expr : postfix_expr LPAREN args_list RPAREN .  (6)
+
+	.  reduce 6
+
+
+state 110
+	args_list : args_list COMMA . postfix_expr  (9)
+
+	INTLITERAL  shift 39
+	FLOATLITERAL  shift 40
+	ID  shift 41
+	.  error
+
+	primary_expr  goto 42
+	postfix_expr  goto 121
+
+
+state 111
+	postfix_expr : postfix_expr LSQUARE args_list RSQUARE .  (5)
+
+	.  reduce 5
+
+
+state 112
+	decl : VAR ID COLON . type_name ASSIGN assign_expr  (40)
+
+	INT  shift 67
+	BOOL  shift 68
+	VOID  shift 69
+	FLOAT  shift 70
+	.  error
+
+	type_name  goto 122
+
+
+state 113
+	compound_statement : compound_statement SEMI statement . SEMI  (55)
+
+	SEMI  shift 123
+	.  error
+
+
+state 114
+	compound_statement : compound_statement SEMI decl . SEMI  (54)
+
+	SEMI  shift 124
+	.  error
+
+
+state 115
+	params_list : ID COLON type_name .  (43)
+	params_list : ID COLON type_name . COMMA params_list  (44)
+
+	COMMA  shift 125
+	RPAREN  reduce 43
+
+
+state 116
+	fun_decl : FUN ID LPAREN params_list RPAREN COLON . type_name  (41)
+
+	INT  shift 67
+	BOOL  shift 68
+	VOID  shift 69
+	FLOAT  shift 70
+	.  error
+
+	type_name  goto 126
+
+
+state 117
+	parallel_block : PARALLEL LPAREN . args_list RPAREN block  (58)
+	args_list : .  (7)
+
+	INTLITERAL  shift 39
+	FLOATLITERAL  shift 40
+	ID  shift 41
+	RPAREN  reduce 7
+	COMMA  reduce 7
+
+	primary_expr  goto 42
+	postfix_expr  goto 95
+	args_list  goto 127
+
+
+state 118
+	branch_statement : IF LPAREN assign_expr RPAREN parallel_block ELSE . parallel_block  (60)
+
+	PARALLEL  shift 104
+	.  error
+
+	parallel_block  goto 128
+
+
+state 119
+	iter_statement : FOR LPAREN assign_expr SEMI assign_expr SEMI . assign_expr RPAREN parallel_block  (63)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 129
+
+
+state 120
+	iter_statement : FOR LPAREN assign_expr TO assign_expr BY . assign_expr RPAREN parallel_block  (62)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 130
+
+
+state 121
+	postfix_expr : postfix_expr . LSQUARE args_list RSQUARE  (5)
+	postfix_expr : postfix_expr . LPAREN args_list RPAREN  (6)
+	args_list : args_list COMMA postfix_expr .  (9)
+
+	LPAREN  shift 65
+	LSQUARE  shift 66
+	RPAREN  reduce 9
+	COMMA  reduce 9
+	RSQUARE  reduce 9
+
+
+state 122
+	decl : VAR ID COLON type_name . ASSIGN assign_expr  (40)
+
+	ASSIGN  shift 131
+	.  error
+
+
+state 123
+	compound_statement : compound_statement SEMI statement SEMI .  (55)
+
+	.  reduce 55
+
+
+state 124
+	compound_statement : compound_statement SEMI decl SEMI .  (54)
+
+	.  reduce 54
+
+
+state 125
+	params_list : ID COLON type_name COMMA . params_list  (44)
+	params_list : .  (42)
+
+	ID  shift 89
+	RPAREN  reduce 42
+
+	params_list  goto 132
+
+
+state 126
+	fun_decl : FUN ID LPAREN params_list RPAREN COLON type_name .  (41)
+
+	.  reduce 41
+
+
+state 127
+	args_list : args_list . COMMA postfix_expr  (9)
+	parallel_block : PARALLEL LPAREN args_list . RPAREN block  (58)
+
+	RPAREN  shift 133
+	COMMA  shift 110
+	.  error
+
+
+state 128
+	branch_statement : IF LPAREN assign_expr RPAREN parallel_block ELSE parallel_block .  (60)
+
+	.  reduce 60
+
+
+state 129
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	iter_statement : FOR LPAREN assign_expr SEMI assign_expr SEMI assign_expr . RPAREN parallel_block  (63)
+
+	RPAREN  shift 134
+	ASSIGN  shift 58
+	.  error
+
+
+state 130
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	iter_statement : FOR LPAREN assign_expr TO assign_expr BY assign_expr . RPAREN parallel_block  (62)
+
+	RPAREN  shift 135
+	ASSIGN  shift 58
+	.  error
+
+
+state 131
+	decl : VAR ID COLON type_name ASSIGN . assign_expr  (40)
+
+	MINUS  shift 6
+	TIMES  shift 7
+	NOT  shift 8
+	TILDE  shift 9
+	.  error
+
+	unary_operator  goto 15
+	unary_expr  goto 16
+	cast_expr  goto 17
+	mult_expr  goto 18
+	add_expr  goto 19
+	rel_expr  goto 20
+	eq_expr  goto 21
+	and_expr  goto 22
+	or_expr  goto 23
+	assign_expr  goto 136
+
+
+state 132
+	params_list : ID COLON type_name COMMA params_list .  (44)
+
+	.  reduce 44
+
+
+state 133
+	parallel_block : PARALLEL LPAREN args_list RPAREN . block  (58)
+
+	LBRACE  shift 59
+	.  error
+
+	block  goto 137
+
+
+state 134
+	iter_statement : FOR LPAREN assign_expr SEMI assign_expr SEMI assign_expr RPAREN . parallel_block  (63)
+
+	PARALLEL  shift 104
+	.  error
+
+	parallel_block  goto 138
+
+
+state 135
+	iter_statement : FOR LPAREN assign_expr TO assign_expr BY assign_expr RPAREN . parallel_block  (62)
+
+	PARALLEL  shift 104
+	.  error
+
+	parallel_block  goto 139
+
+
+state 136
+	assign_expr : assign_expr . ASSIGN unary_expr  (39)
+	decl : VAR ID COLON type_name ASSIGN assign_expr .  (40)
+
+	ASSIGN  shift 58
+	SEMI  reduce 40
+	RBRACE  reduce 40
+
+
+state 137
+	parallel_block : PARALLEL LPAREN args_list RPAREN block .  (58)
+
+	.  reduce 58
+
+
+state 138
+	iter_statement : FOR LPAREN assign_expr SEMI assign_expr SEMI assign_expr RPAREN parallel_block .  (63)
+
+	.  reduce 63
+
+
+state 139
+	iter_statement : FOR LPAREN assign_expr TO assign_expr BY assign_expr RPAREN parallel_block .  (62)
+
+	.  reduce 62
+
+
+53 terminals, 29 nonterminals
+69 grammar rules, 140 states
