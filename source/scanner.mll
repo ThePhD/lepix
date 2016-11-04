@@ -10,8 +10,8 @@ rule token = parse
 | ')'      { RPAREN }
 | '{'      { LBRACE }
 | '}'      { RBRACE }
-| '['	   { LBRACKET }
-| '['	   { RBRACKET }
+| '['	   { LSQUARE }
+| '['	   { RSQUARE }
 | ';'      { SEMI }
 | ':'	   { COLON }
 | ','      { COMMA }
@@ -44,12 +44,14 @@ rule token = parse
 | "false"  { FALSE }
 | "let"	   { LET }
 | "var"    { VAR }
-| "mutable" { MUTE }
-| "const"   { CONST }
 | "fun"	    { FUN }
 | "as"	    { AS }
 | "."	    { DOT }
 | "parallel" { PARALLEL }
+| "break" { BREAK }
+| "continue" { CONTINUE }
+| "as" { AS }
+| "~" { TILDE }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
 | '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOAT(float_of_string lxm) } 
