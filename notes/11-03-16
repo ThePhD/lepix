@@ -1,0 +1,24 @@
+open mp - opens up thread at the beginning or something
+
+what platforms
+- google cloud?
+
+merge arrays and threads
+more correspondence between c pthreading and our language
+avoid p thread create -> look up pthreads bext practices
+
+abstract syntax tree pretty printer
+
+-> HELLO WORLD
+
+testall.sh in microC - huge test suite (5-10 lines of code - tests basic stuff: print, add, starting two threads and waiting for them to terminate)
+
+
+TODO:
+merge arrays and threads
+clang to figure out how to talk about arrays in generated code
+array arithmetic
+-> dynamic multi dimensional arary threading, static is crutch
+think about what hello world is going to be - what is it going to take to get compiler to that point
+
+good test: pull number from environment (don't know where it comes from) 2D array, dynamic creation, threads to sum
