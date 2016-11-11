@@ -1,0 +1,6 @@
+fun main () : int {
+	var x : int[[]] = [ [11], [22], [44], [88] ];
+	var y : int[] = x[3];
+	var z : int = x[0, 3];
+	lib.print(y[0] + z);
+}
