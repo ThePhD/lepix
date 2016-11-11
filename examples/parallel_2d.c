@@ -43,17 +43,21 @@ struct lepix_parallel_transfer_ {
 	bool work_done;
 	ptrdiff_t work_index;
 	ptrdiff_t work_count;
+	ptrdiff_t invocation_id;
+	ptrdiff_t invocation_count;
 	void** local_variables; // -- ONE POINTER PER LOCAL
 	ptrdiff_t local_variables_size; // -- NUMBER OF LOCALS BUT REALLY NOT NEEDED EXCEPT MAYBE SANITY
 	pthread_mutex_t work_lock;
 	pthread_mutexattr_t work_lock_attributes;
 };
 
-void lepix_create_parallel_transfer_ (lepix_parallel_transfer* transfer, lepix_work_function* work, int index, int work_size, void** locals, ptrdiff_t locals_size) {
+void lepix_create_parallel_transfer_ (lepix_parallel_transfer* transfer, lepix_work_function* work, ptrdiff_t invocation_id, ptrdiff_t invocation_count, ptrdiff_t work_index, ptrdiff_t work_count, void** locals, ptrdiff_t locals_size) {
 	transfer->work = work;
 	transfer->work_done = false;
-	transfer->work_index = index;
-	transfer->work_count = work_size;
+	transfer->work_index = work_index;
+	transfer->work_count = work_count;
+	transfer->invocation_id = invocation_id;
+	transfer->invocation_count = invocation_count;
 	transfer->local_variables = locals;
 	transfer->local_variables_size = locals_size;
 	pthread_mutexattr_init(&transfer->work_lock_attributes);
@@ -61,7 +65,7 @@ void lepix_create_parallel_transfer_ (lepix_parallel_transfer* transfer, lepix_w
 }
 
 void lepix_parallel_transfer_dead_(lepix_parallel_transfer* transfer) {
-	lepix_create_parallel_transfer_(transfer, NULL, 0, 0, NULL, 0);
+	lepix_create_parallel_transfer_(transfer, NULL, 0, 0, 0, 0, NULL, 0);
 }
 
 struct lepix_thread_handle_ {
@@ -90,7 +94,7 @@ struct lepix_thread_pool_ {
 };
 
 ptrdiff_t lepix_hardware_concurrency_ () {
-	return 1; // -- TODO: REPLACE WITH LOGIC FOR VARIOUS PLATFORMS
+	return 2; // -- TODO: REPLACE WITH LOGIC FOR VARIOUS PLATFORMS
 }
 
 ptrdiff_t lepix_concurrency_multiplicity_ () {
@@ -165,8 +169,6 @@ void lepix_destroy_pool_(lepix_thread_pool* pool) {
 		pthread_attr_t* attr = &handle->attributes;
 		//pthread_t t = handle->thread;
 		
-		
-
 		pthread_cond_destroy(readywait);
 		pthread_mutex_destroy(readywaitmutex);
 		pthread_mutexattr_destroy(readywaitmutexattr);
@@ -204,6 +206,7 @@ void* lepix_thread_work_spin_(void* h) {
 		transfer->work(transfer, handle);
 		
 		pthread_mutex_lock(&handle->completed_wait_lock);
+		handle->transfer = NULL;
 		transfer->work_done = true;
 		pthread_cond_signal(&handle->completed_wait);
 		pthread_mutex_unlock(&handle->completed_wait_lock);
@@ -212,39 +215,45 @@ void* lepix_thread_work_spin_(void* h) {
 	return NULL;
 }
 
-void lepix_launch_parallel_work_(lepix_thread_pool* pool, lepix_work_function* func, void** locals, ptrdiff_t locals_size) {
+void lepix_launch_parallel_work_(lepix_thread_pool* pool, lepix_work_function* func, ptrdiff_t invocations, void** locals, ptrdiff_t locals_size) {
 	// -- TODO: SMARTER SELECTION OF TARGET ARRAYS
 	typedef struct {
 		pthread_mutex_t* completed_wait_lock;
 		pthread_cond_t* completed_wait;
 		lepix_parallel_transfer transfer;
 	} local_work;
-	int local_work_size = lepix_hardware_concurrency_();
+	int local_work_size = pool->threads_size;
 	local_work* local_work_list = (local_work*)malloc(sizeof(local_work) * local_work_size);
-	for (int i = 0; i < local_work_size; ++i) {
-		lepix_thread_handle* handle = &pool->threads[i];
-		local_work* work = &local_work_list[i];
-		work->completed_wait_lock = &handle->completed_wait_lock;
-		work->completed_wait = &handle->completed_wait;
-		lepix_parallel_transfer* transfer = &work->transfer;
-		
-		lepix_create_parallel_transfer_(transfer, func, i, local_work_size, locals, locals_size);
-		
-		pthread_mutex_lock(&handle->ready_wait_lock);
-		handle->transfer = transfer;
-		pthread_cond_signal(&handle->ready_wait);
-		pthread_mutex_unlock(&handle->ready_wait_lock);
+	if (invocations == 0) {
+		invocations = local_work_size;
 	}
-	for (int i = 0; i < local_work_size; ++i) {
-		local_work* work = &local_work_list[i];
-		lepix_parallel_transfer* transfer = &work->transfer;
-		pthread_mutex_lock(work->completed_wait_lock);
-		if (transfer->work_done) {
-			pthread_mutex_unlock(work->completed_wait_lock);
-			continue;
+	for (ptrdiff_t inv = 0; inv < invocations;) {
+		ptrdiff_t dispatched = 0;
+		for (ptrdiff_t i = 0; i < local_work_size && inv < invocations; ++i, ++inv, ++dispatched) {
+			lepix_thread_handle* handle = &pool->threads[i];
+			local_work* work = &local_work_list[i];
+			work->completed_wait_lock = &handle->completed_wait_lock;
+			work->completed_wait = &handle->completed_wait;
+			lepix_parallel_transfer* transfer = &work->transfer;
+
+			lepix_create_parallel_transfer_(transfer, func, inv, invocations, i, local_work_size, locals, locals_size);
+
+			pthread_mutex_lock(&handle->ready_wait_lock);
+			handle->transfer = transfer;
+			pthread_cond_signal(&handle->ready_wait);
+			pthread_mutex_unlock(&handle->ready_wait_lock);
 		}
-		pthread_cond_wait(work->completed_wait, work->completed_wait_lock);
-		pthread_mutex_unlock(work->completed_wait_lock);
+		for (ptrdiff_t i = 0; i < dispatched; ++i) {
+			local_work* work = &local_work_list[i];
+			lepix_parallel_transfer* transfer = &work->transfer;
+			pthread_mutex_lock(work->completed_wait_lock);
+			if (transfer->work_done) {
+				pthread_mutex_unlock(work->completed_wait_lock);
+				continue;
+			}
+			pthread_cond_wait(work->completed_wait, work->completed_wait_lock);
+			pthread_mutex_unlock(work->completed_wait_lock);
+		}
 	}
 	free(local_work_list);
 }
@@ -253,20 +262,24 @@ lepix_thread_pool pool_;
 
 // -- BUILT-IN PREABLE
 // -- MAPPING FUNCTION FOR THREAD INDICES
-struct lepix_cursor_ {
+struct lepix_cursor_1_ {
 	ptrdiff_t offset;
 	ptrdiff_t size;
 };
 
-typedef struct lepix_cursor_ lepix_cursor;
+typedef struct lepix_cursor_1_ lepix_bounds1;
 
-lepix_cursor lepix_lib_map_indices_1(ptrdiff_t threadindex, ptrdiff_t threadcount, ptrdiff_t dimension) {
-	lepix_cursor c;
+lepix_bounds1 lepix_lib_bounds_for_1(ptrdiff_t threadindex, ptrdiff_t threadcount, ptrdiff_t dimension) {
+	lepix_bounds1 c;
+	c.size = dimension / threadcount;
+	if (c.size == 0) {
+		c.size = dimension;
+	}
+	c.offset = c.size * threadindex;
+	if (c.offset + c.size > dimension) {
+		c.size = dimension - c.size;
+	}
 	return c;
-}
-
-lepix_cursor lepix_lib_map_indices_2(ptrdiff_t threadindex, ptrdiff_t threadcount, ptrdiff_t dimensions[]) {
-	return{};
 }
 
 // -- END PREAMBLE
@@ -285,12 +298,9 @@ void lepix_parallel_main_0 (lepix_parallel_transfer* transfer, lepix_thread_hand
 	int lepix_thread_index_ = transfer->work_index;
 	
 	// var outersize: int = values.bounds[0] + ( values.bounds[0] % lang.thread_count ) / lang.thread_count;
-	ptrdiff_t outersize;
-	ptrdiff_t outerindex;
-	int outersize = values->dimensions[1] + ( values->dimensions[1] % lepix_thread_count_ ) / lepix_thread_count_;
-	// for (var outer : int = 0 to outersize) {
-	for (int outer = 0; outer < outersize; ++outer) {
-		outer = outer + ( lepix_thread_index_ * values->dimensions[1] );
+	lepix_bounds1 c = lepix_lib_bounds_for_1(lepix_thread_index_, lepix_thread_count_, values->dimensions[1]);
+	// for (var outer : int = c.offset to c.offset + c.size) {
+	for (int outer = c.offset; outer < c.offset + c.size; ++outer) {
 		// slice
 		// var inner : int[] = values[outer];
 		lepix_array_n1 inner = {
@@ -310,7 +320,7 @@ void lepix_parallel_main_0 (lepix_parallel_transfer* transfer, lepix_thread_hand
 		// atomic {
 		// -- BEGIN SYNCHRONIZED BLOCK
 		{
-			pthread_mutex_lock (&transfer->work_lock);
+			pthread_mutex_lock(&transfer->work_lock);
 			*sum = *sum + localsum;
 			pthread_mutex_unlock (&transfer->work_lock);
 		}
@@ -349,7 +359,7 @@ int main (int argc, char* argv[]) {
 		// -- 2 LOCAL VARIABLES IN ABOVE SCOPES
 		// -- MUST BE TRANSFERRED WITH REST OF INFO
 		void* local_bucket_[2] = { &values, &sum };
-		lepix_launch_parallel_work_(&pool_, &lepix_parallel_main_0, local_bucket_, 2);
+		lepix_launch_parallel_work_(&pool_, &lepix_parallel_main_0, 0, local_bucket_, 2);
 	// } 
 	// -- END PARALLEL SCOPE
 	}
