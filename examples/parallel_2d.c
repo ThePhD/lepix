@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 
 struct lepix_array_n1_;
@@ -193,10 +194,12 @@ void* lepix_thread_work_spin_(void* h) {
 			result = pthread_cond_wait(&handle->ready_wait, &handle->ready_wait_lock);
 		}
 		if (result != 0 || handle->transfer == NULL) {
+			pthread_mutex_unlock(&handle->ready_wait_lock);
 			continue;
 		}
 		else if (handle->transfer->work == NULL) {
 			// -- TODO: BETTER SIGNALING
+			pthread_mutex_unlock(&handle->ready_wait_lock);
 			break;
 		}
 		lepix_parallel_transfer* transfer = handle->transfer;
@@ -364,7 +367,7 @@ int main (int argc, char* argv[]) {
 	// -- END PARALLEL SCOPE
 	}
 
-	printf("%d", sum);
+	printf("%d\n", sum);
 
 // } 
 	// SCOPE EXIT
