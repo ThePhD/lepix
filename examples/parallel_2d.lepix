@@ -10,8 +10,11 @@ fun main () : int {
 	var sum : int = 0;
 
 	parallel {
-		var outersize: int = values.bounds[0] + ( values.bounds[0] % lang.thread_count ) / lang.thread_count;
+		// TODO: write function to make this automatic
+		// for users
+		var outersize: int = values.bounds[1] + ( values.bounds[1] % lang.thread_count ) / lang.thread_count;
 		for (var outer : int = 0 to outersize) {
+			outer = outer + lang.thread_index * values.bound[1];
 			// slice
 			var inner : int[] = values[outer];
 			var localsum : int = 0;
