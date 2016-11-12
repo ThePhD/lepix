@@ -1,22 +1,10 @@
 fun main () : int {
-	
-	var values : int[] = [
-		1, 2, 
-		1, 2,
-		1, 2, 
-		1, 2
-	];
-	int sum = 0;
-	parallel {
-		var size : int = values.size() / lang.thread_count;
-		for (var x : int = 0 to size) {
-			var i : int = x + (lang.thread_index * size);
-			atomic {
-				sum = sum + values[i];
-			}
+	var x : int = 0;
+	parallel( invocations = 2 ) {
+		atomic {
+			x = x + 1;
 		}
 	}
-	
-	// sum == 12
-	return sum;
+	// x == 2
+	return x;
 }

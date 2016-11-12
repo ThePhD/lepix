@@ -1,9 +1,9 @@
 fun sum (arr : int[]) : int {
-	int sum = 0;
+	var x : int = 0;
 	for (var i : int = 0; i < arr.size(); i += 1) {
-		sum += arr[i];
+		x += arr[i];
 	}
-	return sum;
+	return x;
 }
 
 fun numbers () : int[] {

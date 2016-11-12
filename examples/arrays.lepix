@@ -1,0 +1,7 @@
+fun get_array () : int[] {
+	return [ 11, 22, 44, 88 ];
+}
+
+fun main () : int {
+	lib.print(get_array()[3]);
+}
