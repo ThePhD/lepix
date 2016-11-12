@@ -27,11 +27,11 @@ void lepix_parallel_main_0 (lepix_parallel_transfer* transfer, lepix_thread_hand
 	for (int outer = c.offset; outer < c.offset + c.size; ++outer) {
 		// slice
 		// var inner : int[] = values[outer];
-		lepix_array_n1 inner = {
-			&values->memory[ outer * values->dimensions[0] * sizeof(int)],
+		lepix_array_n1_owner inner = {
+			(unsigned char*)malloc(values->dimensions[0] * sizeof(int)),
 			{ values->dimensions[0] }
 		};
-
+		memcpy(inner.memory, &values->memory[outer * values->dimensions[0] * sizeof(int)], inner.dimensions[0] * sizeof(int));
 		//var localsum : int = 0;
 		int localsum = 0;		
 		//for (var i : int = 0 to inner.size()) {
@@ -47,9 +47,12 @@ void lepix_parallel_main_0 (lepix_parallel_transfer* transfer, lepix_thread_hand
 			pthread_mutex_lock(&transfer->work_lock);
 			*sum = *sum + localsum;
 			pthread_mutex_unlock (&transfer->work_lock);
-		}
 		// }
+		}
 		// -- END SYNCHRONIZED BLOCK
+		{
+			free(inner.memory);
+		}
 	}
 	// }
 }
