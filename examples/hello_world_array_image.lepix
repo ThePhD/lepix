@@ -1,0 +1,12 @@
+fun main () : int {
+	// 2 dimensional array
+	// of integers, initialized as a string
+	// from a "bitmap"
+	var arr : int[[]] = "\
+|   | ||| |   |   |||   |   | ||| ||| |   || 
+|   | |   |   |   | |   |   | | | | | |   | |
+||||| ||  |   |   | |   | | | | | ||  |   | |
+|   | |   |   |   | |   || || | | | | |   | |
+|   | ||| ||| ||| |||   |   | ||| | | ||| || ";
+	lib.save("hello.bmp", arr);
+}

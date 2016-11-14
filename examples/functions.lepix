@@ -1,0 +1,15 @@
+fun sum (arr : int[]) : int {
+	var x : int = 0;
+	for (var i : int = 0; i < arr.size(); i += 1) {
+		x += arr[i];
+	}
+	return x;
+}
+
+fun numbers () : int[] {
+	return [ 1, 2, 3 ];
+}
+
+fun main () : int {
+	return sum(numbers());
+}

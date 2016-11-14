@@ -1,0 +1,29 @@
+fun main () : int {
+	
+	var values : int[[]] = [
+		[0, 1], 
+		[2, 3],
+		[4, 5], 
+		[6, 7]
+	];
+
+	var sum : int = 0;
+
+	parallel {
+		var c : bounds1 = lib.bounds_for(lang.thread_index, lang.thread_count, values.bounds[1]);
+		for (var outer : int = c.offset to c.offset + c.size) {
+			// slice
+			var inner : int[] = values[outer];
+			var localsum : int = 0;
+			for (var i : int = 0 to inner.size()) {
+				localsum = localsum + inner[i];
+			}
+			atomic {
+				sum = sum + localsum;
+			}
+		}
+	}
+	
+	
+	return sum;
+}

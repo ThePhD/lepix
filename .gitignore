@@ -18,3 +18,7 @@ source/preprocessor/parser.ml
 source/preprocessor/parser.mli
 source/preprocessor/pp.cmi
 source/preprocessor/pp.cmo
+examples/pthreads-w32-2-9-1/
+examples/x86/
+examples/main_parallel_2d
+examples/.vs/examples/v14/.suo
