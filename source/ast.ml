@@ -7,6 +7,8 @@ type uop = Neg | Not
 
 type typ = Int | Bool | Void | Float | Array of typ 
 
+type jump = Break | Continue 
+
 type bind = string * typ
 
 type expr =
@@ -26,6 +28,7 @@ type expr =
 
 type stmt =
     Block of stmt list
+  | ParallelBlock of stmt list
   | Expr of expr
   | Return of expr
   | If of expr * stmt * stmt
@@ -62,6 +65,10 @@ let string_of_uop = function
     Neg -> "-"
   | Not -> "!"
 
+let string_of_jump= function
+    Break -> "Break"
+  | Continue -> "Continue"
+
 let rec string_of_expr = function
     Literal(l) -> string_of_int l
   | BoolLit(true) -> "true"
@@ -83,6 +90,8 @@ let rec string_of_expr = function
  let rec string_of_stmt = function
     Block(stmts) ->
       "{\n" ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
+  | ParallelBlock(stmts) ->
+      "parallel {\n " ^ String.concat "" (List.map string_of_stmt stmts) ^ "}\n"
   | Expr(expr) -> string_of_expr expr ^ ";\n";
   | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
   | If(e, s, Block([])) -> "if (" ^ string_of_expr e ^ ")\n" ^ string_of_stmt s
