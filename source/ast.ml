@@ -13,13 +13,13 @@ type expr =
     Literal of int
   | BoolLit of bool
   | Id of string
-  | Floatlit of float
-  | Access of string * expr (*int or expr*)
+  | FloatLit of float
+  | Access of string * expr 
   | Binop of expr * op * expr
-  | Unop of uop * expr
-  | Assign of string * expr (*will a[3] be considered string or make expr*expr and check during semantic checking*)
-  | ArrayAssign of string * int * expr (*^^ or string * expr * expr*)
-  | Arrays of expr list (*if array without name*)
+  | Unop of uop * expr 
+  | Assign of string * expr   
+  | ArrayAssign of string * expr * expr 
+  | Arrays of expr list 
   | InitArray of string * expr list 
   | Call of string * expr list
   | Noexpr
@@ -32,16 +32,15 @@ type stmt =
   | For of expr * expr * expr * stmt
   | While of expr * stmt
   
-(*check*)
+
 type func_decl = {
     fname : string;
     formals : bind list;
     typ : typ;
-    locals : bind list; (*getting rid of possibly*)
-    body : stmt list; (*why separated from function*)
+    body : stmt list; 
   }
 
-type program = bind list * func_decl list (*may need to change*)
+type program = stmt list 
 
 (* Pretty-printing functions *)
 
@@ -74,6 +73,7 @@ let rec string_of_expr = function
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
   | Access(s, l) -> s ^ "[" ^ string_of_int l ^ "]"
   | ArrayAssign (s, l, e) -> s ^"[" ^ string_of_int l ^ "] = " ^ string_of_expr e
+  | Arrays (el) -> "[" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
   | InitArray(s, el) -> s ^ " = [" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
   | Call(f, el) ->
@@ -100,13 +100,15 @@ let string_of_typ = function
   | Float -> "float"
   | Array(t) -> "array of " ^ string_of_typ t
 
+let string_of_fdecl fdecl =
+  "fun " ^ fdecl.fname ^ "(" ^ String.concat ", " (List.map snd fdecl.formals) ^
+  ") : " ^ string_of_typ fdecl.typ ^ " {\n"
+  String.concat "" (List.map string_of_stmt fdecl.body) ^
+  "}\n"
+
+let string_of_program (stmts) =
+  String.concat "" (List.map string_of_stmt stmts)
   
-
-(* 
-int a, b, c
-int[]=[5,4,3,2,1]
-int[[]]={"
-*)
-
+  (*how does it ever get to func_decl then?*)
 
 
