@@ -1,4 +1,8 @@
-%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA DOT LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY 
+%{
+open Ast
+%}
+
+%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA DOT LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR TILDE AS VAR
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID FLOAT
 %token <int> INTLITERAL
@@ -17,84 +21,52 @@
 %left TIMES DIVIDE
 %right NOT NEG
 
-%start statement
-%type<string> statement
+%start compound_statement
+%type<string> compound_statement
 %%
 
-primary_expr:
- ID { 0 }
-| INTLITERAL { 0 }
-| FLOATLITERAL { 0 }
-
-postfix_expr:
-  primary_expr { 0 }
-| postfix_expr LSQUARE args_list RSQUARE { 0 }
-| postfix_expr LPAREN args_list RPAREN  { 0 }
-
-args_list: { 0 }
-| postfix_expr { 0 }
-| args_list COMMA postfix_expr { 0 }
-
-unary_operator:
-  TILDE { 0 }
-| NOT { 0 }
-| MINUS { 0 }
-| TIMES { 0 }
-
-unary_expr:
-  unary_operator postfix_expr { 0 }
-
-cast_expr:
-  unary_expr AS type_name { 0 }
+args_list: { [] }
+| expr { [$1] }
+| expr COMMA args_list{ 0 }
 
 type_name:
-  INT { 0 }
-| FLOAT { 0 }
-| BOOL { 0 }
-| VOID { 0 }
+  INT { Int }
+| FLOAT { Float }
+| BOOL { Bool }
+| VOID { Void }
+| type_name LSQUARE RSQUARE { 0 }
+| type_name LSQUARE LSQUARE RSQUARE RSQUARE { 0 }
+| type_name LSQUARE LSQUARE LSQUARE RSQUARE  RSQUARE RSQUARE { 0 }
 
-mult_expr:
- cast_expr { 0 }
-| mult_expr TIMES cast_expr { 0 }
-| mult_expr DIVIDE cast_expr { 0 }
-
-add_expr:
-mult_expr { 0 }
-| add_expr PLUS mult_expr { 0 }
-| add_expr MINUS mult_expr { 0 }
-
-rel_expr:
-add_expr { 0 }
-| rel_expr LT add_expr { 0 }
-| rel_expr GT add_expr { 0 }
-| rel_expr LEQ add_expr { 0 }
-| rel_expr GEQ add_expr { 0 }
-
-
-eq_expr:
-rel_expr { 0 }
-| eq_expr NEQ rel_expr { 0 }
-| eq_expr EQ rel_expr { 0 }
-
-
-and_expr:
-eq_expr { 0 }
-| and_expr AND eq_expr { 0 }
-
-or_expr:
-and_expr { 0 }
-| or_expr OR and_expr { 0 }
-
-assign_expr:
-or_expr { 0 }
-| assign_expr ASSIGN unary_expr { 0 }
+expr:
+ID { Id($1) }
+| INTLITERAL { Literal($1) }
+| FLOATLITERAL { FloatLit($1) }
+| TRUE { BoolLit(true) }
+| FALSE { BoolLit(false) } 
+| ID LSQUARE args_list RSQUARE { Access($1,$3)  }
+| ID LPAREN args_list RPAREN  { Call($1,$3)  }
+| MINUS expr %prec NEG { Unop( Neg, $2) }
+| NOT expr { Unop( Not, $2) }
+| expr TIMES expr { Binop( $1, Mult, $3) }
+| expr DIVIDE expr { Binop( $1, Div, $3)  }
+| expr PLUS expr { Binop( $1, Add, $3) }
+| expr MINUS expr { Binop( $1, Sub, $3) }
+| expr LT expr { Binop( $1, Less, $3) }
+| expr GT expr { Binop( $1, Greater, $3) }
+| expr LEQ expr { Binop( $1, Leq, $3) }
+| expr GEQ expr { Binop( $1, Geq, $3) }
+| expr NEQ expr { Binop( $1, Neq, $3) }
+| expr EQ expr { Binop( $1, Eq, $3) }
+| expr AND expr { Binop( $1, And, $3) }
+| expr OR expr { Binop( $1, Or, $3) }
+| ID ASSIGN expr { Assign($1, $3) }
 
 decl:
-VAR ID COLON type_name ASSIGN assign_expr { 0 }  
-
+VAR ID COLON type_name ASSIGN expr { 0 }  
 
 fun_decl:
-FUN ID LPAREN params_list RPAREN COLON type_name { 0 }
+FUN ID LPAREN params_list RPAREN COLON type_name block { 0 }
 
 params_list: { 0 }
 | ID COLON type_name { 0 }
@@ -106,31 +78,32 @@ statement:
 | iter_statement { 0 }
 | ret_statement { 0 }
 | jump_statement { 0 }
-| fun_statement { 0 }
+| fun_decl { 0 }
 
 expr_statement:
-| assign_expr SEMI {0}
+| expr SEMI {0}
 
 compound_statement : { 0 }
 | decl { 0 }
+| statement { 0 }
 | compound_statement SEMI decl SEMI { 0 }
 | compound_statement SEMI statement SEMI { 0 }
 
 block:
 LBRACE compound_statement RBRACE { 0 }
-| LBRACE block RBRACE { 0 }
 
 parallel_block:
-PARALLEL LPAREN args_list RPAREN block { 0 }
+block { 0 }
+| PARALLEL LPAREN args_list RPAREN block { 0 }
 
 branch_statement:
-IF LPAREN assign_expr RPAREN parallel_block %prec NOELSE { 0 }
-| IF LPAREN assign_expr RPAREN parallel_block ELSE parallel_block { 0 }
+IF LPAREN expr RPAREN parallel_block %prec NOELSE { 0 }
+| IF LPAREN expr RPAREN parallel_block ELSE parallel_block { 0 }
 
 iter_statement:
-WHILE LPAREN assign_expr RPAREN parallel_block { 0 }
-|  FOR LPAREN assign_expr TO assign_expr BY assign_expr RPAREN parallel_block { 0 }
-|  FOR LPAREN assign_expr SEMI assign_expr SEMI assign_expr RPAREN parallel_block { 0 }
+WHILE LPAREN expr RPAREN parallel_block { 0 }
+|  FOR LPAREN expr TO expr BY expr RPAREN parallel_block { 0 }
+|  FOR LPAREN expr SEMI expr SEMI expr RPAREN parallel_block { 0 }
 
 ret_statement:
 RETURN expr_statement { 0 }
@@ -139,5 +112,3 @@ jump_statement:
 BREAK SEMI { 0 }
 | CONTINUE SEMI { 0 }
 
-fun_statement:
-fun_decl block { 0 }

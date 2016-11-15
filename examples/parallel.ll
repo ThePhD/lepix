@@ -1,4 +1,4 @@
-; ModuleID = 'parallel_2d.c'
+; ModuleID = 'parallel.c'
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -13,75 +13,9 @@ target triple = "x86_64-pc-linux-gnu"
 %struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
 %struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
 %struct.lepix_parallel_transfer_ = type { void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)*, i8, i64, i64, i64, i64, i8**, i64, %union.pthread_mutex_t, %union.pthread_mutexattr_t }
-%struct.lepix_bounds_1_ = type { i64, i64 }
 %struct.local_work = type { %union.pthread_mutex_t*, %union.pthread_cond_t*, %struct.lepix_parallel_transfer_ }
-%struct.lepix_array_n2_ = type { i8*, [2 x i64] }
-%struct.lepix_array_n1_ = type { i8*, [1 x i64] }
 
 @lepix_pool_ = common global %struct.lepix_thread_pool_ zeroinitializer, align 8
-
-; Function Attrs: nounwind uwtable
-define { i64, i64 } @lepix_lib_bounds_for_1(i64 %threadindex, i64 %threadcount, i64 %dimension) #0 {
-  %1 = alloca %struct.lepix_bounds_1_, align 8
-  %2 = alloca i64, align 8
-  %3 = alloca i64, align 8
-  %4 = alloca i64, align 8
-  %c = alloca %struct.lepix_bounds_1_, align 8
-  store i64 %threadindex, i64* %2, align 8
-  store i64 %threadcount, i64* %3, align 8
-  store i64 %dimension, i64* %4, align 8
-  %5 = load i64, i64* %4, align 8
-  %6 = load i64, i64* %3, align 8
-  %7 = sdiv i64 %5, %6
-  %8 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  store i64 %7, i64* %8, align 8
-  %9 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  %10 = load i64, i64* %9, align 8
-  %11 = icmp eq i64 %10, 0
-  br i1 %11, label %12, label %15
-
-; <label>:12                                      ; preds = %0
-  %13 = load i64, i64* %4, align 8
-  %14 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  store i64 %13, i64* %14, align 8
-  br label %15
-
-; <label>:15                                      ; preds = %12, %0
-  %16 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  %17 = load i64, i64* %16, align 8
-  %18 = load i64, i64* %2, align 8
-  %19 = mul nsw i64 %17, %18
-  %20 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 0
-  store i64 %19, i64* %20, align 8
-  %21 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 0
-  %22 = load i64, i64* %21, align 8
-  %23 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  %24 = load i64, i64* %23, align 8
-  %25 = add nsw i64 %22, %24
-  %26 = load i64, i64* %4, align 8
-  %27 = icmp sgt i64 %25, %26
-  br i1 %27, label %28, label %34
-
-; <label>:28                                      ; preds = %15
-  %29 = load i64, i64* %4, align 8
-  %30 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  %31 = load i64, i64* %30, align 8
-  %32 = sub nsw i64 %29, %31
-  %33 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  store i64 %32, i64* %33, align 8
-  br label %34
-
-; <label>:34                                      ; preds = %28, %15
-  %35 = bitcast %struct.lepix_bounds_1_* %1 to i8*
-  %36 = bitcast %struct.lepix_bounds_1_* %c to i8*
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %35, i8* %36, i64 16, i32 8, i1 false)
-  %37 = bitcast %struct.lepix_bounds_1_* %1 to { i64, i64 }*
-  %38 = load { i64, i64 }, { i64, i64 }* %37, align 8
-  ret { i64, i64 } %38
-}
-
-; Function Attrs: argmemonly nounwind
-declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i32, i1) #1
 
 ; Function Attrs: nounwind uwtable
 define void @lepix_create_parallel_transfer_(%struct.lepix_parallel_transfer_* %transfer, void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)* %work, i64 %invocation_id, i64 %invocation_count, i64 %work_index, i64 %work_count, i8** %locals, i64 %locals_size) #0 {
@@ -134,20 +68,20 @@ define void @lepix_create_parallel_transfer_(%struct.lepix_parallel_transfer_* %
   store i64 %29, i64* %31, align 8
   %32 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
   %33 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %32, i32 0, i32 9
-  %34 = call i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t* %33) #5
+  %34 = call i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t* %33) #4
   %35 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
   %36 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %35, i32 0, i32 8
   %37 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
   %38 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %37, i32 0, i32 9
-  %39 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %36, %union.pthread_mutexattr_t* %38) #5
+  %39 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %36, %union.pthread_mutexattr_t* %38) #4
   ret void
 }
 
 ; Function Attrs: nounwind
-declare i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t*) #2
+declare i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_mutex_init(%union.pthread_mutex_t*, %union.pthread_mutexattr_t*) #2
+declare i32 @pthread_mutex_init(%union.pthread_mutex_t*, %union.pthread_mutexattr_t*) #1
 
 ; Function Attrs: nounwind uwtable
 define void @lepix_parallel_transfer_dead_(%struct.lepix_parallel_transfer_* %transfer) #0 {
@@ -194,7 +128,7 @@ define void @lepix_create_pool_(%struct.lepix_thread_pool_* %pool) #0 {
   %8 = getelementptr inbounds %struct.lepix_thread_pool_, %struct.lepix_thread_pool_* %7, i32 0, i32 1
   %9 = load i64, i64* %8, align 8
   %10 = mul i64 288, %9
-  %11 = call noalias i8* @malloc(i64 %10) #5
+  %11 = call noalias i8* @malloc(i64 %10) #4
   %12 = bitcast i8* %11 to %struct.lepix_thread_handle_*
   %13 = load %struct.lepix_thread_pool_*, %struct.lepix_thread_pool_** %1, align 8
   %14 = getelementptr inbounds %struct.lepix_thread_pool_, %struct.lepix_thread_pool_* %13, i32 0, i32 0
@@ -253,34 +187,34 @@ define void @lepix_create_pool_(%struct.lepix_thread_pool_* %pool) #0 {
   %50 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %49, i32 0, i32 0
   store i64* %50, i64** %t, align 8
   %51 = load %union.pthread_attr_t*, %union.pthread_attr_t** %attr, align 8
-  %52 = call i32 @pthread_attr_init(%union.pthread_attr_t* %51) #5
+  %52 = call i32 @pthread_attr_init(%union.pthread_attr_t* %51) #4
   %53 = load %union.pthread_attr_t*, %union.pthread_attr_t** %attr, align 8
-  %54 = call i32 @pthread_attr_setdetachstate(%union.pthread_attr_t* %53, i32 0) #5
+  %54 = call i32 @pthread_attr_setdetachstate(%union.pthread_attr_t* %53, i32 0) #4
   %55 = load %union.pthread_condattr_t*, %union.pthread_condattr_t** %readywaitattr, align 8
-  %56 = call i32 @pthread_condattr_init(%union.pthread_condattr_t* %55) #5
+  %56 = call i32 @pthread_condattr_init(%union.pthread_condattr_t* %55) #4
   %57 = load %union.pthread_mutexattr_t*, %union.pthread_mutexattr_t** %readywaitmutexattr, align 8
-  %58 = call i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t* %57) #5
+  %58 = call i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t* %57) #4
   %59 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %readywaitmutex, align 8
   %60 = load %union.pthread_mutexattr_t*, %union.pthread_mutexattr_t** %readywaitmutexattr, align 8
-  %61 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %59, %union.pthread_mutexattr_t* %60) #5
+  %61 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %59, %union.pthread_mutexattr_t* %60) #4
   %62 = load %union.pthread_cond_t*, %union.pthread_cond_t** %readywait, align 8
   %63 = load %union.pthread_condattr_t*, %union.pthread_condattr_t** %readywaitattr, align 8
-  %64 = call i32 @pthread_cond_init(%union.pthread_cond_t* %62, %union.pthread_condattr_t* %63) #5
+  %64 = call i32 @pthread_cond_init(%union.pthread_cond_t* %62, %union.pthread_condattr_t* %63) #4
   %65 = load %union.pthread_condattr_t*, %union.pthread_condattr_t** %completedwaitattr, align 8
-  %66 = call i32 @pthread_condattr_init(%union.pthread_condattr_t* %65) #5
+  %66 = call i32 @pthread_condattr_init(%union.pthread_condattr_t* %65) #4
   %67 = load %union.pthread_mutexattr_t*, %union.pthread_mutexattr_t** %completedwaitmutexattr, align 8
-  %68 = call i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t* %67) #5
+  %68 = call i32 @pthread_mutexattr_init(%union.pthread_mutexattr_t* %67) #4
   %69 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %completedwaitmutex, align 8
   %70 = load %union.pthread_mutexattr_t*, %union.pthread_mutexattr_t** %completedwaitmutexattr, align 8
-  %71 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %69, %union.pthread_mutexattr_t* %70) #5
+  %71 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %69, %union.pthread_mutexattr_t* %70) #4
   %72 = load %union.pthread_cond_t*, %union.pthread_cond_t** %completedwait, align 8
   %73 = load %union.pthread_condattr_t*, %union.pthread_condattr_t** %completedwaitattr, align 8
-  %74 = call i32 @pthread_cond_init(%union.pthread_cond_t* %72, %union.pthread_condattr_t* %73) #5
+  %74 = call i32 @pthread_cond_init(%union.pthread_cond_t* %72, %union.pthread_condattr_t* %73) #4
   %75 = load i64*, i64** %t, align 8
   %76 = load %union.pthread_attr_t*, %union.pthread_attr_t** %attr, align 8
   %77 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %78 = bitcast %struct.lepix_thread_handle_* %77 to i8*
-  %79 = call i32 @pthread_create(i64* %75, %union.pthread_attr_t* %76, i8* (i8*)* @lepix_thread_work_spin_, i8* %78) #5
+  %79 = call i32 @pthread_create(i64* %75, %union.pthread_attr_t* %76, i8* (i8*)* @lepix_thread_work_spin_, i8* %78) #4
   br label %80
 
 ; <label>:80                                      ; preds = %22
@@ -294,22 +228,22 @@ define void @lepix_create_pool_(%struct.lepix_thread_pool_* %pool) #0 {
 }
 
 ; Function Attrs: nounwind
-declare noalias i8* @malloc(i64) #2
+declare noalias i8* @malloc(i64) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_attr_init(%union.pthread_attr_t*) #2
+declare i32 @pthread_attr_init(%union.pthread_attr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_attr_setdetachstate(%union.pthread_attr_t*, i32) #2
+declare i32 @pthread_attr_setdetachstate(%union.pthread_attr_t*, i32) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_condattr_init(%union.pthread_condattr_t*) #2
+declare i32 @pthread_condattr_init(%union.pthread_condattr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_cond_init(%union.pthread_cond_t*, %union.pthread_condattr_t*) #2
+declare i32 @pthread_cond_init(%union.pthread_cond_t*, %union.pthread_condattr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_create(i64*, %union.pthread_attr_t*, i8* (i8*)*, i8*) #2
+declare i32 @pthread_create(i64*, %union.pthread_attr_t*, i8* (i8*)*, i8*) #1
 
 ; Function Attrs: nounwind uwtable
 define i8* @lepix_thread_work_spin_(i8* %h) #0 {
@@ -333,7 +267,7 @@ define i8* @lepix_thread_work_spin_(i8* %h) #0 {
 ; <label>:8                                       ; preds = %5
   %9 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %10 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %9, i32 0, i32 5
-  %11 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %10) #5
+  %11 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %10) #4
   %12 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %13 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %12, i32 0, i32 11
   %14 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %13, align 8
@@ -364,7 +298,7 @@ define i8* @lepix_thread_work_spin_(i8* %h) #0 {
 ; <label>:30                                      ; preds = %25, %22
   %31 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %32 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %31, i32 0, i32 5
-  %33 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %32) #5
+  %33 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %32) #4
   br label %5
 
 ; <label>:34                                      ; preds = %25
@@ -379,7 +313,7 @@ define i8* @lepix_thread_work_spin_(i8* %h) #0 {
 ; <label>:41                                      ; preds = %34
   %42 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %43 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %42, i32 0, i32 5
-  %44 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %43) #5
+  %44 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %43) #4
   br label %71
 
 ; <label>:45                                      ; preds = %34
@@ -392,7 +326,7 @@ define i8* @lepix_thread_work_spin_(i8* %h) #0 {
   store %struct.lepix_parallel_transfer_* %49, %struct.lepix_parallel_transfer_** %transfer, align 8
   %50 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %51 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %50, i32 0, i32 5
-  %52 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %51) #5
+  %52 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %51) #4
   %53 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %transfer, align 8
   %54 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %53, i32 0, i32 0
   %55 = load void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)*, void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)** %54, align 8
@@ -401,7 +335,7 @@ define i8* @lepix_thread_work_spin_(i8* %h) #0 {
   call void %55(%struct.lepix_parallel_transfer_* %56, %struct.lepix_thread_handle_* %57)
   %58 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %59 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %58, i32 0, i32 9
-  %60 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %59) #5
+  %60 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %59) #4
   %61 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %62 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %61, i32 0, i32 11
   store %struct.lepix_parallel_transfer_* null, %struct.lepix_parallel_transfer_** %62, align 8
@@ -410,14 +344,14 @@ define i8* @lepix_thread_work_spin_(i8* %h) #0 {
   store i8 1, i8* %64, align 8
   %65 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %66 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %65, i32 0, i32 7
-  %67 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %66) #5
+  %67 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %66) #4
   %68 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %69 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %68, i32 0, i32 9
-  %70 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %69) #5
+  %70 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %69) #4
   br label %5
 
 ; <label>:71                                      ; preds = %41, %5
-  call void @pthread_exit(i8* null) #6
+  call void @pthread_exit(i8* null) #5
   unreachable
                                                   ; No predecessors!
   %73 = load i8*, i8** %1, align 8
@@ -448,7 +382,7 @@ define void @lepix_destroy_pool_(%struct.lepix_thread_pool_* %pool) #0 {
   %3 = getelementptr inbounds %struct.lepix_thread_pool_, %struct.lepix_thread_pool_* %2, i32 0, i32 1
   %4 = load i64, i64* %3, align 8
   %5 = mul i64 112, %4
-  %6 = call noalias i8* @malloc(i64 %5) #5
+  %6 = call noalias i8* @malloc(i64 %5) #4
   %7 = bitcast i8* %6 to %struct.lepix_parallel_transfer_*
   store %struct.lepix_parallel_transfer_* %7, %struct.lepix_parallel_transfer_** %dead_transfers, align 8
   store i32 0, i32* %i, align 4
@@ -487,7 +421,7 @@ define void @lepix_destroy_pool_(%struct.lepix_thread_pool_* %pool) #0 {
   store %struct.lepix_parallel_transfer_* %29, %struct.lepix_parallel_transfer_** %31, align 8
   %32 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %33 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %32, i32 0, i32 3
-  %34 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %33) #5
+  %34 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %33) #4
   %35 = load i64*, i64** %t, align 8
   %36 = load i64, i64* %35, align 8
   %37 = call i32 @pthread_join(i64 %36, i8** null)
@@ -502,7 +436,7 @@ define void @lepix_destroy_pool_(%struct.lepix_thread_pool_* %pool) #0 {
 ; <label>:41                                      ; preds = %8
   %42 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %dead_transfers, align 8
   %43 = bitcast %struct.lepix_parallel_transfer_* %42 to i8*
-  call void @free(i8* %43) #5
+  call void @free(i8* %43) #4
   store i32 0, i32* %i1, align 4
   br label %44
 
@@ -551,23 +485,23 @@ define void @lepix_destroy_pool_(%struct.lepix_thread_pool_* %pool) #0 {
   %75 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %74, i32 0, i32 1
   store %union.pthread_attr_t* %75, %union.pthread_attr_t** %attr, align 8
   %76 = load %union.pthread_cond_t*, %union.pthread_cond_t** %readywait, align 8
-  %77 = call i32 @pthread_cond_destroy(%union.pthread_cond_t* %76) #5
+  %77 = call i32 @pthread_cond_destroy(%union.pthread_cond_t* %76) #4
   %78 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %readywaitmutex, align 8
-  %79 = call i32 @pthread_mutex_destroy(%union.pthread_mutex_t* %78) #5
+  %79 = call i32 @pthread_mutex_destroy(%union.pthread_mutex_t* %78) #4
   %80 = load %union.pthread_mutexattr_t*, %union.pthread_mutexattr_t** %readywaitmutexattr, align 8
-  %81 = call i32 @pthread_mutexattr_destroy(%union.pthread_mutexattr_t* %80) #5
+  %81 = call i32 @pthread_mutexattr_destroy(%union.pthread_mutexattr_t* %80) #4
   %82 = load %union.pthread_condattr_t*, %union.pthread_condattr_t** %readywaitattr, align 8
-  %83 = call i32 @pthread_condattr_destroy(%union.pthread_condattr_t* %82) #5
+  %83 = call i32 @pthread_condattr_destroy(%union.pthread_condattr_t* %82) #4
   %84 = load %union.pthread_cond_t*, %union.pthread_cond_t** %completedwait, align 8
-  %85 = call i32 @pthread_cond_destroy(%union.pthread_cond_t* %84) #5
+  %85 = call i32 @pthread_cond_destroy(%union.pthread_cond_t* %84) #4
   %86 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %completedwaitmutex, align 8
-  %87 = call i32 @pthread_mutex_destroy(%union.pthread_mutex_t* %86) #5
+  %87 = call i32 @pthread_mutex_destroy(%union.pthread_mutex_t* %86) #4
   %88 = load %union.pthread_mutexattr_t*, %union.pthread_mutexattr_t** %completedwaitmutexattr, align 8
-  %89 = call i32 @pthread_mutexattr_destroy(%union.pthread_mutexattr_t* %88) #5
+  %89 = call i32 @pthread_mutexattr_destroy(%union.pthread_mutexattr_t* %88) #4
   %90 = load %union.pthread_condattr_t*, %union.pthread_condattr_t** %completedwaitattr, align 8
-  %91 = call i32 @pthread_condattr_destroy(%union.pthread_condattr_t* %90) #5
+  %91 = call i32 @pthread_condattr_destroy(%union.pthread_condattr_t* %90) #4
   %92 = load %union.pthread_attr_t*, %union.pthread_attr_t** %attr, align 8
-  %93 = call i32 @pthread_attr_destroy(%union.pthread_attr_t* %92) #5
+  %93 = call i32 @pthread_attr_destroy(%union.pthread_attr_t* %92) #4
   br label %94
 
 ; <label>:94                                      ; preds = %51
@@ -581,38 +515,38 @@ define void @lepix_destroy_pool_(%struct.lepix_thread_pool_* %pool) #0 {
 }
 
 ; Function Attrs: nounwind
-declare i32 @pthread_cond_signal(%union.pthread_cond_t*) #2
+declare i32 @pthread_cond_signal(%union.pthread_cond_t*) #1
 
-declare i32 @pthread_join(i64, i8**) #3
-
-; Function Attrs: nounwind
-declare void @free(i8*) #2
+declare i32 @pthread_join(i64, i8**) #2
 
 ; Function Attrs: nounwind
-declare i32 @pthread_cond_destroy(%union.pthread_cond_t*) #2
+declare void @free(i8*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_mutex_destroy(%union.pthread_mutex_t*) #2
+declare i32 @pthread_cond_destroy(%union.pthread_cond_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_mutexattr_destroy(%union.pthread_mutexattr_t*) #2
+declare i32 @pthread_mutex_destroy(%union.pthread_mutex_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_condattr_destroy(%union.pthread_condattr_t*) #2
+declare i32 @pthread_mutexattr_destroy(%union.pthread_mutexattr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_attr_destroy(%union.pthread_attr_t*) #2
+declare i32 @pthread_condattr_destroy(%union.pthread_condattr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_mutex_lock(%union.pthread_mutex_t*) #2
-
-declare i32 @pthread_cond_wait(%union.pthread_cond_t*, %union.pthread_mutex_t*) #3
+declare i32 @pthread_attr_destroy(%union.pthread_attr_t*) #1
 
 ; Function Attrs: nounwind
-declare i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) #2
+declare i32 @pthread_mutex_lock(%union.pthread_mutex_t*) #1
+
+declare i32 @pthread_cond_wait(%union.pthread_cond_t*, %union.pthread_mutex_t*) #2
+
+; Function Attrs: nounwind
+declare i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) #1
 
 ; Function Attrs: noreturn
-declare void @pthread_exit(i8*) #4
+declare void @pthread_exit(i8*) #3
 
 ; Function Attrs: nounwind uwtable
 define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)* %func, i64 %invocations, i8** %locals, i64 %locals_size) #0 {
@@ -645,7 +579,7 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
   %10 = load i32, i32* %local_work_size, align 4
   %11 = sext i32 %10 to i64
   %12 = mul i64 128, %11
-  %13 = call noalias i8* @malloc(i64 %12) #5
+  %13 = call noalias i8* @malloc(i64 %12) #4
   %14 = bitcast i8* %13 to %struct.local_work*
   store %struct.local_work* %14, %struct.local_work** %local_work_list, align 8
   %15 = load i64, i64* %3, align 8
@@ -726,17 +660,17 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
   call void @lepix_create_parallel_transfer_(%struct.lepix_parallel_transfer_* %56, void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)* %57, i64 %58, i64 %59, i64 %60, i64 %62, i8** %63, i64 %64)
   %65 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %66 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %65, i32 0, i32 5
-  %67 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %66) #5
+  %67 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %66) #4
   %68 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %transfer, align 8
   %69 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %70 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %69, i32 0, i32 11
   store %struct.lepix_parallel_transfer_* %68, %struct.lepix_parallel_transfer_** %70, align 8
   %71 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %72 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %71, i32 0, i32 3
-  %73 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %72) #5
+  %73 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %72) #4
   %74 = load %struct.lepix_thread_handle_*, %struct.lepix_thread_handle_** %handle, align 8
   %75 = getelementptr inbounds %struct.lepix_thread_handle_, %struct.lepix_thread_handle_* %74, i32 0, i32 5
-  %76 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %75) #5
+  %76 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %75) #4
   br label %77
 
 ; <label>:77                                      ; preds = %37
@@ -772,7 +706,7 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
   %95 = load %struct.local_work*, %struct.local_work** %work2, align 8
   %96 = getelementptr inbounds %struct.local_work, %struct.local_work* %95, i32 0, i32 0
   %97 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %96, align 8
-  %98 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %97) #5
+  %98 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %97) #4
   %99 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %transfer3, align 8
   %100 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %99, i32 0, i32 1
   %101 = load i8, i8* %100, align 8
@@ -783,7 +717,7 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
   %104 = load %struct.local_work*, %struct.local_work** %work2, align 8
   %105 = getelementptr inbounds %struct.local_work, %struct.local_work* %104, i32 0, i32 0
   %106 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %105, align 8
-  %107 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %106) #5
+  %107 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %106) #4
   br label %120
 
 ; <label>:108                                     ; preds = %89
@@ -797,7 +731,7 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
   %116 = load %struct.local_work*, %struct.local_work** %work2, align 8
   %117 = getelementptr inbounds %struct.local_work, %struct.local_work* %116, i32 0, i32 0
   %118 = load %union.pthread_mutex_t*, %union.pthread_mutex_t** %117, align 8
-  %119 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %118) #5
+  %119 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %118) #4
   br label %120
 
 ; <label>:120                                     ; preds = %108, %103
@@ -812,7 +746,7 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
 ; <label>:124                                     ; preds = %21
   %125 = load %struct.local_work*, %struct.local_work** %local_work_list, align 8
   %126 = bitcast %struct.local_work* %125 to i8*
-  call void @free(i8* %126) #5
+  call void @free(i8* %126) #4
   ret void
 }
 
@@ -820,15 +754,7 @@ define void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* %pool, void
 define void @lepix_parallel_main_0(%struct.lepix_parallel_transfer_* %transfer, %struct.lepix_thread_handle_* %thread) #0 {
   %1 = alloca %struct.lepix_parallel_transfer_*, align 8
   %2 = alloca %struct.lepix_thread_handle_*, align 8
-  %values = alloca %struct.lepix_array_n2_*, align 8
-  %sum = alloca i32*, align 8
-  %lepix_thread_count_ = alloca i32, align 4
-  %lepix_thread_index_ = alloca i32, align 4
-  %c = alloca %struct.lepix_bounds_1_, align 8
-  %outer = alloca i32, align 4
-  %inner = alloca %struct.lepix_array_n1_, align 8
-  %localsum = alloca i32, align 4
-  %i = alloca i32, align 4
+  %x = alloca i32*, align 8
   store %struct.lepix_parallel_transfer_* %transfer, %struct.lepix_parallel_transfer_** %1, align 8
   store %struct.lepix_thread_handle_* %thread, %struct.lepix_thread_handle_** %2, align 8
   %3 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
@@ -836,227 +762,50 @@ define void @lepix_parallel_main_0(%struct.lepix_parallel_transfer_* %transfer, 
   %5 = load i8**, i8*** %4, align 8
   %6 = getelementptr inbounds i8*, i8** %5, i64 0
   %7 = load i8*, i8** %6, align 8
-  %8 = bitcast i8* %7 to %struct.lepix_array_n2_*
-  store %struct.lepix_array_n2_* %8, %struct.lepix_array_n2_** %values, align 8
+  %8 = bitcast i8* %7 to i32*
+  store i32* %8, i32** %x, align 8
   %9 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
-  %10 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %9, i32 0, i32 6
-  %11 = load i8**, i8*** %10, align 8
-  %12 = getelementptr inbounds i8*, i8** %11, i64 1
-  %13 = load i8*, i8** %12, align 8
-  %14 = bitcast i8* %13 to i32*
-  store i32* %14, i32** %sum, align 8
-  %15 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
-  %16 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %15, i32 0, i32 3
-  %17 = load i64, i64* %16, align 8
-  %18 = trunc i64 %17 to i32
-  store i32 %18, i32* %lepix_thread_count_, align 4
-  %19 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
-  %20 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %19, i32 0, i32 2
-  %21 = load i64, i64* %20, align 8
-  %22 = trunc i64 %21 to i32
-  store i32 %22, i32* %lepix_thread_index_, align 4
-  %23 = load i32, i32* %lepix_thread_index_, align 4
-  %24 = sext i32 %23 to i64
-  %25 = load i32, i32* %lepix_thread_count_, align 4
-  %26 = sext i32 %25 to i64
-  %27 = load %struct.lepix_array_n2_*, %struct.lepix_array_n2_** %values, align 8
-  %28 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %27, i32 0, i32 1
-  %29 = getelementptr inbounds [2 x i64], [2 x i64]* %28, i64 0, i64 1
-  %30 = load i64, i64* %29, align 8
-  %31 = call { i64, i64 } @lepix_lib_bounds_for_1(i64 %24, i64 %26, i64 %30)
-  %32 = bitcast %struct.lepix_bounds_1_* %c to { i64, i64 }*
-  %33 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %32, i32 0, i32 0
-  %34 = extractvalue { i64, i64 } %31, 0
-  store i64 %34, i64* %33, align 8
-  %35 = getelementptr inbounds { i64, i64 }, { i64, i64 }* %32, i32 0, i32 1
-  %36 = extractvalue { i64, i64 } %31, 1
-  store i64 %36, i64* %35, align 8
-  %37 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 0
-  %38 = load i64, i64* %37, align 8
-  %39 = trunc i64 %38 to i32
-  store i32 %39, i32* %outer, align 4
-  br label %40
-
-; <label>:40                                      ; preds = %116, %0
-  %41 = load i32, i32* %outer, align 4
-  %42 = sext i32 %41 to i64
-  %43 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 0
-  %44 = load i64, i64* %43, align 8
-  %45 = getelementptr inbounds %struct.lepix_bounds_1_, %struct.lepix_bounds_1_* %c, i32 0, i32 1
-  %46 = load i64, i64* %45, align 8
-  %47 = add nsw i64 %44, %46
-  %48 = icmp slt i64 %42, %47
-  br i1 %48, label %49, label %119
-
-; <label>:49                                      ; preds = %40
-  %50 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 0
-  %51 = load %struct.lepix_array_n2_*, %struct.lepix_array_n2_** %values, align 8
-  %52 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %51, i32 0, i32 1
-  %53 = getelementptr inbounds [2 x i64], [2 x i64]* %52, i64 0, i64 0
-  %54 = load i64, i64* %53, align 8
-  %55 = mul i64 %54, 4
-  %56 = call noalias i8* @malloc(i64 %55) #5
-  store i8* %56, i8** %50, align 8
-  %57 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 1
-  %58 = getelementptr inbounds [1 x i64], [1 x i64]* %57, i64 0, i64 0
-  %59 = load %struct.lepix_array_n2_*, %struct.lepix_array_n2_** %values, align 8
-  %60 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %59, i32 0, i32 1
-  %61 = getelementptr inbounds [2 x i64], [2 x i64]* %60, i64 0, i64 0
-  %62 = load i64, i64* %61, align 8
-  store i64 %62, i64* %58, align 8
-  %63 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 0
-  %64 = load i8*, i8** %63, align 8
-  %65 = load i32, i32* %outer, align 4
-  %66 = sext i32 %65 to i64
-  %67 = load %struct.lepix_array_n2_*, %struct.lepix_array_n2_** %values, align 8
-  %68 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %67, i32 0, i32 1
-  %69 = getelementptr inbounds [2 x i64], [2 x i64]* %68, i64 0, i64 0
-  %70 = load i64, i64* %69, align 8
-  %71 = mul nsw i64 %66, %70
-  %72 = mul i64 %71, 4
-  %73 = load %struct.lepix_array_n2_*, %struct.lepix_array_n2_** %values, align 8
-  %74 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %73, i32 0, i32 0
-  %75 = load i8*, i8** %74, align 8
-  %76 = getelementptr inbounds i8, i8* %75, i64 %72
-  %77 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 1
-  %78 = getelementptr inbounds [1 x i64], [1 x i64]* %77, i64 0, i64 0
-  %79 = load i64, i64* %78, align 8
-  %80 = mul i64 %79, 4
-  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %64, i8* %76, i64 %80, i32 1, i1 false)
-  store i32 0, i32* %localsum, align 4
-  store i32 0, i32* %i, align 4
-  br label %81
-
-; <label>:81                                      ; preds = %99, %49
-  %82 = load i32, i32* %i, align 4
-  %83 = sext i32 %82 to i64
-  %84 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 1
-  %85 = getelementptr inbounds [1 x i64], [1 x i64]* %84, i64 0, i64 0
-  %86 = load i64, i64* %85, align 8
-  %87 = icmp slt i64 %83, %86
-  br i1 %87, label %88, label %102
-
-; <label>:88                                      ; preds = %81
-  %89 = load i32, i32* %localsum, align 4
-  %90 = load i32, i32* %i, align 4
-  %91 = sext i32 %90 to i64
-  %92 = mul i64 %91, 4
-  %93 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 0
-  %94 = load i8*, i8** %93, align 8
-  %95 = getelementptr inbounds i8, i8* %94, i64 %92
-  %96 = load i8, i8* %95, align 1
-  %97 = zext i8 %96 to i32
-  %98 = add nsw i32 %89, %97
-  store i32 %98, i32* %localsum, align 4
-  br label %99
-
-; <label>:99                                      ; preds = %88
-  %100 = load i32, i32* %i, align 4
-  %101 = add nsw i32 %100, 1
-  store i32 %101, i32* %i, align 4
-  br label %81
-
-; <label>:102                                     ; preds = %81
-  %103 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
-  %104 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %103, i32 0, i32 8
-  %105 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %104) #5
-  %106 = load i32*, i32** %sum, align 8
-  %107 = load i32, i32* %106, align 4
-  %108 = load i32, i32* %localsum, align 4
-  %109 = add nsw i32 %107, %108
-  %110 = load i32*, i32** %sum, align 8
-  store i32 %109, i32* %110, align 4
-  %111 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
-  %112 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %111, i32 0, i32 8
-  %113 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %112) #5
-  %114 = getelementptr inbounds %struct.lepix_array_n1_, %struct.lepix_array_n1_* %inner, i32 0, i32 0
-  %115 = load i8*, i8** %114, align 8
-  call void @free(i8* %115) #5
-  br label %116
-
-; <label>:116                                     ; preds = %102
-  %117 = load i32, i32* %outer, align 4
-  %118 = add nsw i32 %117, 1
-  store i32 %118, i32* %outer, align 4
-  br label %40
-
-; <label>:119                                     ; preds = %40
+  %10 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %9, i32 0, i32 8
+  %11 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %10) #4
+  %12 = load i32*, i32** %x, align 8
+  %13 = load i32, i32* %12, align 4
+  %14 = add nsw i32 %13, 1
+  %15 = load i32*, i32** %x, align 8
+  store i32 %14, i32* %15, align 4
+  %16 = load %struct.lepix_parallel_transfer_*, %struct.lepix_parallel_transfer_** %1, align 8
+  %17 = getelementptr inbounds %struct.lepix_parallel_transfer_, %struct.lepix_parallel_transfer_* %16, i32 0, i32 8
+  %18 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %17) #4
   ret void
 }
 
 ; Function Attrs: nounwind uwtable
-define i32 @main(i32 %argc, i8** %argv) #0 {
+define i32 @main(i32 %argc, i8** %arv) #0 {
   %1 = alloca i32, align 4
   %2 = alloca i32, align 4
   %3 = alloca i8**, align 8
-  %values = alloca %struct.lepix_array_n2_, align 8
-  %values_fill = alloca i32*, align 8
-  %sum = alloca i32, align 4
-  %local_bucket_ = alloca [2 x i8*], align 16
+  %x = alloca i32, align 4
+  %locals = alloca [1 x i8*], align 8
   store i32 0, i32* %1, align 4
   store i32 %argc, i32* %2, align 4
-  store i8** %argv, i8*** %3, align 8
+  store i8** %arv, i8*** %3, align 8
   call void @lepix_create_pool_(%struct.lepix_thread_pool_* @lepix_pool_)
-  %4 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %values, i32 0, i32 0
-  %5 = call noalias i8* @malloc(i64 32) #5
+  store i32 0, i32* %x, align 4
+  %4 = getelementptr inbounds [1 x i8*], [1 x i8*]* %locals, i64 0, i64 0
+  %5 = bitcast i32* %x to i8*
   store i8* %5, i8** %4, align 8
-  %6 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %values, i32 0, i32 1
-  %7 = getelementptr inbounds [2 x i64], [2 x i64]* %6, i64 0, i64 0
-  store i64 2, i64* %7, align 8
-  %8 = getelementptr inbounds i64, i64* %7, i64 1
-  store i64 4, i64* %8, align 8
-  %9 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %values, i32 0, i32 0
-  %10 = load i8*, i8** %9, align 8
-  %11 = bitcast i8* %10 to i32*
-  store i32* %11, i32** %values_fill, align 8
-  %12 = load i32*, i32** %values_fill, align 8
-  %13 = getelementptr inbounds i32, i32* %12, i64 0
-  store i32 0, i32* %13, align 4
-  %14 = load i32*, i32** %values_fill, align 8
-  %15 = getelementptr inbounds i32, i32* %14, i64 1
-  store i32 1, i32* %15, align 4
-  %16 = load i32*, i32** %values_fill, align 8
-  %17 = getelementptr inbounds i32, i32* %16, i64 2
-  store i32 2, i32* %17, align 4
-  %18 = load i32*, i32** %values_fill, align 8
-  %19 = getelementptr inbounds i32, i32* %18, i64 3
-  store i32 3, i32* %19, align 4
-  %20 = load i32*, i32** %values_fill, align 8
-  %21 = getelementptr inbounds i32, i32* %20, i64 4
-  store i32 4, i32* %21, align 4
-  %22 = load i32*, i32** %values_fill, align 8
-  %23 = getelementptr inbounds i32, i32* %22, i64 5
-  store i32 5, i32* %23, align 4
-  %24 = load i32*, i32** %values_fill, align 8
-  %25 = getelementptr inbounds i32, i32* %24, i64 6
-  store i32 6, i32* %25, align 4
-  %26 = load i32*, i32** %values_fill, align 8
-  %27 = getelementptr inbounds i32, i32* %26, i64 7
-  store i32 7, i32* %27, align 4
-  store i32 0, i32* %sum, align 4
-  %28 = getelementptr inbounds [2 x i8*], [2 x i8*]* %local_bucket_, i64 0, i64 0
-  %29 = bitcast %struct.lepix_array_n2_* %values to i8*
-  store i8* %29, i8** %28, align 8
-  %30 = getelementptr inbounds i8*, i8** %28, i64 1
-  %31 = bitcast i32* %sum to i8*
-  store i8* %31, i8** %30, align 8
-  %32 = getelementptr inbounds [2 x i8*], [2 x i8*]* %local_bucket_, i32 0, i32 0
-  call void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* @lepix_pool_, void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)* @lepix_parallel_main_0, i64 0, i8** %32, i64 2)
-  %33 = getelementptr inbounds %struct.lepix_array_n2_, %struct.lepix_array_n2_* %values, i32 0, i32 0
-  %34 = load i8*, i8** %33, align 8
-  call void @free(i8* %34) #5
+  %6 = getelementptr inbounds [1 x i8*], [1 x i8*]* %locals, i32 0, i32 0
+  call void @lepix_launch_parallel_work_(%struct.lepix_thread_pool_* @lepix_pool_, void (%struct.lepix_parallel_transfer_*, %struct.lepix_thread_handle_*)* @lepix_parallel_main_0, i64 2, i8** %6, i64 1)
   call void @lepix_destroy_pool_(%struct.lepix_thread_pool_* @lepix_pool_)
-  %35 = load i32, i32* %sum, align 4
-  ret i32 %35
+  %7 = load i32, i32* %x, align 4
+  ret i32 %7
 }
 
 attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #1 = { argmemonly nounwind }
-attributes #2 = { nounwind "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #3 = { "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #4 = { noreturn "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
-attributes #5 = { nounwind }
-attributes #6 = { noreturn }
+attributes #1 = { nounwind "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #2 = { "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #3 = { noreturn "disable-tail-calls"="false" "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+fxsr,+mmx,+sse,+sse2" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #4 = { nounwind }
+attributes #5 = { noreturn }
 
 !llvm.ident = !{!0}
 
