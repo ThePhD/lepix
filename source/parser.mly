@@ -22,7 +22,7 @@ open Ast
 %right NOT NEG
 
 %start program
-%type<Ast.func_decl> program
+%type<Ast.prog> program
 %%
 
 args_list: { [] }
@@ -66,7 +66,7 @@ binding:
 ID COLON type_name { ($1,$3) }
 
 decl:
-| VAR binding ASSIGN expr SEMI { Assign(fst $2,$4) }
+| VAR binding ASSIGN expr SEMI { Decl($2,$4) }
 
 params_list: { [] }
 | ID COLON type_name { [($1,$3)] }
@@ -88,11 +88,17 @@ statement:
 | RETURN expr SEMI  { Return($2) }
 | BREAK SEMI { Break }
 | CONTINUE SEMI { Continue }
+| decl { DecStmt($1) } 
 
 /* 
 | decl { $1 }
 */
 
+decls_list: { [] }
+| decls_list decl { $2::$1 }
+
+fdecls_list : { [] }
+| fdecls_list fun_decl { $2::$1 }
 
 program:
-	fun_decl EOF { $1 } 
+decls_list fdecls_list EOF { Prog($1,$2) }

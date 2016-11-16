@@ -24,6 +24,9 @@ type expr =
   | Call of string * expr list
   | Noexpr
 
+type decl = 
+  Decl of bind * expr
+
 type stmt =
   Expr of expr
   | Return of expr
@@ -31,7 +34,8 @@ type stmt =
   | For of expr * expr * expr * stmt list
   | While of expr * stmt list 
   | Break
-  | Continue 
+  | Continue
+  | DecStmt of decl 
 
 type func_decl = {
     fname : string;
@@ -40,7 +44,8 @@ type func_decl = {
     body : stmt list; 
   }
 
-type program = stmt list 
+type prog = 
+Prog of decl list * func_decl list 
 
 (* Pretty-printing functions *)
 
@@ -84,6 +89,28 @@ let rec string_of_expr = function
       f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
 
+let rec string_of_typ = function
+    Int -> "int"
+  | Bool -> "bool"
+  | Void -> "void"
+  | Float -> "float"
+  | Array(t) -> "array of " ^ string_of_typ t
+
+let rec string_of_bind = function
+| (str, typ) -> str ^ " : " ^ string_of_typ typ
+
+let rec string_of_bind_list = function
+  [] -> ""
+| hd::[] -> string_of_bind hd
+| hd::tl -> string_of_bind hd ^ string_of_bind_list tl
+
+let rec string_of_decl = function
+  | Decl(binding,expr) -> "var " ^ string_of_bind binding ^ " = " ^ string_of_expr expr ^ ";\n"
+
+let rec string_of_decls_list = function
+   [] -> ""
+  | hd::[] -> string_of_decl hd
+  | hd::tl -> string_of_decl hd ^ string_of_decls_list tl
 
  let rec string_of_stmt_list = function
  | [] -> ""
@@ -98,31 +125,16 @@ let rec string_of_expr = function
   | While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt_list s
   | Break -> "break;\n"
   | Continue -> "continue;\n"
+  | DecStmt(decl) -> string_of_decl decl
 
-let rec string_of_typ = function
-    Int -> "int"
-  | Bool -> "bool"
-  | Void -> "void"
-  | Float -> "float"
-  | Array(t) -> "array of " ^ string_of_typ t
+let rec string_of_fdecl = function
+  | fdecl -> "fun " ^  fdecl.fname ^ "( " ^ string_of_bind_list fdecl.formals ^ " ) :" ^ string_of_typ fdecl.typ  ^ "\n{" ^ string_of_stmt_list fdecl.body ^ "}\n"
 
-let rec string_of_bind_list = function
-  [] -> ""
-| hd::[] -> string_of_bind hd
-| hd::tl -> string_of_bind hd ^ string_of_bind_list tl
-and string_of_bind = function
-| (str, typ) -> str ^ " : " ^ string_of_typ typ
+let rec string_of_fdecls_list = function
+   [] -> ""
+  | hd::[] -> string_of_fdecl hd
+  | hd::tl -> string_of_fdecl hd ^ string_of_fdecls_list tl
 
-let string_of_fdecl fdecl =
-  "fun " ^ fdecl.fname ^ "( " ^ string_of_bind_list fdecl.formals ^ " ) :" ^ string_of_typ fdecl.typ  ^ "\n{" ^ string_of_stmt_list fdecl.body ^ "}"
-(*
-let string_of_program (stmts) =
-  String.concat "" (List.map string_of_stmt stmts)
-  
-
-*)
-
-
-let string_of_program a =
-	string_of_fdecl a
+let string_of_program = function
+  | Prog(d,f) -> string_of_decls_list d ^ "\n" ^ string_of_fdecls_list f ^ "\n"
 
