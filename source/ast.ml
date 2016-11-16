@@ -124,5 +124,5 @@ let string_of_program (stmts) =
 
 
 let string_of_program a =
-	string_of_stmt a
+	string_of_fdecl a
 

@@ -22,7 +22,7 @@ open Ast
 %right NOT NEG
 
 %start program
-%type<Ast.stmt> program
+%type<Ast.func_decl> program
 %%
 
 args_list: { [] }
@@ -95,4 +95,4 @@ statement:
 
 
 program:
-	statement EOF { $1 } 
+	fun_decl EOF { $1 } 
