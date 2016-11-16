@@ -11,7 +11,7 @@ rule token = parse
 | '{'      { LBRACE }
 | '}'      { RBRACE }
 | '['	   { LSQUARE }
-| '['	   { RSQUARE }
+| ']'	   { RSQUARE }
 | ';'      { SEMI }
 | ':'	   { COLON }
 | ','      { COMMA }
@@ -48,6 +48,7 @@ rule token = parse
 | "break" { BREAK }
 | "continue" { CONTINUE }
 | "invocations" { INVOCATIONS }
+| "atomic" { ATOMIC }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
 | '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 

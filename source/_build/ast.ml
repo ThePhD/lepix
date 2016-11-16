@@ -5,7 +5,7 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Void | Float | Array of typ 
+type typ = Int | Bool | Void | Float | Array1 of typ | Array2 of typ | Array3 of typ 
 
 type bind = string * typ
 
@@ -37,7 +37,8 @@ type stmt =
   | Break
   | Continue
   | DecStmt of decl
-  | Parallel of expr * stmt list 
+  | Parallel of expr * stmt list
+  | Atomic of stmt list 
 
 type func_decl = {
     fname : string;
@@ -97,7 +98,9 @@ let rec string_of_typ = function
   | Bool -> "bool"
   | Void -> "void"
   | Float -> "float"
-  | Array(t) -> "array of " ^ string_of_typ t
+  | Array1(t) -> string_of_typ t ^ "[ ]"
+  | Array2(t) -> string_of_typ t ^ "[[ ]]"
+  | Array3(t) -> string_of_typ t ^ "[[[ ]]]"
 
 let rec string_of_bind = function
 | (str, typ) -> str ^ " : " ^ string_of_typ typ
@@ -118,7 +121,7 @@ let rec string_of_decls_list = function
  let rec string_of_stmt_list = function
  | [] -> ""
  | hd::[] -> string_of_stmt hd
- | hd::tl -> string_of_stmt hd ^ ";\n" ^ string_of_stmt_list tl
+ | hd::tl -> string_of_stmt hd ^ ";\n" ^ string_of_stmt_list tl ^ "\n"
  and  string_of_stmt = function
   | Expr(expr) -> string_of_expr expr ^ ";\n"; 
   | Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
@@ -130,6 +133,7 @@ let rec string_of_decls_list = function
   | Continue -> "continue;\n"
   | DecStmt(decl) -> string_of_decl decl
   | Parallel(e,sl) -> "parallel( invocations = " ^ string_of_expr e ^ " )\n{\n" ^ string_of_stmt_list sl ^ "\n}\n" 
+  | Atomic(sl) -> "atomic {\n" ^ string_of_stmt_list sl ^ "}"
 
 let rec string_of_fdecl = function
   | fdecl -> "fun " ^  fdecl.fname ^ "( " ^ string_of_bind_list fdecl.formals ^ " ) :" ^ string_of_typ fdecl.typ  ^ "\n{\n" ^ string_of_stmt_list fdecl.body ^ "}\n"

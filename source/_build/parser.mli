@@ -15,6 +15,7 @@ type token =
   | TO
   | BY
   | INVOCATIONS
+  | ATOMIC
   | PLUS
   | MINUS
   | TIMES
