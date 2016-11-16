@@ -91,6 +91,12 @@ statement:
 
 /* 
 | decl { $1 }
+
+
+jump_statement:
+BREAK SEMI { Break }
+| CONTINUE SEMI { Continue }
+
 */
 
 
