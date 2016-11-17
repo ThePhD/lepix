@@ -3,6 +3,7 @@ open Ast
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY INVOCATIONS ATOMIC
+%token DOT NAMESPACE
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR VAR
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID FLOAT
 %token <int> INTLITERAL
@@ -30,23 +31,27 @@ args_list: { [] }
 |  args_list COMMA expr { $3::$1 }
 
 type_name:
-  INT { Int }
+| INT { Int }
 | FLOAT { Float }
 | BOOL { Bool }
 | VOID { Void }
-| type_name LSQUARE RSQUARE { Array1($1) }
-| type_name LSQUARE LSQUARE RSQUARE RSQUARE { Array2($1) }
-| type_name LSQUARE LSQUARE LSQUARE RSQUARE RSQUARE RSQUARE { Array3($1) }
+| type_name LSQUARE RSQUARE { Array($1, 1) }
+| type_name LSQUARE LSQUARE RSQUARE RSQUARE { Array($1, 2) }
+| type_name LSQUARE LSQUARE LSQUARE RSQUARE RSQUARE RSQUARE { Array($1, 3) }
+
+qualified_id:
+| ID { [$1] }
+| qualified_id DOT ID { $1::$3 }
 
 expr:
-ID { Id($1) }
-| INTLITERAL { Literal($1) }
+qualified_id { Id($1) }
+| INTLITERAL { IntLit($1) }
 | FLOATLITERAL { FloatLit($1) }
 | TRUE { BoolLit(true) }
 | FALSE { BoolLit(false) }
 | LSQUARE args_list RSQUARE { ArrayLit($2) }
-| ID LSQUARE args_list RSQUARE { Access($1,$3)  }
-| ID LPAREN args_list RPAREN  { Call($1,$3)  }
+| qualified_id LSQUARE args_list RSQUARE { Access(Id($1),$3)  }
+| qualified_id LPAREN args_list RPAREN  { Call(Id($1),$3)  }
 | MINUS expr %prec NEG { Unop( Neg, $2) }
 | NOT expr { Unop( Not, $2) }
 | expr TIMES expr { Binop( $1, Mult, $3) }
@@ -66,12 +71,12 @@ ID { Id($1) }
 binding:
 ID COLON type_name { ($1,$3) }
 
-decl:
-| VAR binding ASSIGN expr SEMI { Decl($2,$4) }
-
 params_list: { [] }
 | ID COLON type_name { [($1,$3)] }
 | ID COLON type_name COMMA params_list { ($1,$3)::$5 }
+
+var_decl:
+| VAR binding ASSIGN expr SEMI { VarDecl($2,$4) }
 
 fun_decl:
 FUN ID LPAREN params_list RPAREN COLON type_name LBRACE statement_list RBRACE { { fname=$2;formals=$4;typ=$7;body=$9} }
@@ -89,15 +94,13 @@ statement:
 | RETURN expr SEMI  { Return($2) }
 | BREAK SEMI { Break }
 | CONTINUE SEMI { Continue }
-| decl { DecStmt($1) } 
+| var_decl { VarDecStmt($1) } 
 | PARALLEL LPAREN INVOCATIONS ASSIGN expr RPAREN LBRACE statement_list RBRACE  { Parallel($5,$8) }
 | ATOMIC LBRACE statement_list RBRACE { Atomic($3) }
 
-decls_list: { [] }
-| decls_list decl { $2::$1 }
-
-fdecls_list : { [] }
-| fdecls_list fun_decl { $2::$1 }
+decls_list : { [] }
+| decls_list fun_decl { Func($2)::$1 }
+| decls_list var_decl { Var($2)::$1 }
 
 program:
-decls_list fdecls_list EOF { Prog($1,$2) }
+| decls_list EOF { Prog($1) }

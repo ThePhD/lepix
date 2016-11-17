@@ -7,7 +7,7 @@ clean :
 
 #Build top level lepix executable
 lepix :
-	ocamlbuild lepix.native
+	ocamlbuild -use-ocamlfind -pkgs llvm,llvm.analysis lepix.native
 
 
 
