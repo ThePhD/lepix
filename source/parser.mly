@@ -41,7 +41,7 @@ type_name:
 
 qualified_id:
 | ID { [$1] }
-| qualified_id DOT ID { $1::$3 }
+| qualified_id DOT ID { $1 @ [$3] }
 
 expr:
 qualified_id { Id($1) }
