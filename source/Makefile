@@ -6,7 +6,7 @@ clean :
 	rm -rf parser.output
 
 lepix :
-	ocamlbuild lepix.native
+	ocamlbuild -use-ocamlfind -pkgs llvm,llvm.analysis lepix.native
 
 
 
