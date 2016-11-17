@@ -26,3 +26,4 @@ source/preprocessor/parser.ml
 source/preprocessor/parser.mli
 source/preprocessor/pp.cmi
 source/preprocessor/pp.cmo
+.vs/
