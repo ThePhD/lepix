@@ -3,7 +3,6 @@ open Ast
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY INVOCATIONS ATOMIC
-%token DOT NAMESPACE
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR VAR
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID FLOAT
 %token <int> INTLITERAL
@@ -39,20 +38,15 @@ type_name:
 | type_name LSQUARE LSQUARE RSQUARE RSQUARE { Array2($1) }
 | type_name LSQUARE LSQUARE LSQUARE RSQUARE RSQUARE RSQUARE { Array3($1) }
 
-qualified_id:
-ID { Id( [$1] ) }
-| ID DOT ID { Id( [$1; $3] ) }
-
-
 expr:
-qualified_id { $1 }
+ID { Id($1) }
 | INTLITERAL { Literal($1) }
 | FLOATLITERAL { FloatLit($1) }
 | TRUE { BoolLit(true) }
 | FALSE { BoolLit(false) }
 | LSQUARE args_list RSQUARE { ArrayLit($2) }
-| qualified_id LSQUARE args_list RSQUARE { Access($1,$3)  }
-| qualified_id LPAREN args_list RPAREN  { Call($1,$3)  }
+| ID LSQUARE args_list RSQUARE { Access($1,$3)  }
+| ID LPAREN args_list RPAREN  { Call($1,$3)  }
 | MINUS expr %prec NEG { Unop( Neg, $2) }
 | NOT expr { Unop( Not, $2) }
 | expr TIMES expr { Binop( $1, Mult, $3) }

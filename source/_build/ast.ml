@@ -12,16 +12,16 @@ type bind = string * typ
 type expr =
     Literal of int
   | BoolLit of bool
-  | Id of string list
+  | Id of string
   | FloatLit of float
-  | Access of expr * expr list 
+  | Access of string * expr list 
   | Binop of expr * op * expr
   | Unop of uop * expr 
   | Assign of string * expr   
   | ArrayAssign of string * expr * expr 
   | Arrays of expr list 
   | InitArray of string * expr list 
-  | Call of expr * expr list
+  | Call of string * expr list
   | Noexpr
   | ArrayLit of expr list
 
@@ -79,17 +79,17 @@ let rec string_of_expr = function
   | BoolLit(true) -> "true"
   | BoolLit(false) -> "false"
   | FloatLit(f) -> string_of_float f
-  | Id(sl) -> String.concat "." sl
+  | Id(s) -> s
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-  | Access(e, l) -> string_of_expr e ^ "[" ^ string_of_list (List.map string_of_expr l) ^ "]"
+  | Access(s, l) -> s ^ "[" ^ string_of_list (List.map string_of_expr l) ^ "]"
   | ArrayAssign (s, l, e) -> s ^"[" ^ string_of_expr l ^ "] = " ^ string_of_expr e
   | Arrays (el) -> "[" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
   | InitArray(s, el) -> s ^ " = [" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
-  | Call(e, el) ->
-      string_of_expr e ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+  | Call(f, el) ->
+      f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
   | ArrayLit(el) -> "[ " ^ String.concat ", " (List.map string_of_expr el) ^ " ]"
 
@@ -133,7 +133,7 @@ let rec string_of_decls_list = function
   | Continue -> "continue;\n"
   | DecStmt(decl) -> string_of_decl decl
   | Parallel(e,sl) -> "parallel( invocations = " ^ string_of_expr e ^ " )\n{\n" ^ string_of_stmt_list sl ^ "\n}\n" 
-  | Atomic(sl) -> "atomic {\n" ^ string_of_stmt_list sl ^ "}\n"
+  | Atomic(sl) -> "atomic {\n" ^ string_of_stmt_list sl ^ "}"
 
 let rec string_of_fdecl = function
   | fdecl -> "fun " ^  fdecl.fname ^ "( " ^ string_of_bind_list fdecl.formals ^ " ) :" ^ string_of_typ fdecl.typ  ^ "\n{\n" ^ string_of_stmt_list fdecl.body ^ "}\n"
