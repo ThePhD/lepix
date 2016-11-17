@@ -5,7 +5,8 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq |
 
 type uop = Neg | Not
 
-type typ = Int | Bool | Void | Float | Array1 of typ | Array2 of typ | Array3 of typ 
+type typ = Int | Bool | Void | Float 
+| Array of typ * int
 
 type bind = string * typ
 
@@ -21,9 +22,9 @@ type expr =
   | ArrayAssign of string * expr * expr 
   | Arrays of expr list 
   | InitArray of string * expr list 
+  | ArrayLit of expr list
   | Call of expr * expr list
   | Noexpr
-  | ArrayLit of expr list
 
 type decl = 
   Decl of bind * expr
@@ -98,9 +99,7 @@ let rec string_of_typ = function
   | Bool -> "bool"
   | Void -> "void"
   | Float -> "float"
-  | Array1(t) -> string_of_typ t ^ "[ ]"
-  | Array2(t) -> string_of_typ t ^ "[[ ]]"
-  | Array3(t) -> string_of_typ t ^ "[[[ ]]]"
+  | Array(t, d) -> string_of_typ t ^ ( String.make d '[' ) ^ ( String.make d ']' )
 
 let rec string_of_bind = function
 | (str, typ) -> str ^ " : " ^ string_of_typ typ

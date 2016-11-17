@@ -31,28 +31,28 @@ args_list: { [] }
 |  args_list COMMA expr { $3::$1 }
 
 type_name:
-  INT { Int }
+| INT { Int }
 | FLOAT { Float }
 | BOOL { Bool }
 | VOID { Void }
-| type_name LSQUARE RSQUARE { Array1($1) }
-| type_name LSQUARE LSQUARE RSQUARE RSQUARE { Array2($1) }
-| type_name LSQUARE LSQUARE LSQUARE RSQUARE RSQUARE RSQUARE { Array3($1) }
+| type_name LSQUARE RSQUARE { Array($1, 1) }
+| type_name LSQUARE LSQUARE RSQUARE RSQUARE { Array($1, 2) }
+| type_name LSQUARE LSQUARE LSQUARE RSQUARE RSQUARE RSQUARE { Array($1, 3) }
 
 qualified_id:
-ID { Id( [$1] ) }
-| ID DOT ID { Id( [$1; $3] ) }
+| ID { [$1] }
+| qualified_id DOT ID { $3::$1 }
 
 
 expr:
-qualified_id { $1 }
+qualified_id { Id($1) }
 | INTLITERAL { Literal($1) }
 | FLOATLITERAL { FloatLit($1) }
 | TRUE { BoolLit(true) }
 | FALSE { BoolLit(false) }
 | LSQUARE args_list RSQUARE { ArrayLit($2) }
-| qualified_id LSQUARE args_list RSQUARE { Access($1,$3)  }
-| qualified_id LPAREN args_list RPAREN  { Call($1,$3)  }
+| qualified_id LSQUARE args_list RSQUARE { Access(Id($1),$3)  }
+| qualified_id LPAREN args_list RPAREN  { Call(Id($1),$3)  }
 | MINUS expr %prec NEG { Unop( Neg, $2) }
 | NOT expr { Unop( Not, $2) }
 | expr TIMES expr { Binop( $1, Mult, $3) }
