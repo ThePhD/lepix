@@ -22,3 +22,14 @@ examples/pthreads-w32-2-9-1/
 examples/x86/
 examples/main_parallel_2d
 examples/.vs/examples/v14/.suo
+source/parser.mli
+source/parser.ml
+source/scanner.ml
+source/lepix.native
+source/parser.output
+source/*.cmx
+source/*.cmi
+source/*.cmo
+source/*.cmx
+source/*.o
+

@@ -5,6 +5,7 @@ clean :
 	rm -rf *.cmx *.cmi *.cmo *.cmx *.o
 	rm -rf parser.output
 
+#Build top level lepix executable
 lepix :
 	ocamlbuild lepix.native
 
