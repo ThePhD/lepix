@@ -1,0 +1,6 @@
+focus on "getting it to show signs of life first"
+
+TODO
+- HELLO WORLD - get a program working first so we can use regression test suite
+- write runtime library in C, turn it into LLVMIR
+- don't check LLVM text file with diff, check output of our code against ^
