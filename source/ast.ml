@@ -12,16 +12,16 @@ type bind = string * typ
 type expr =
     Literal of int
   | BoolLit of bool
-  | Id of string
+  | Id of string list
   | FloatLit of float
-  | Access of string * expr list 
+  | Access of expr * expr list 
   | Binop of expr * op * expr
   | Unop of uop * expr 
   | Assign of string * expr   
   | ArrayAssign of string * expr * expr 
   | Arrays of expr list 
   | InitArray of string * expr list 
-  | Call of string * expr list
+  | Call of expr * expr list
   | Noexpr
 
 type decl = 
@@ -76,17 +76,17 @@ let rec string_of_expr = function
   | BoolLit(true) -> "true"
   | BoolLit(false) -> "false"
   | FloatLit(f) -> string_of_float f
-  | Id(s) -> s
+  | Id(sl) -> String.concat "." sl
   | Binop(e1, o, e2) ->
       string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
   | Unop(o, e) -> string_of_uop o ^ string_of_expr e
-  | Access(s, l) -> s ^ "[" ^ string_of_list (List.map string_of_expr l) ^ "]"
+  | Access(e, l) -> string_of_expr e ^ "[" ^ string_of_list (List.map string_of_expr l) ^ "]"
   | ArrayAssign (s, l, e) -> s ^"[" ^ string_of_expr l ^ "] = " ^ string_of_expr e
   | Arrays (el) -> "[" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
   | Assign(v, e) -> v ^ " = " ^ string_of_expr e
   | InitArray(s, el) -> s ^ " = [" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
-  | Call(f, el) ->
-      f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+  | Call(e, el) ->
+      string_of_expr e ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
   | Noexpr -> ""
 
 let rec string_of_typ = function

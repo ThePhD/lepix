@@ -27,6 +27,7 @@ rule token = parse
 | ">"      { GT }
 | ">="     { GEQ }
 | "&&"     { AND }
+| '.'      { DOT }
 | "||"     { OR }
 | "!"      { NOT }
 | "if"     { IF }
@@ -47,6 +48,7 @@ rule token = parse
 | "parallel" { PARALLEL }
 | "break" { BREAK }
 | "continue" { CONTINUE }
+| "namespace" { NAMESPACE }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
 | '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 
