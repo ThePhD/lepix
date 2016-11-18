@@ -2,7 +2,7 @@
 open Ast
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY INVOCATIONS ATOMIC
+%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY INVOCATIONS ATOMIC THREADCOUNT
 %token DOT NAMESPACE
 %token PLUS MINUS TIMES DIVIDE ASSIGN NOT EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR VAR
 %token RETURN IF ELSE FOR WHILE INT BOOL VOID FLOAT
@@ -79,13 +79,13 @@ var_decl:
 | VAR binding ASSIGN expr SEMI { VarDecl($2,$4) }
 
 fun_decl:
-FUN ID LPAREN params_list RPAREN COLON type_name LBRACE statement_list RBRACE { { fname=$2;formals=$4;typ=$7;body=$9} }
+FUN ID LPAREN params_list RPAREN COLON type_name LBRACE statement_list RBRACE { { func_name=$2; func_parameters=$4; func_return_type=$7; func_body=$9} }
 
 statement_list: { [] }
 | statement_list statement { $2::$1 }
 
 statement:
- expr SEMI { Expr($1) }
+| expr SEMI { Expr($1) }
 | IF LPAREN expr RPAREN LBRACE statement_list RBRACE %prec NOELSE { If($3,$6,[]) }
 | IF LPAREN expr RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE { If($3,$6,$10)  }
 | WHILE LPAREN expr RPAREN LBRACE statement_list RBRACE { While($3,$6) }
@@ -95,7 +95,7 @@ statement:
 | BREAK SEMI { Break }
 | CONTINUE SEMI { Continue }
 | var_decl { VarDecStmt($1) } 
-| PARALLEL LPAREN INVOCATIONS ASSIGN expr RPAREN LBRACE statement_list RBRACE  { Parallel($5,$8) }
+| PARALLEL LPAREN INVOCATIONS ASSIGN expr RPAREN LBRACE statement_list RBRACE  { Parallel([$5],$8) }
 | ATOMIC LBRACE statement_list RBRACE { Atomic($3) }
 
 decls_list : { [] }

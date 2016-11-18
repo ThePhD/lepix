@@ -49,6 +49,7 @@ rule token = parse
 | "break" { BREAK }
 | "continue" { CONTINUE }
 | "invocations" { INVOCATIONS }
+| "thread_count" { THREADCOUNT }
 | "atomic" { ATOMIC }
 | "namespace" { NAMESPACE }
 | ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
