@@ -23,27 +23,33 @@ type scope = {
 	scope_functions : L.llvalue StringMap.t;
 }
 
-let generate (ast) =
-	print_string (A.string_of_program ast);
-	let context = L.global_context() in
-	let context_builder = L.builder context in
-	let m = L.create_module context "lepix" in
-	let f32_t   = L.float_type   context in
-	let f64_t   = L.double_type  context in
-	let i8_t    = L.i8_type      context in
-	(* for 'char' type to printf -- even if they resolve to same type, we differentiate*)
-	let char_t  = L.i8_type      context in
-	let i32_t   = L.i32_type     context in
-	let i64_t   = L.i64_type     context in
-	(* LLVM treats booleans as 1-bit integers, not distinct types with their own true / false *)
-	let bool_t  = L.i1_type      context in
-	let void_t  = L.void_type    context in
-	(* TODO: clean up this hack and implement proper scoping and finding of functions
-	and other scoped / namespaced / runtime libraries *)
-	let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in 
-	let printf_func = L.declare_function "printf" printf_t m in
-	let int_format_str = L.build_global_stringptr "%d\n" "fmt" context_builder in
+let _ = print_endline "Creating Context";;
+let context = L.global_context();;
+let _ = print_endline "Creating Builder";;
+let context_builder = L.builder context;;
+let _ = print_endline "Creating Module";;
+let m = L.create_module context "lepix";;
+let _ = print_endline "Creating Typenames";;
+let f32_t   = L.float_type   context;;
+let f64_t   = L.double_type  context;;
+let i8_t    = L.i8_type      context;;
+(* for 'char' type to printf -- even if they resolve to same type, we differentiate*)
+let char_t  = L.i8_type      context;;
+let i32_t   = L.i32_type     context;;
+let i64_t   = L.i64_type     context;;
+(* LLVM treats booleans as 1-bit integers, not distinct types with their own true / false *)
+let bool_t  = L.i1_type      context;;
+let void_t  = L.void_type    context;;
+(* TODO: clean up this hack and implement proper scoping and finding of functions
+and other scoped / namespaced / runtime libraries *)
+let _ = print_endline "Creating printf_t";;
+let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |];;
+let _ = print_endline "Creating printf_func";;
+let printf_func = L.declare_function "printf" printf_t m;;
 	
+
+let generate (ast) =
+	print_endline "Codegen.generate call..."; 	
 	(* Function to convert Ast types to LLVM Types
 	Applies itself recursively, using the above 
 	created types on the context *)
@@ -55,37 +61,72 @@ let generate (ast) =
 		| A.Array(t, d) -> L.array_type (ast_to_llvm_type t) d
 	in
 
-	let gen_function_declaration f =
-		(* Generate the function with its signature *)
-		let args_t = Array.of_list (List.map (fun (_, t) -> ast_to_llvm_type t) f.A.func_parameters) in
-		let sig_t = L.function_type (ast_to_llvm_type f.A.func_return_type) args_t in
-		L.declare_function f.A.func_name sig_t m;
-	in
-
-	let rec gen_expression = function
+	let rec gen_expression = function 
 		| A.Id(sl) -> let composite_id = (String.concat "." sl) in
-		(* TODO: fix this and the entire if condition by implementing search for the scope's functions *)
-		if composite_id = "lib.print" then 
-			printf_func
-		else
-			printf_func
+			(* TODO: fix this and the entire if condition by implementing search for the scope's functions *)
+			if composite_id = "lib.print" then 
+				printf_func
+			else
+				printf_func
 		| A.BoolLit(value) -> L.const_int bool_t (if value then 1 else 0) (* bool_t is still an integer, must convert *)
 		| A.IntLit(value) -> L.const_int i32_t value
 		| A.FloatLit(value) -> L.const_float f32_t value
-		| A.Call(e, el) -> let target = gen_expression e in 
+		| A.Call(e, el) -> ignore( print_endline ( "generating function call: " ^ ( A.string_of_expr e ) ) );
+			let target = gen_expression e in 
+			let int_format_str = L.build_global_stringptr "%d\n" "fmt" context_builder in
 			let args = ( Array.of_list ( int_format_str :: (List.map gen_expression el) ) ) in
-			L.build_call target args "printf" context_builder
+			let v = L.build_call target args "printf" context_builder in
+			v
+		
+		(* TODO: do code generation for these *)
+		| A.Access(e, el) ->
+			L.const_int i32_t 0
+		| A.Binop(e1, op, e2) ->
+			L.const_int i32_t 0
+		| A.Unop(op, e1) ->
+			L.const_int i32_t 0
+		| A.Assign(s, e) ->
+			L.const_int i32_t 0
+		| A.ArrayAssign(s, e1, e2) ->
+			L.const_int i32_t 0
+		| A.Arrays(el) ->
+			L.const_int i32_t 0
+		| A.InitArray(s, el) ->
+			L.const_int i32_t 0
+		| A.ArrayLit(el) ->
+			L.const_int i32_t 0
+		| A.Noexpr ->
+			L.const_int i32_t 0
 	in
 
 	let gen_statement = function
 		| A.Expr(e) -> gen_expression e
+		| A.Return(e) -> gen_expression e
+
+		(* TODO: fill this out *)
+		| A.If(e, true_sl, false_sl) ->
+			L.const_int i32_t 0 
+		| A.For(inite, compe, incre, sl) ->
+			L.const_int i32_t 0 
+		| A.While(expr, sl) ->
+			L.const_int i32_t 0 
+		| A.Break ->
+			L.const_int i32_t 0 
+		| A.Continue ->
+			L.const_int i32_t 0 
+		| A.VarDecStmt(vdecl) ->
+			L.const_int i32_t 0
+		| A.Parallel(el, sl) ->
+			L.const_int i32_t 0
+		| A.Atomic(sl) ->
+			L.const_int i32_t 0 
 	in
 
 	let rec gen_statement_list = function
 		(* 0 value (default integer return, specifically to get main() working right now...*)
 		| [] -> L.const_int i32_t 0
 		| s :: [] -> gen_statement s
-		| s :: rest -> gen_statement s; gen_statement_list rest
+		| s :: rest -> ignore(gen_statement s); gen_statement_list rest
 	in
 
 	(* TODO: this will come in handy later when we need to declare lots of functions
@@ -98,40 +139,36 @@ let generate (ast) =
 	in *)
 
 	let gen_function_definition f = 
+		print_endline "generating function definition";
 		(* Generate the function with its signature *)
 		let args_t = Array.of_list (List.map (fun (_, t) -> ast_to_llvm_type t) f.A.func_parameters) in
 		let sig_t = L.function_type (ast_to_llvm_type f.A.func_return_type) args_t in
 		let ll_func = L.define_function f.A.func_name sig_t m in
 		(* generate the body *)
-		let body_block = L.append_block context "entry_point:" ll_func in
+		let body_block = L.entry_block ll_func in
 		L.position_at_end body_block context_builder;
 		let ret_val = gen_statement_list f.A.func_body in
 		let _ = L.build_ret ret_val context_builder in
 		ll_func
 	in
 
-    let gen_variable_definition v =
-        (* TODO: placeholder, replace with actual variable definition and symbol insertion *)
-	   L.const_int i32_t 3435973836
-    in
+	let gen_variable_definition v =
+		print_endline "generating variable definition (unimplemented)";
+		(* TODO: placeholder, replace with actual variable definition and symbol insertion *)
+		L.const_int i32_t 0xCCCCCCC
+	in
 
 	let gen_decl = function
-		| A.Func(f) -> gen_function_definition f
-		| A.Var(v) -> gen_variable_definition v
+		| A.Func(f) -> print_endline "Matching Func Decl"; gen_function_definition f
+		| A.Var(v) -> print_endline "Matching Var Decl"; gen_variable_definition v
 	in
 
-	let gen_decl_list = function
-		| [] -> ignore()
-		| d :: rest -> ignore(gen_decl d)
+	let gen_program p =
+		ignore( List.map gen_decl p )
 	in
 
-	let gen_module p = function
-		| A.Prog(dl) -> List.map gen_decl dl
-	in
-	(* TODO: The code that imports a module or a built-in namespace *)
-	let add_import = function
-		| "lib" -> ignore()
-	in
-	gen_module ast;
+	gen_program ast;
+	
+	print_endline "return module m"; 
 	m
 ;;

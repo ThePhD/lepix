@@ -1,5 +1,13 @@
 %{
 open Ast
+
+let reverse_list l =
+  let rec builder acc = function
+    | [] -> acc
+    | hd::tl -> builder (hd::acc) tl
+  in 
+  builder [] l
+
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA LSQUARE RSQUARE COLON FUN CONTINUE BREAK PARALLEL TO BY INVOCATIONS ATOMIC THREADCOUNT
@@ -81,8 +89,11 @@ var_decl:
 fun_decl:
 FUN ID LPAREN params_list RPAREN COLON type_name LBRACE statement_list RBRACE { { func_name=$2; func_parameters=$4; func_return_type=$7; func_body=$9} }
 
-statement_list: { [] }
-| statement_list statement { $2::$1 }
+statement_list_builder: { [] }
+| statement_list_builder statement { $2::$1 }
+
+statement_list :
+| statement_list_builder { reverse_list $1 }
 
 statement:
 | expr SEMI { Expr($1) }
@@ -103,4 +114,4 @@ decls_list : { [] }
 | decls_list var_decl { Var($2)::$1 }
 
 program:
-| decls_list EOF { Prog($1) }
+| decls_list EOF { reverse_list $1 }

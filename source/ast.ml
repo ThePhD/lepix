@@ -6,7 +6,10 @@ type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq
 type uop = Neg | Not
 
 type typ = 
-	| Int | Bool | Void | Float 
+	| Int 
+	| Bool 
+	| Void 
+	| Float 
 	| Array of typ * int
 
 type bind = string * typ
@@ -16,6 +19,7 @@ type expr =
 	| IntLit of int
 	| FloatLit of float
 	| Id of string list
+	| Call of expr * expr list
 	| Access of expr * expr list 
 	| Binop of expr * op * expr
 	| Unop of uop * expr 
@@ -24,7 +28,6 @@ type expr =
 	| Arrays of expr list 
 	| InitArray of string * expr list 
 	| ArrayLit of expr list
-	| Call of expr * expr list
 	| Noexpr
 
 type var_decl = 
@@ -53,8 +56,7 @@ type decl =
 	| Func of func_decl
 	| Var of var_decl
 
-type prog = 
-	| Prog of decl list
+type prog = decl list
 
 (* Pretty-printing functions *)
 
@@ -140,10 +142,10 @@ let rec string_of_stmt_list = function
 
 let string_of_func_decl fdecl =
 	"fun " ^  fdecl.func_name 
-    ^ "( " ^ string_of_bind_list fdecl.func_parameters ^ " ) :" 
-    ^ string_of_typ fdecl.func_return_type  ^ "\n{\n" 
+    ^ "(" ^ string_of_bind_list fdecl.func_parameters ^ ") :" 
+    ^ string_of_typ fdecl.func_return_type  ^ "{\n" 
     ^ string_of_stmt_list fdecl.func_body 
-    ^ "}\n"
+    ^ "}"
 
 let string_of_decl = function
 	| Func(fdecl) -> string_of_func_decl fdecl
@@ -154,5 +156,5 @@ let rec string_of_decls_list = function
 	| hd::[] -> string_of_decl hd
 	| hd::tl -> string_of_decl hd ^ string_of_decls_list tl
 
-let string_of_program = function
-	| Prog(dl) -> string_of_decls_list dl
+let string_of_program p = 
+	string_of_decls_list p
