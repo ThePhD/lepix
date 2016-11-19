@@ -1,3 +1,7 @@
 fun main () : int {
-	var x : int[[]] = [];
+	var x1 : int[] = [];
+	var x2 : int[[]] = [];
+	var x3 : int[[[]]] = [];
+	var x4 : int[[[[]]]] = [];
+	var x5 : int[[[[[]]]]] = [];
 }

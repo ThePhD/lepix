@@ -23,13 +23,9 @@ type scope = {
 	scope_functions : L.llvalue StringMap.t;
 }
 
-let _ = print_endline "Creating Context";;
 let context = L.global_context();;
-let _ = print_endline "Creating Builder";;
 let context_builder = L.builder context;;
-let _ = print_endline "Creating Module";;
 let m = L.create_module context "lepix";;
-let _ = print_endline "Creating Typenames";;
 let f32_t   = L.float_type   context;;
 let f64_t   = L.double_type  context;;
 let i8_t    = L.i8_type      context;;
@@ -42,14 +38,10 @@ let bool_t  = L.i1_type      context;;
 let void_t  = L.void_type    context;;
 (* TODO: clean up this hack and implement proper scoping and finding of functions
 and other scoped / namespaced / runtime libraries *)
-let _ = print_endline "Creating printf_t";;
 let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |];;
-let _ = print_endline "Creating printf_func";;
 let printf_func = L.declare_function "printf" printf_t m;;
-	
 
 let generate (ast) =
-	print_endline "Codegen.generate call..."; 	
 	(* Function to convert Ast types to LLVM Types
 	Applies itself recursively, using the above 
 	created types on the context *)
@@ -81,17 +73,11 @@ let generate (ast) =
 		(* TODO: do code generation for these *)
 		| A.Access(e, el) ->
 			L.const_int i32_t 0
-		| A.Binop(e1, op, e2) ->
+		| A.BinaryOp(e1, op, e2) ->
 			L.const_int i32_t 0
-		| A.Unop(op, e1) ->
+		| A.PrefixUnaryOp(op, e1) ->
 			L.const_int i32_t 0
 		| A.Assign(s, e) ->
-			L.const_int i32_t 0
-		| A.ArrayAssign(s, e1, e2) ->
-			L.const_int i32_t 0
-		| A.Arrays(el) ->
-			L.const_int i32_t 0
-		| A.InitArray(s, el) ->
 			L.const_int i32_t 0
 		| A.ArrayLit(el) ->
 			L.const_int i32_t 0
@@ -108,13 +94,15 @@ let generate (ast) =
 			L.const_int i32_t 0 
 		| A.For(inite, compe, incre, sl) ->
 			L.const_int i32_t 0 
+		| A.ForBy(frome, toe, bye, sl) ->
+			L.const_int i32_t 0 
 		| A.While(expr, sl) ->
 			L.const_int i32_t 0 
-		| A.Break ->
+		| A.Break(n) ->
 			L.const_int i32_t 0 
 		| A.Continue ->
 			L.const_int i32_t 0 
-		| A.VarDecStmt(vdecl) ->
+		| A.Var(vdecl) ->
 			L.const_int i32_t 0
 		| A.Parallel(el, sl) ->
 			L.const_int i32_t 0
@@ -139,7 +127,6 @@ let generate (ast) =
 	in *)
 
 	let gen_function_definition f = 
-		print_endline "generating function definition";
 		(* Generate the function with its signature *)
 		let args_t = Array.of_list (List.map (fun (_, t) -> ast_to_llvm_type t) f.A.func_parameters) in
 		let sig_t = L.function_type (ast_to_llvm_type f.A.func_return_type) args_t in
@@ -153,14 +140,19 @@ let generate (ast) =
 	in
 
 	let gen_variable_definition v =
-		print_endline "generating variable definition (unimplemented)";
+		(* TODO: placeholder, replace with actual variable definition and symbol insertion *)
+		L.const_int i32_t 0xCCCCCCC
+	in
+
+	let gen_namespace_definition name definitions =
 		(* TODO: placeholder, replace with actual variable definition and symbol insertion *)
 		L.const_int i32_t 0xCCCCCCC
 	in
 
 	let gen_decl = function
-		| A.Func(f) -> print_endline "Matching Func Decl"; gen_function_definition f
-		| A.Var(v) -> print_endline "Matching Var Decl"; gen_variable_definition v
+		| A.FuncDef(fd) -> gen_function_definition fd
+		| A.VarDef(vd) -> gen_variable_definition vd
+		| A.NamespaceDef(ns_name, ns_definitions) -> (gen_namespace_definition ns_name ns_definitions)
 	in
 
 	let gen_program p =
@@ -169,6 +161,5 @@ let generate (ast) =
 
 	gen_program ast;
 	
-	print_endline "return module m"; 
 	m
 ;;

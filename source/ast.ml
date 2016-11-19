@@ -1,18 +1,19 @@
 (* Abstract Syntax Tree*)
 
-type op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
+type binary_op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
     | And | Or
 
-type uop = Neg | Not
+type prefix_unary_op = 
+| Neg | Not
 
-type typ = 
+type builtin_type = 
 	| Int 
 	| Bool 
 	| Void 
 	| Float 
-	| Array of typ * int
+	| Array of builtin_type * int
 
-type bind = string * typ
+type bind = string * builtin_type
 
 type expr =
 	| BoolLit of bool
@@ -21,46 +22,49 @@ type expr =
 	| Id of string list
 	| Call of expr * expr list
 	| Access of expr * expr list 
-	| Binop of expr * op * expr
-	| Unop of uop * expr 
-	| Assign of string * expr   
-	| ArrayAssign of string * expr * expr 
-	| Arrays of expr list 
-	| InitArray of string * expr list 
+	| BinaryOp of expr * binary_op * expr
+	| PrefixUnaryOp of prefix_unary_op * expr 
+	| Assign of string list * expr   
 	| ArrayLit of expr list
 	| Noexpr
 
-type var_decl = 
-	| VarDecl of bind * expr
+type variable_definition = 
+	| VarBinding of bind * expr
+
+type parallel_expr =
+	| Invocation of expr
+	| ThreadCount of expr
 
 type stmt =
 	| Expr of expr
 	| Return of expr
 	| If of expr * stmt list * stmt list
 	| For of expr * expr * expr * stmt list
+	| ForBy of expr * expr * expr * stmt list
 	| While of expr * stmt list 
-	| Break
+	| Break of int
 	| Continue
-	| VarDecStmt of var_decl
-	| Parallel of expr list * stmt list
-	| Atomic of stmt list 
+	| Var of variable_definition
+	| Parallel of parallel_expr list * stmt list
+	| Atomic of stmt list
 
-type func_decl = {
+type function_definition = {
 	func_name : string;
 	func_parameters : bind list;
-	func_return_type : typ;
+	func_return_type : builtin_type;
 	func_body : stmt list; 
 }
 
-type decl =
-	| Func of func_decl
-	| Var of var_decl
+type definition =
+	| FuncDef of function_definition
+	| VarDef of variable_definition
+	| NamespaceDef of string list * definition list
 
-type prog = decl list
+type prog = definition list
 
 (* Pretty-printing functions *)
 
-let string_of_op = function
+let string_of_binary_op = function
 	| Add -> "+"
 	| Sub -> "-"
 	| Mult -> "*"
@@ -74,11 +78,7 @@ let string_of_op = function
 	| And -> "&&"
 	| Or -> "||"
 
-let rec string_of_list = function
-	| [] -> ""
-	| s::l -> s ^ "," ^ string_of_list l
-
-let string_of_uop = function
+let string_of_unary_op = function
 	| Neg -> "-"
 	| Not -> "!"
 
@@ -88,73 +88,66 @@ let rec string_of_expr = function
 	| BoolLit(false) -> "false"
 	| FloatLit(f) -> string_of_float f
 	| Id(sl) -> String.concat "." sl
-	| Binop(e1, o, e2) ->
-		string_of_expr e1 ^ " " ^ string_of_op o ^ " " ^ string_of_expr e2
-	| Unop(o, e) -> string_of_uop o ^ string_of_expr e
-	| Access(e, l) -> string_of_expr e ^ "[" ^ string_of_list (List.map string_of_expr l) ^ "]"
-	| ArrayAssign (s, l, e) -> s ^"[" ^ string_of_expr l ^ "] = " ^ string_of_expr e
-	| Arrays (el) -> "[" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
-	| Assign(v, e) -> v ^ " = " ^ string_of_expr e
-	| InitArray(s, el) -> s ^ " = [" ^ String.concat ", " (List.map string_of_expr el) ^ "]"
+	| BinaryOp(e1, o, e2) ->
+		string_of_expr e1 ^ " " ^ string_of_binary_op o ^ " " ^ string_of_expr e2
+	| PrefixUnaryOp(o, e) -> string_of_unary_op o ^ string_of_expr e
+	| Access(e, l) -> string_of_expr e ^ "[" ^ (String.concat ", " (List.map string_of_expr l)) ^ "]"
+	| Assign(sl, e) -> ( String.concat "." sl ) ^ " = " ^ string_of_expr e
 	| Call(e, el) ->
 		string_of_expr e ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
 	| Noexpr -> "{ Noop }"
 	| ArrayLit(el) -> "[ " ^ String.concat ", " (List.map string_of_expr el) ^ " ]"
 
+let string_of_parallel_expr = function
+	| Invocation(e) -> string_of_expr e
+	| ThreadCount(e) -> string_of_expr e
+
 let rec string_of_expr_list = function
 	| [] -> ""
 	| s::l -> string_of_expr s ^ "," ^ string_of_expr_list l
 
-let rec string_of_typ = function
+let rec string_of_typename = function
 	| Int -> "int"
 	| Bool -> "bool"
 	| Void -> "void"
 	| Float -> "float"
-	| Array(t, d) -> string_of_typ t ^ ( String.make d '[' ) ^ ( String.make d ']' )
+	| Array(t, d) -> string_of_typename t ^ ( String.make d '[' ) ^ ( String.make d ']' )
 
 let rec string_of_bind = function
-	| (str, typ) -> str ^ " : " ^ string_of_typ typ
+	| (n, t) -> n ^ " : " ^ string_of_typename t
 
-let rec string_of_bind_list = function
-	| [] -> ""
-	| hd::[] -> string_of_bind hd
-	| hd::tl -> string_of_bind hd ^ string_of_bind_list tl
-
-let rec string_of_var_decl = function
-	| VarDecl(binding,expr) -> "var " ^ string_of_bind binding ^ " = " ^ string_of_expr expr ^ ";\n"
+let string_of_var_binding = function 
+	| VarBinding(b, e) -> "var " ^ string_of_bind b ^ " = " ^ string_of_expr e ^ ";\n"
 
 let rec string_of_stmt_list = function
 	| [] -> ""
 	| hd::[] -> string_of_stmt hd
-	| hd::tl -> string_of_stmt hd ^ ";\n" ^ string_of_stmt_list tl ^ "\n"
+	| hd::tl -> string_of_stmt hd ^ string_of_stmt_list tl
 	and string_of_stmt = function
 		| Expr(expr) -> string_of_expr expr ^ ";\n"; 
 		| Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
 		| If(e, s, []) -> "if (" ^ string_of_expr e ^ ")\n" ^"{" ^  string_of_stmt_list s ^ "}"
 		| If(e, s, s2) -> "if (" ^ string_of_expr e ^ ")\n" ^"{" ^  string_of_stmt_list s ^ "}\n" ^ "else\n{" ^ string_of_stmt_list s2 ^"\n}"
-		| For(e1, e2, e3, s) -> "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list s ^ "}"
+		| For(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
+		| ForBy(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " to " ^ string_of_expr e2 ^ " by " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
 		| While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt_list s
-		| Break -> "break;\n"
+		| Break(n) -> ( if n == 1 then "break" else "break" ^ string_of_int n ) ^ ";\n"
 		| Continue -> "continue;\n"
-		| VarDecStmt(vdecl) -> string_of_var_decl vdecl
-		| Parallel(el,sl) -> "parallel( invocations = " ^ string_of_expr_list el ^ " )\n{\n" ^ string_of_stmt_list sl ^ "\n}\n" 
+		| Var(vdef) -> string_of_var_binding vdef
+		| Parallel(pel,sl) -> "parallel(" ^ (String.concat ", " (List.map string_of_parallel_expr pel)) ^ " )\n{\n" ^ string_of_stmt_list sl ^ "\n}\n" 
 		| Atomic(sl) -> "atomic {\n" ^ string_of_stmt_list sl ^ "}\n"
 
-let string_of_func_decl fdecl =
+let string_of_function_definition fdecl =
 	"fun " ^  fdecl.func_name 
-    ^ "(" ^ string_of_bind_list fdecl.func_parameters ^ ") :" 
-    ^ string_of_typ fdecl.func_return_type  ^ "{\n" 
+    ^ "(" ^ (String.concat ", " (List.map string_of_bind fdecl.func_parameters)) ^ ") : " 
+    ^ string_of_typename fdecl.func_return_type  ^ "{\n" 
     ^ string_of_stmt_list fdecl.func_body 
-    ^ "}"
+    ^ "}\n"
 
-let string_of_decl = function
-	| Func(fdecl) -> string_of_func_decl fdecl
-	| Var(vdecl) -> string_of_var_decl vdecl
-
-let rec string_of_decls_list = function
-	| [] -> ""
-	| hd::[] -> string_of_decl hd
-	| hd::tl -> string_of_decl hd ^ string_of_decls_list tl
+let rec string_of_definition = function
+	| FuncDef(fdef) -> string_of_function_definition fdef
+	| VarDef(vdef) -> string_of_var_binding vdef
+	| NamespaceDef(sl, defs) -> "namespace {\n" ^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
 
 let string_of_program p = 
-	string_of_decls_list p
+	(String.concat "" (List.map string_of_definition p) )
