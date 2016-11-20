@@ -1,5 +1,7 @@
-fun main () : int {
+
+
+fun main () : BAD {
 	parallel {
-		
+				
 	}
 }

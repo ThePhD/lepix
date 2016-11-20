@@ -16,6 +16,7 @@ let reverse_list l =
 %token PLUS MINUS TIMES DIVIDE ASSIGN 
 %token MODULO
 %token NOT AND OR EQ NEQ LT LEQ GT GEQ
+%token AMP
 %token TRUE FALSE
 %token VAR LET
 %token FUN TO BY 
@@ -92,11 +93,11 @@ expr:
 | LPAREN expr RPAREN { $2 }
 
 binding:
-| ID COLON type_name { ($1,$3) }
+| ID COLON type_name { ($1,$3, false) }
 
 params_list: { [] }
-| ID COLON type_name { [($1,$3)] }
-| ID COLON type_name COMMA params_list { ($1,$3)::$5 }
+| ID COLON type_name { [($1,$3, false)] }
+| ID COLON type_name COMMA params_list { ($1,$3, false)::$5 }
 
 variable_definition:
 | VAR binding ASSIGN expr SEMI { VarBinding($2,$4) }

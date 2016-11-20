@@ -130,7 +130,7 @@ let generate (ast) =
 
 	let gen_function_definition f = 
 		(* Generate the function with its signature *)
-		let args_t = Array.of_list (List.map (fun (_, t) -> ast_to_llvm_type t) f.A.func_parameters) in
+		let args_t = Array.of_list (List.map (fun (_, t, _) -> ast_to_llvm_type t) f.A.func_parameters) in
 		let sig_t = L.function_type (ast_to_llvm_type f.A.func_return_type) args_t in
 		let ll_func = L.define_function f.A.func_name sig_t m in
 		(* generate the body *)

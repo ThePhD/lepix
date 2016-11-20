@@ -1,4 +1,25 @@
-(* Abstract Syntax Tree *)
+(* LePiX Language Compiler Implementation
+Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this 
+software and associated documentation files (the "Software"), to deal in the Software 
+without restriction, including without limitation the rights to use, copy, modify, 
+merge, publish, distribute, sublicense, and/or sell copies of the Software, and to 
+permit persons to whom the Software is furnished to do so, subject to the following 
+conditions:
+
+The above copyright notice and this permission notice shall be included in all copies 
+or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
+
+(* Types and routines for the abstract syntax tree and 
+representation of a LePiX program. *)
 
 type binary_op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
 	| And | Or
@@ -13,7 +34,7 @@ type builtin_type =
 	| Float 
 	| Array of builtin_type * int
 
-type bind = string * builtin_type
+type bind = string * builtin_type * bool
 
 type name = string
 type qualified_id = string list
@@ -119,7 +140,7 @@ let rec string_of_typename = function
 	| Array(t, d) -> string_of_typename t ^ ( String.make d '[' ) ^ ( String.make d ']' )
 
 let rec string_of_bind = function
-	| (n, t) -> n ^ " : " ^ string_of_typename t
+	| (n, t, r) -> n ^ " : " ^ ( if r then "&" else "" ) ^ string_of_typename t
 
 let string_of_var_binding = function 
 	| VarBinding(b, e) -> "var " ^ string_of_bind b ^ " = " ^ string_of_expr e ^ ";\n"
@@ -152,7 +173,8 @@ let string_of_function_definition fdecl =
 let rec string_of_definition = function
 	| FuncDef(fdef) -> string_of_function_definition fdef
 	| VarDef(vdef) -> string_of_var_binding vdef
-	| NamespaceDef(sl, defs) -> "namespace {\n" ^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
+	| NamespaceDef(sl, defs) -> "namespace " ^ ( String.concat "." sl ) ^ "{\n" 
+		^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
 
 let string_of_program p = 
 	(String.concat "" (List.map string_of_definition p) )
