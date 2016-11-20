@@ -9,12 +9,19 @@ let reverse_list l =
 	builder [] l
 %}
 
-%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA LSQUARE RSQUARE COLON FUN TO BY 
+%token SEMI LPAREN RPAREN LBRACE RBRACE COMMA 
+%token LSQUARE RSQUARE COLON
+%token DOT 
 %token PARALLEL INVOCATIONS ATOMIC THREADCOUNT
-%token PLUS MINUS TIMES DIVIDE ASSIGN NOT EQ NEQ LT LEQ GT GEQ TRUE FALSE AND OR VAR
+%token PLUS MINUS TIMES DIVIDE ASSIGN 
+%token MODULO
+%token NOT AND OR EQ NEQ LT LEQ GT GEQ
+%token TRUE FALSE
+%token VAR LET
+%token FUN TO BY 
 %token RETURN CONTINUE BREAK IF ELSE FOR WHILE
 %token INT BOOL VOID FLOAT
-%token DOT NAMESPACE
+%token NAMESPACE
 %token <string> ID
 %token <int> INTLITERAL
 %token <float> FLOATLITERAL
@@ -30,6 +37,7 @@ let reverse_list l =
 %left PLUS MINUS
 %left TIMES DIVIDE
 %right NOT NEG
+%left DOT
 
 %start program
 %type<Ast.prog> program
@@ -50,9 +58,12 @@ type_name:
 | VOID { Void }
 | type_name array_spec { Array($1, $2); }
 
-qualified_id:
+qualified_id_builder:
 | ID { [$1] }
 | qualified_id DOT ID { $3::$1 }
+
+qualified_id:
+| qualified_id_builder { reverse_list $1 }
 
 expr:
 | qualified_id { Id($1) }
@@ -65,19 +76,20 @@ expr:
 | qualified_id LPAREN args_list RPAREN  { Call(Id($1),$3)  }
 | MINUS expr %prec NEG { PrefixUnaryOp(Neg, $2) }
 | NOT expr { PrefixUnaryOp(Not, $2) }
-| expr TIMES expr { BinaryOp( $1, Mult, $3) }
-| expr DIVIDE expr { BinaryOp( $1, Div, $3)  }
-| expr PLUS expr { BinaryOp( $1, Add, $3) }
-| expr MINUS expr { BinaryOp( $1, Sub, $3) }
-| expr LT expr { BinaryOp( $1, Less, $3) }
-| expr GT expr { BinaryOp( $1, Greater, $3) }
-| expr LEQ expr { BinaryOp( $1, Leq, $3) }
-| expr GEQ expr { BinaryOp( $1, Geq, $3) }
-| expr NEQ expr { BinaryOp( $1, Neq, $3) }
-| expr EQ expr { BinaryOp( $1, Equal, $3) }
-| expr AND expr { BinaryOp( $1, And, $3) }
-| expr OR expr { BinaryOp( $1, Or, $3) }
+| expr TIMES expr { BinaryOp($1, Mult, $3) }
+| expr DIVIDE expr { BinaryOp($1, Div, $3)  }
+| expr PLUS expr { BinaryOp($1, Add, $3) }
+| expr MINUS expr { BinaryOp($1, Sub, $3) }
+| expr LT expr { BinaryOp($1, Less, $3) }
+| expr GT expr { BinaryOp($1, Greater, $3) }
+| expr LEQ expr { BinaryOp($1, Leq, $3) }
+| expr GEQ expr { BinaryOp($1, Geq, $3) }
+| expr NEQ expr { BinaryOp($1, Neq, $3) }
+| expr EQ expr { BinaryOp($1, Equal, $3) }
+| expr AND expr { BinaryOp($1, And, $3) }
+| expr OR expr { BinaryOp($1, Or, $3) }
 | qualified_id ASSIGN expr { Assign($1, $3) }
+| LPAREN expr RPAREN { $2 }
 
 binding:
 | ID COLON type_name { ($1,$3) }
@@ -99,7 +111,7 @@ statement_list :
 | statement_list_builder { reverse_list $1 }
 
 parallel_binding:
-| INVOCATIONS ASSIGN expr { Invocation($3) }
+| INVOCATIONS ASSIGN expr { Invocations($3) }
 | THREADCOUNT ASSIGN expr { ThreadCount($3) }
 
 parallel_binding_list_builder: { [] }
@@ -122,6 +134,7 @@ statement:
 | CONTINUE SEMI { Continue }
 | variable_definition { Var($1) }
 | PARALLEL LPAREN parallel_binding_list RPAREN LBRACE statement_list RBRACE  { Parallel($3,$6) }
+| PARALLEL LBRACE statement_list RBRACE  { Parallel([ThreadCount(IntLit(-1)); Invocations(IntLit(-1))],$3) }
 | ATOMIC LBRACE statement_list RBRACE { Atomic($3) }
 
 decls_list : { [] }

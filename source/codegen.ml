@@ -73,6 +73,8 @@ let generate (ast) =
 		(* TODO: do code generation for these *)
 		| A.Access(e, el) ->
 			L.const_int i32_t 0
+		| A.MemberAccess(e, el) ->
+			L.const_int i32_t 0
 		| A.BinaryOp(e1, op, e2) ->
 			L.const_int i32_t 0
 		| A.PrefixUnaryOp(op, e1) ->

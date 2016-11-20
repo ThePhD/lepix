@@ -3,7 +3,7 @@
 { open Parser }
 
 rule token = parse
-  [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
+| [' ' '\t' '\r' '\n'] { token lexbuf } (* Whitespace *)
 | "/*"     { mcomment 0 lexbuf }           (* Mult-iline Comments *)
 | "//"	   { scomment lexbuf }		(* Single-line Comments *)
 | '('      { LPAREN }
@@ -27,6 +27,7 @@ rule token = parse
 | ">"      { GT }
 | ">="     { GEQ }
 | "&&"     { AND }
+| "%"      { MODULO }
 | '.'      { DOT }
 | "||"     { OR }
 | "!"      { NOT }

@@ -1,10 +1,10 @@
-(* Abstract Syntax Tree*)
+(* Abstract Syntax Tree *)
 
 type binary_op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
-    | And | Or
+	| And | Or
 
 type prefix_unary_op = 
-| Neg | Not
+	| Neg | Not
 
 type builtin_type = 
 	| Int 
@@ -15,13 +15,17 @@ type builtin_type =
 
 type bind = string * builtin_type
 
+type name = string
+type qualified_id = string list
+
 type expr =
 	| BoolLit of bool
 	| IntLit of int
 	| FloatLit of float
-	| Id of string list
+	| Id of qualified_id
 	| Call of expr * expr list
-	| Access of expr * expr list 
+	| Access of expr * expr list
+	| MemberAccess of expr * name 
 	| BinaryOp of expr * binary_op * expr
 	| PrefixUnaryOp of prefix_unary_op * expr 
 	| Assign of string list * expr   
@@ -32,7 +36,7 @@ type variable_definition =
 	| VarBinding of bind * expr
 
 type parallel_expr =
-	| Invocation of expr
+	| Invocations of expr
 	| ThreadCount of expr
 
 type stmt =
@@ -92,6 +96,7 @@ let rec string_of_expr = function
 		string_of_expr e1 ^ " " ^ string_of_binary_op o ^ " " ^ string_of_expr e2
 	| PrefixUnaryOp(o, e) -> string_of_unary_op o ^ string_of_expr e
 	| Access(e, l) -> string_of_expr e ^ "[" ^ (String.concat ", " (List.map string_of_expr l)) ^ "]"
+	| MemberAccess(e, s) -> string_of_expr e ^ "." ^ s
 	| Assign(sl, e) -> ( String.concat "." sl ) ^ " = " ^ string_of_expr e
 	| Call(e, el) ->
 		string_of_expr e ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
@@ -99,7 +104,7 @@ let rec string_of_expr = function
 	| ArrayLit(el) -> "[ " ^ String.concat ", " (List.map string_of_expr el) ^ " ]"
 
 let string_of_parallel_expr = function
-	| Invocation(e) -> string_of_expr e
+	| Invocations(e) -> string_of_expr e
 	| ThreadCount(e) -> string_of_expr e
 
 let rec string_of_expr_list = function
