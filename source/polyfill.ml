@@ -37,37 +37,50 @@ let string_to_list s =
 	String.iter acc s;
 	List.rev !l
 
-let string_split v s =
-	let b = ref 0 in
-	let e = String.length s in
-	let vlen = String.length v in
-	let lastmatch = ref 0 in
-	if vlen >= e then
-		[s]
-	else
-		let slist = ref [] in
-		let add_sub start len =
-			let fresh = ( String.sub s start len ) in 
-			slist := fresh :: !slist;
-			lastmatch := start + len + vlen;
-			b := !lastmatch;
-		in
-		while (!b < e) do
-			if s.[!b] <> v.[0] then
-				b := 1 + !b
-			else 
-				let start = !b in
-				let currb = ref (1 + start) in
-				let found = ref true in
-				for vb = 1 to (vlen - 1) do
-					found := !found && ( s.[!currb] = v.[vb] );
-					currb := !currb + 1
-				done;
-				let len = start - !lastmatch in
-				if !found then (add_sub !lastmatch len)
-		done;
-		if !lastmatch < e then
-			add_sub !lastmatch (e - !lastmatch);
+let foldi f value start_index len =
+	let end_index = start_index + len - 1 in
+	if start_index >= end_index then value else
+	let accumulated = ref value 
+	in
+	for i = start_index to end_index do
+		accumulated := ( f !accumulated i )
+	done;
+	!accumulated
 
-		(* Return complete split list *)
-		List.rev !slist
+let iteri f start_index len =
+	let end_index = start_index + len - 1 in
+	if start_index < end_index then
+		for i = start_index to end_index do
+			( f i )
+		done
+
+let string_split v s =
+	let e = String.length s
+	and vlen = String.length v 
+	in 
+	if vlen >= e then [s] else
+	let forward_search start =
+		let acc found idx =
+			found && ( s.[start + idx] = v.[idx] )
+		in
+		foldi acc true 1 (vlen - 1)
+	in
+	let add_sub start len =
+		let fresh = ( String.sub s start len ) in 
+		slist := fresh :: !slist;
+		start + len + vlen
+	in
+	let acc (b, slist, last) start =
+		if (b < last) then (b, slist, last) else
+		if ( s.[b] = v.[0] ) then
+			let len = start - !lastmatch in
+			if (forward_search b) then 
+				(add_sub start len)
+			else
+				(1 + b, slist, last) 
+		else 
+			(1 + b, slist, last)
+	in
+	let (b, slist) = foldi acc (0, []) 0 e;
+	(* Return complete split list *)
+	List.rev slist
