@@ -23,7 +23,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 { 
 	open Parser
 
-	let current_line = ref 1
     let sourcename = ref ""
 }
 
@@ -32,7 +31,7 @@ let newline = ['\n']
 
 rule token = parse
 | whitespace { token lexbuf }
-| newline  { incr current_line; Lexing.new_line lexbuf; token lexbuf }
+| newline  { Lexing.new_line lexbuf; token lexbuf }
 | "/*"     { multi_comment 0 lexbuf }
 | "//"	   { single_comment lexbuf }
 | '('      { LPAREN }
@@ -88,15 +87,15 @@ rule token = parse
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
-| _ as char { raise (Failure("illegal character " ^ Char.escaped char)) }
+| _ as c { raise (Error.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 and multi_comment level = parse
-| newline { incr current_line; Lexing.new_line lexbuf; multi_comment level lexbuf }
+| newline { Lexing.new_line lexbuf; multi_comment level lexbuf }
 |  "*/" { if level = 0 then token lexbuf else multi_comment (level-1) lexbuf }
 |  "/*" { multi_comment (level+1) lexbuf }
 | _    { multi_comment level  lexbuf }
 
 and single_comment = parse
-| newline { incr current_line; Lexing.new_line lexbuf; token lexbuf }
+| newline { Lexing.new_line lexbuf; token lexbuf }
 | _    { single_comment lexbuf }
 

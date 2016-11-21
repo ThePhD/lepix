@@ -21,35 +21,84 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 (* Top-level of the LePiX compiler: scan & parse the input,
    check the resulting AST, generate LLVM IR, and dump the module *)
 
-type action = Token | Ast | Ir | Compile
+type action = 
+	| Tokens
+	| Ast
+	| Semantic
+	| Llvm
+	| Compile
 
-let _ = let action = if Array.length Sys.argv > 1 then
-	List.assoc Sys.argv.(1) [ 
-		("-t", Token);	(* Print the tokens *)
-		("-a", Ast);	(* Print the AST *)
-		("-l", Ir);  (* Generate LLVM, don't check *)
-		("-c", Compile) (* Generate LLVM and check it, check LLVM IR *)
-	]
-	else Ir in
+let action_to_int = function
+	| Tokens -> 0
+	| Ast -> 1
+	| Semantic -> 2
+	| Llvm -> 3
+	| Compile -> 100
+
+let _ = 
+	let action = Llvm in
+	let context = { 
+		Driver.parser_line_number = 0; 
+		Driver.parser_token = Parser.EOF;
+		Driver.parser_token_count = 0;
+		Driver.parser_token_number = 0;
+		Driver.parser_token_range = (0, 0);
+		Driver.parser_source_name = "";
+	} in
+	let options = [
+		( "p", "pipe", "Take input from standard in", fun ( s ) -> () );
+		( "o", "output", "Set the output file", fun ( s ) -> () );
+		( "t", "tokens", "Print the stream of tokens", fun ( s ) -> () );
+		( "a", "ast", "Print the parsed Program", fun ( s ) -> () );
+		( "s", "semantic", "Print the Semantic Program", fun ( s ) -> () );
+		( "l", "llvm", "Print the generated LLVM code", fun ( s ) -> () );
+		( "c", "compile", "Compile to the desired input and output the final LLVM", fun ( s ) -> () );
+	] in
 	try 
 		let lexbuf = Lexing.from_channel stdin in
 		let tokenstream = Driver.lex lexbuf ":stdin" in match action with
-		| Token -> print_endline( Representation.token_list_to_string tokenstream )
-		| Ast -> let program = Driver.parse tokenstream in
-			Driver.analyze program; print_endline (Ast.string_of_program program)
-		| Ir -> let program = Driver.parse tokenstream in
-			Driver.analyze program; let m = Codegen.generate program in
+		| Tokens -> print_endline( Representation.token_list_to_string tokenstream )
+		| Ast -> let program = Driver.parse tokenstream context in
+			print_endline (Representation.string_of_program program)
+		| Semantic -> let program = Driver.parse tokenstream context in
+			let semanticprogram = Driver.analyze program in 
+			print_endline (Representation.string_of_program semanticprogram)
+		| Llvm -> let program = Driver.parse tokenstream context in
+			let semanticprogram = Driver.analyze program in 
+			let m = Codegen.generate semanticprogram in
 			print_endline (Llvm.string_of_llmodule m)
-		| Compile -> let program = Driver.parse tokenstream in
-			Driver.analyze program; let m = Codegen.generate program in
+		| Compile -> let program = Driver.parse tokenstream context in
+			let semanticprogram = Driver.analyze program in 
+			let m = Codegen.generate semanticprogram in
 			Llvm_analysis.assert_valid_module m;
 			print_endline (Llvm.string_of_llmodule m)
+		;
+		exit 0
 	with
+		(* Lexer Errors *)
+		| Error.UnknownCharacter( c, (s, e) ) ->
+			let relpos = 1 + s.Lexing.pos_cnum - s.Lexing.pos_bol in
+			let endrelpos = 1 + e.Lexing.pos_cnum - e.Lexing.pos_bol in		
+			let msg = "Lexing Error:"
+			^ "\n" ^ "\t" ^ "Unrecognized character in program: " ^  c
+			^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
+			^ "\n" ^ "\t" ^ "Character: " ^ Representation.token_range_to_string ( relpos, endrelpos )	
+			in
+			print_endline msg;
+		
+		(* Parser Errors *)
 		| Parsing.Parse_error ->
 			let msg = "Parsing Error:" 
-			^ "\n" ^ "\t" ^ "Line: " ^ string_of_int !Driver.parser_line_number
-			^ "\n" ^ "\t" ^ "Character: " ^ Representation.token_range_to_string !Driver.parser_token_range
-			^ "\n" ^ "\t" ^ "Syntax Error at token #" ^ ( string_of_int !Driver.parser_token_count ) 
-				^ ": [id " ^ string_of_int !Driver.parser_token_number ^ ":" ^ Representation.token_to_string !Driver.parser_token ^ "]"
+			^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int context.Driver.parser_token_count )
+			^ "\n" ^ "\t" ^ "Line: " ^ string_of_int context.Driver.parser_line_number
+			^ "\n" ^ "\t" ^ "Character: " ^ Representation.token_range_to_string context.Driver.parser_token_range
+				^ ": [id " ^ string_of_int context.Driver.parser_token_number ^ ":" ^ Representation.token_to_string context.Driver.parser_token ^ "]"
 			in
-			print_endline msg
+			print_endline msg;
+		| Error.MissingEoF ->
+			let msg = "Parsing Error:" 
+			^ "\n" ^ "\t" ^ "Missing EoF at end of token stream (bad lexer input?)" 
+			in
+			print_endline msg;
+		;
+		exit 1;

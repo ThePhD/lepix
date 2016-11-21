@@ -21,6 +21,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 (* Contains routines for string-ifying various parts of the
 infrastructure of the compiler, to make it easy to understand what the fuck we're doing. *)
 
+(* Lexer types: dumping and pretty printing tokens *)
+
 let token_to_string = function
 	| Parser.LPAREN -> "LPAREN"	
 	| Parser.RPAREN -> "RPAREN"	
@@ -95,3 +97,96 @@ let token_list_to_string token_list =
 		^ token_source_to_string pos ^ "] " 
 		^ helper tail
 	| [] -> "\n" in helper token_list
+
+
+(* Program types: Dump and Pretty-Printing Functions *)
+
+let string_of_binary_op = function
+	| Ast.Add -> "+"
+	| Ast.Sub -> "-"
+	| Ast.Mult -> "*"
+	| Ast.Div -> "/"
+	| Ast.Equal -> "=="
+	| Ast.Neq -> "!="
+	| Ast.Less -> "<"
+	| Ast.Leq -> "<="
+	| Ast.Greater -> ">"
+	| Ast.Geq -> ">="
+	| Ast.And -> "&&"
+	| Ast.Or -> "||"
+
+let string_of_unary_op = function
+	| Ast.Neg -> "-"
+	| Ast.Not -> "!"
+
+let rec string_of_expr = function
+	| Ast.IntLit(l) -> string_of_int l
+	| Ast.BoolLit(true) -> "true"
+	| Ast.BoolLit(false) -> "false"
+	| Ast.FloatLit(f) -> string_of_float f
+	| Ast.Id(sl) -> String.concat "." sl
+	| Ast.BinaryOp(e1, o, e2) ->
+		string_of_expr e1 ^ " " ^ string_of_binary_op o ^ " " ^ string_of_expr e2
+	| Ast.PrefixUnaryOp(o, e) -> string_of_unary_op o ^ string_of_expr e
+	| Ast.Access(e, l) -> string_of_expr e ^ "[" ^ (String.concat ", " (List.map string_of_expr l)) ^ "]"
+	| Ast.MemberAccess(e, s) -> string_of_expr e ^ "." ^ s
+	| Ast.Assign(sl, e) -> ( String.concat "." sl ) ^ " = " ^ string_of_expr e
+	| Ast.Call(e, el) ->
+		string_of_expr e ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+	| Ast.Noexpr -> "{ Noop }"
+	| Ast.ArrayLit(el) -> "[ " ^ String.concat ", " (List.map string_of_expr el) ^ " ]"
+
+let string_of_parallel_expr = function
+	| Ast.Invocations(e) -> string_of_expr e
+	| Ast.ThreadCount(e) -> string_of_expr e
+
+let rec string_of_expr_list = function
+	| [] -> ""
+	| s::l -> string_of_expr s ^ "," ^ string_of_expr_list l
+
+let rec string_of_typename = function
+	| Ast.Int -> "int"
+	| Ast.Bool -> "bool"
+	| Ast.Void -> "void"
+	| Ast.Float -> "float"
+	| Ast.Array(t, d) -> string_of_typename t ^ ( String.make d '[' ) ^ ( String.make d ']' )
+
+let rec string_of_bind = function
+	| (n, t, r) -> n ^ " : " ^ ( if r then "&" else "" ) ^ string_of_typename t
+
+let string_of_var_binding = function 
+	| Ast.VarBinding(b, e) -> "var " ^ string_of_bind b ^ " = " ^ string_of_expr e ^ ";\n"
+
+let rec string_of_stmt_list = function
+	| [] -> ""
+	| hd::[] -> string_of_stmt hd
+	| hd::tl -> string_of_stmt hd ^ string_of_stmt_list tl
+	and string_of_stmt = function
+		| Ast.Expr(expr) -> string_of_expr expr ^ ";\n"; 
+		| Ast.Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
+		| Ast.If(e, s, []) -> "if (" ^ string_of_expr e ^ ")\n" ^"{" ^  string_of_stmt_list s ^ "}"
+		| Ast.If(e, s, s2) -> "if (" ^ string_of_expr e ^ ")\n" ^"{" ^  string_of_stmt_list s ^ "}\n" ^ "else\n{" ^ string_of_stmt_list s2 ^"\n}"
+		| Ast.For(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
+		| Ast.ForBy(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " to " ^ string_of_expr e2 ^ " by " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
+		| Ast.While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt_list s
+		| Ast.Break(n) -> ( if n == 1 then "break" else "break" ^ string_of_int n ) ^ ";\n"
+		| Ast.Continue -> "continue;\n"
+		| Ast.Var(vdef) -> string_of_var_binding vdef
+		| Ast.Parallel(pel,sl) -> "parallel(" ^ (String.concat ", " (List.map string_of_parallel_expr pel)) ^ " )\n{\n" ^ string_of_stmt_list sl ^ "\n}\n" 
+		| Ast.Atomic(sl) -> "atomic {\n" ^ string_of_stmt_list sl ^ "}\n"
+
+let string_of_function_definition fdecl =
+	"fun " ^  fdecl.Ast.func_name 
+    ^ "(" ^ (String.concat ", " (List.map string_of_bind fdecl.Ast.func_parameters)) ^ ") : " 
+    ^ string_of_typename fdecl.Ast.func_return_type  ^ "{\n" 
+    ^ string_of_stmt_list fdecl.Ast.func_body 
+    ^ "}\n"
+
+let rec string_of_definition = function
+	| Ast.FuncDef(fdef) -> string_of_function_definition fdef
+	| Ast.VarDef(vdef) -> string_of_var_binding vdef
+	| Ast.NamespaceDef(sl, defs) -> "namespace " ^ ( String.concat "." sl ) ^ "{\n" 
+		^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
+
+let string_of_program p = 
+	(String.concat "" (List.map string_of_definition p) )

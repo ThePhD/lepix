@@ -4,12 +4,8 @@ open Ast
 
 module StringMap = Map.Make(String)
 
-type result = 
-| Okay 
-| Error
-
 let check (ast) = 
-    Okay
+    ast
 
 
 
