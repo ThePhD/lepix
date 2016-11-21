@@ -18,164 +18,27 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Semantic checking for the Lepix compiler that will produce a new 
-SemanticProgram type with things like locals group into a single type 
-and type promotions / conversions organized for operators. *)
-
-open Ast
-
-module StringMap = Map.Make(String)
-
-let check (ast) = 
-    ast
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(* These subroutines are for the specific purpose of 
+working with the file system, since we are not using Batteries Included of Jane Street's
+Core.Std and the like in our implementation so far... *)
+
+let lines_in_file f filename =
+	let chan = open_in filename in
+	try while true do f(input_line chan) done
+	with End_of_file -> close_in chan
+;;
+
+let read_text filename =
+	(* Read all the lines into a reference and return
+	the value itself *)
+	let result = ref "" in
+	lines_in_file ( fun line -> result := !result ^ line ) filename;
+	!result
+;;
+
+let write_text text filename =
+	let chan = open_out filename in (* create or truncate file, return channel *)
+		Printf.fprintf chan "%s\n" text; (* write something *)
+	(* flush and close the channel *)
+	close_out chan
+;; 

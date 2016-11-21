@@ -21,8 +21,19 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 (* A listing of exceptions and the methods that power them
 to make the parser more expressive *)
 
+(* Driver and Related class of errors *)
+let option_error_exit_code = 1
+
+(* Option Errors *)
+exception NoOption
+exception BadOption of string
+exception MissingOption of string
+exception OptionFileNotFound of string
+
+(* Compiler class of Errors *)
+let compiler_error_exit_code = 2
 (* Lexer Errors *)
-exception UnknownCharacter of string * ( Lexing.position * Lexing.position )
+exception UnknownCharacter of string * string * ( Lexing.position * Lexing.position )
 
 (* Parser Errors *)
 exception MissingEoF

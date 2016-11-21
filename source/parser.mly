@@ -24,12 +24,6 @@ menhir, as we have developed against both for testing purposes. *)
 
 open Ast
 
-let reverse_list l =
-	let rec builder acc = function
-	| [] -> acc
-	| hd::tl -> builder (hd::acc) tl
-	in 
-	builder [] l
 %}
 
 %token SEMI LPAREN RPAREN LBRACE RBRACE COMMA 
@@ -87,7 +81,7 @@ qualified_id_builder:
 | qualified_id DOT ID { $3::$1 }
 
 qualified_id:
-| qualified_id_builder { reverse_list $1 }
+| qualified_id_builder { List.rev $1 }
 
 expr:
 | qualified_id { Id($1) }
@@ -132,7 +126,7 @@ statement_list_builder: { [] }
 | statement_list_builder statement { $2::$1 }
 
 statement_list :
-| statement_list_builder { reverse_list $1 }
+| statement_list_builder { List.rev $1 }
 
 parallel_binding:
 | INVOCATIONS ASSIGN expr { Invocations($3) }
@@ -143,7 +137,7 @@ parallel_binding_list_builder: { [] }
 | parallel_binding_list_builder COMMA parallel_binding { $3::$1 }
 
 parallel_binding_list:
-| parallel_binding_list_builder { reverse_list $1 }
+| parallel_binding_list_builder { List.rev $1 }
 
 statement:
 | expr SEMI { Expr($1) }
@@ -167,4 +161,4 @@ decls_list : { [] }
 | decls_list NAMESPACE qualified_id LBRACE decls_list RBRACE { NamespaceDef($3, $5)::$1 }
 
 program:
-| decls_list EOF { reverse_list $1 }
+| decls_list EOF { List.rev $1 }
