@@ -66,6 +66,7 @@ let string_split v s =
 		foldi acc true 1 (vlen - 1)
 	in
 	let add_sub start len slist =
+		if len < 1 then ( start, slist ) else
 		let fresh = ( String.sub s start len ) 
 		and last = start + len + vlen in
 		( last, fresh :: slist )
