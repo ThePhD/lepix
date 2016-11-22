@@ -68,23 +68,23 @@ let string_split v s =
 	let add_sub start len slist =
 		let fresh = ( String.sub s start len ) 
 		and last = start + len + vlen in
-		( last, last, fresh :: slist )
+		( last, fresh :: slist )
 	in
-	let acc (b, last, slist) start =
-		if (b < last) then (1 + b, last, slist) else
-		if ( s.[b] = v.[0] ) then
-			if (forward_search b) then 
+	let acc (last, slist) start =
+		if (start < last) then (last, slist) else
+		if ( s.[start] = v.[0] ) then
+			if (forward_search start) then 
 				let len = start - last in
 				(add_sub last len slist)
 			else
-				(1 + b, last, slist) 
+				(last, slist) 
 		else 
-			if b == ( e - 1 ) then
+			if ( start = ( e - 1 ) ) then
 				let len = e - last in
 				(add_sub last len slist)			
 			else
-				(1 + b, last, slist)
+				(last, slist)
 	in
-	let (b, last, slist) = ( foldi acc (0, 0, []) 0 e ) in
+	let (_, slist) = ( foldi acc (0, []) 0 e ) in
 	(* Return complete split list *)
 	List.rev slist
