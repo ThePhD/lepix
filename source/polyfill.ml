@@ -65,22 +65,26 @@ let string_split v s =
 		in
 		foldi acc true 1 (vlen - 1)
 	in
-	let add_sub start len =
-		let fresh = ( String.sub s start len ) in 
-		slist := fresh :: !slist;
-		start + len + vlen
+	let add_sub start len slist =
+		let fresh = ( String.sub s start len ) 
+		and last = start + len + vlen in
+		( last, last, fresh :: slist )
 	in
-	let acc (b, slist, last) start =
-		if (b < last) then (b, slist, last) else
+	let acc (b, last, slist) start =
+		if (b < last) then (1 + b, last, slist) else
 		if ( s.[b] = v.[0] ) then
-			let len = start - !lastmatch in
 			if (forward_search b) then 
-				(add_sub start len)
+				let len = start - last in
+				(add_sub last len slist)
 			else
-				(1 + b, slist, last) 
+				(1 + b, last, slist) 
 		else 
-			(1 + b, slist, last)
+			if b == ( e - 1 ) then
+				let len = e - last in
+				(add_sub last len slist)			
+			else
+				(1 + b, last, slist)
 	in
-	let (b, slist) = foldi acc (0, []) 0 e;
+	let (b, last, slist) = ( foldi acc (0, 0, []) 0 e ) in
 	(* Return complete split list *)
 	List.rev slist
