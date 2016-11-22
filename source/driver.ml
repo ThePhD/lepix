@@ -72,16 +72,22 @@ let action_to_int = function
 	| Llvm -> 3
 	| Compile -> 100
 
+type option =
+	| Dash of string
+	| DoubleDash of string
+	| Argument of int * string
+
 let read_options ocontext =
 	let argc = Array.length Sys.argv - 1 in
 	(* Skip first argument one (argv 0 is the path 
 	of the exec on pretty much all systems) *)
-	let argv = ( Array.sub Sys.argv 1 argc ) in
-	let action = ref Help in
-	let input = ref Pipe in 
-	let output = ref Pipe in 
-	let specified = ref [] in
-	let seen_stdin = ref false in
+	let argv = ( Array.sub Sys.argv 1 argc )
+	and action = ref Help
+	and input = ref Pipe 
+	and output = ref Pipe
+	and specified = ref []
+	and seen_stdin = ref false 
+	in
 	(* Our various options *)
 	let update_action a =
 		specified := a :: !specified;
@@ -90,13 +96,13 @@ let read_options ocontext =
 	in 
 	let options = [
 		( 1, "h", "help", "print the help message", 
-			fun _ _ -> ( action := Help ) 
+			fun _ _ -> ( update_action(Help) ) 
 		);
 		( 1, "p", "pipe", "Take input from standard in (default: stdin)", 
 			fun _ _ -> ( input := Pipe; seen_stdin := true ) 
 		);
 		( 2, "o", "output", "Set the output file (default: stdout)", 
-			fun _ o -> ( output := File(o); () ) 
+			fun _ o -> ( output := File(o) ) 
 		);
 		( 1, "t", "tokens", "Print the stream of tokens",
 			fun _ _ -> ( update_action(Tokens) ) 
@@ -113,7 +119,13 @@ let read_options ocontext =
 		( 1, "c", "compile", "Compile the desired input and output the final LLVM", 
 			fun _ _ -> ( update_action(Compile) ) 
 		);
-	] in
+	]
+	and position_option arg_index positional_index arg =
+		if Sys.file_exists arg then
+			input := File( arg )
+		else
+			raise(Error.OptionFileNotFound(arg))
+	in
 	let help tabulation =
 		let value_text = "<value>" in
 		let value_text_len = String.length value_text in
@@ -155,91 +167,106 @@ let read_options ocontext =
 	if argc < 1 then
 		(!input, !output, !action, !specified)
 	else
-	(* For stopping us from processing a second-option arg if we have it *)
-	let block = ref false in
-	(* Function for each argument *)
-	let f idx arg = 
-		if !block then block := false else
+	
+	let to_option idx arg = 
 		let arglen = String.length arg in
 		if arglen < 2 then raise(Error.BadOption(arg));
-		let is_dashed s = 
-			let isdash = s.[0] = '-' in
-			let isdoubledash = isdash && s.[1] = '-' in
-			let acc i b = 
-				i + (Polyfill.int_of_bool b)
+		let acc (count, block) idx = 
+			if block then (count, block) else
+			let dashed = ( arg.[idx] = '-' ) in
+			( count + ( Polyfill.int_of_bool dashed ), not dashed )
+		in
+		let (dashcount, _) = Polyfill.foldi acc ( 0, false ) 0 arglen in
+		let nodasharg = String.sub arg dashcount ( arglen - dashcount ) in 
+		match dashcount with
+			| 0 -> Argument(idx, nodasharg)
+			| 1 -> Dash(nodasharg)
+			| 2 -> DoubleDash(nodasharg)
+			| _ -> raise(Error.BadOption(arg))
+	in
+	(* Convert all arguments to the Option type first *)
+	let options_argv = Array.mapi to_option argv in
+	
+	(* Function for each argument *)
+	let f (index, positional_index, skip_next) option_arg =
+		if skip_next then (1 + index, positional_index, false) else 
+		let execute_on_match_sub_option ( opt_failure, should_block ) opt_string pred = match opt_failure with
+			(* There is some failure, so just propogate it through *)
+			| Some(x) -> ( opt_failure, should_block )
+			(* There is no failure, so now work with the list *)
+			| None -> begin match List.filter pred options with
+				(* We use filter instead of find because find is dumb and throws an
+				exception instead of just returning an optional because
+				whoever designed the OCaml standard library is an absolute
+				bell end. *)
+				| ( 1, _, _, _, f ) :: tail -> (* Only needs 1 argument *)
+					(f opt_string ""); 
+					( opt_failure, should_block )
+				| ( 2, _, _, _, f ) :: tail -> (* Needs 2 arguments, look ahead by 1 *)
+					if ( index + 1 ) >= argc  then 
+						raise(Error.MissingOption(opt_string));
+					let nextarg = ( options_argv.(1 + index) ) in 
+					let _ = match nextarg with
+						| Argument(idx, s) -> (f opt_string s)
+						| _ -> raise(Error.BadOption(opt_string))
+					in
+					( opt_failure, true )				
+				| _ -> (* Unhandled case: return new failure string *)
+					( Some opt_string, should_block )
+				end
+		and on_failure dashes opt arglist arg =
+			let msg = dashes ^ opt 
+				^ if ( List.length arglist ) > 1 then " ( in " ^ dashes ^ arg ^ " )" else "" 
 			in
-			( isdash, isdoubledash, ( List.fold_left acc 0 [ isdash; isdoubledash ] ) )
+			raise(Error.BadOption(msg))
 		in
-		let ( d, dd, dashcount ) = is_dashed arg in
-		let nodasharg = String.sub arg dashcount ( arglen - dashcount ) in
-		let make_arg_pairs l =
-			List.map (fun s -> ( s, false )) l
-		in
-		let execute_on_match_option (opt_failure, problems) opt_string use_short =
-			if problems then (opt_failure, problems) else
-			let pred = function 
-				| (_, short, long, _, f ) -> 
-					if use_short then
-						short = opt_string
-					else 
-						long = opt_string
-			in
-			try
-				match List.find pred options with
-					| ( 1, _, _, _, f ) -> 
-						(f opt_string ""); 
-						( opt_failure, false )
-					| ( 2, _, _, _, f ) -> 
-						if ( idx + 1 ) >= argc  then 
-							raise(Error.MissingOption(opt_string));
-						let nextarg = ( argv.(1 + idx) ) in
-						(f opt_string nextarg);
-						block := true;
-						( opt_failure, false )
-					| _ -> ( opt_string, true )
-			with
-				| _ -> ( opt_string, true )
-		in
-		match (d, dd) with
-			(* if it has a dash only *)
-			| ( true, false ) -> 
+		let ( should_skip_next, was_positional ) = match option_arg with
+			| Dash(arg) ->
+				(* if it has a dash only *)
 				(* each letter can be its own thing *)
-				let perletter (opt_failure, problems) ( c, _ ) = 
+				let perletter (opt_failure, should_break) c = 
 					let opt_string = ( String.make 1 c ) in
-					execute_on_match_option (opt_failure, problems) opt_string true
+					let short_pred (_, short, _, _, _ ) = 
+						short = opt_string
+					in
+					execute_on_match_sub_option (opt_failure, should_break) opt_string short_pred
 				in
 				(* look at every character. If there's 1 match among them, go crazy *)
-				let arglist = make_arg_pairs (Polyfill.string_to_list nodasharg) in
-				let (opt_failure, problems) = ( List.fold_left perletter ( "", false ) arglist ) in
-				if problems then 
-					let msg = "-" ^ opt_failure 
-						^ if ( List.length arglist ) > 1 then " ( in " ^ arg ^ " )" else "" 
-					in
-				raise(Error.BadOption(msg))
-			(* if it has a double dash... *)
-			| ( _, true ) -> 
+				let arglist = (Polyfill.string_to_list arg) in
+				let (opt_failure, causes_skip) = ( List.fold_left perletter ( None, false ) arglist ) in
+				begin match opt_failure with
+					| None -> 
+						( causes_skip, 0 )
+					| Some(opt) -> let _ = (on_failure "--" opt arglist arg) in 
+						( causes_skip, 0 )
+				end
+			| DoubleDash(arg) -> print_endline arg;
+				(* if it has a double dash... *)
 				(* each comma-delimeted word can be its own option *)
-				let perword (opt_failure, problems) ( opt_string, _ ) = 
-					execute_on_match_option (opt_failure, problems) opt_string false
+				let perword (opt_failure, problems) opt_string = 
+					let long_pred (_, _, long, _, _ ) =
+						long = opt_string
+					in
+					execute_on_match_sub_option (opt_failure, problems) opt_string long_pred
 				in
 				(* look at word character. If there's 1 match among them, go crazy *)
-				let arglist = make_arg_pairs (Polyfill.string_split "," nodasharg) in
-				let (opt_failure, problems) = ( List.fold_left perword ( "", false ) arglist ) in
-				if problems then 
-					let msg = "--" ^ opt_failure 
-						^ if ( List.length arglist ) > 1 then " ( in " ^ arg ^ " )" else "" 
-					in
-				raise(Error.BadOption(msg))
-			| ( false, false ) ->
-				(* otherwise, it's just a plain file *)
-				if Sys.file_exists arg then
-					input := File( arg )
-				else
-					raise(Error.OptionFileNotFound(arg))
-		;
+				let arglist = Polyfill.string_split "," arg in
+				let (opt_failure, causes_skip) = ( List.fold_left perword ( None, false ) arglist ) in
+				begin match opt_failure with
+					| None -> 
+						( causes_skip, 0 )
+					| Some(opt) -> let _ = (on_failure "--" opt arglist arg) in 
+						( causes_skip, 0 )
+				end
+			(* otherwise, it's just a positional argument *)
+			| Argument(idx, arg) ->
+				(position_option index positional_index arg);
+				( skip_next, 1 )
+		in
+		(1 + index, positional_index + was_positional, should_skip_next)
 	in
 	(* Iterate over the arguments *)
-	Array.iteri f argv;
+	let _ = Array.fold_left f (0, 0, false) options_argv in
 	(* Return tuple of input, output, action *)
 	( !input, !output, !action, !specified )
 
