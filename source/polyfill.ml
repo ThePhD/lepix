@@ -89,3 +89,7 @@ let string_split v s =
 	let (_, slist) = ( foldi acc (0, []) 0 e ) in
 	(* Return complete split list *)
 	List.rev slist
+
+let string_starts_with str pre =
+	let prelen = (String.length pre) in
+	prelen <= (String.length str ) && pre = (String.sub str 0 prelen)

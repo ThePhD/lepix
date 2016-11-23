@@ -170,19 +170,10 @@ let read_options ocontext =
 	
 	let to_option idx arg = 
 		let arglen = String.length arg in
-		if arglen < 2 then raise(Error.BadOption(arg));
-		let acc (count, block) idx = 
-			if block then (count, block) else
-			let dashed = ( arg.[idx] = '-' ) in
-			( count + ( Polyfill.int_of_bool dashed ), not dashed )
-		in
-		let (dashcount, _) = Polyfill.foldi acc ( 0, false ) 0 arglen in
-		let nodasharg = String.sub arg dashcount ( arglen - dashcount ) in 
-		match dashcount with
-			| 0 -> Argument(idx, nodasharg)
-			| 1 -> Dash(nodasharg)
-			| 2 -> DoubleDash(nodasharg)
-			| _ -> raise(Error.BadOption(arg))
+		match arg with
+			| _ when Polyfill.string_starts_with arg "--" -> DoubleDash((String.sub arg 2 (arglen - 2)))
+			| _ when Polyfill.string_starts_with arg "-" -> Dash((String.sub arg 1 (arglen - 1)))
+			| _ -> Argument(idx, arg)
 	in
 	(* Convert all arguments to the Option type first *)
 	let options_argv = Array.mapi to_option argv in
@@ -240,7 +231,7 @@ let read_options ocontext =
 					| Some(opt) -> let _ = (on_failure "--" opt arglist arg) in 
 						( causes_skip, 0 )
 				end
-			| DoubleDash(arg) -> print_endline arg;
+			| DoubleDash(arg) ->
 				(* if it has a double dash... *)
 				(* each comma-delimeted word can be its own option *)
 				let perword (opt_failure, problems) opt_string = 
