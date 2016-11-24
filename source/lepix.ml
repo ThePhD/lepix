@@ -69,11 +69,12 @@ let _ =
 				^ "\n" ^ "\t" ^ "File " ^ f ^ " was not found"
 				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
 				prerr_endline msg
-			| _ -> 
+			| err -> 
 				let msg = "Unknown Error:" 
 				^ "\n" ^ "\t" ^ "Contact the compiler vendor for more details and possibly include source code, or try simplifying the program" 
 				in
 				prerr_endline msg;
+				raise(err)
 		in
 		(* Exit if arguments are wrong *)
 		ignore( ( exit Error.option_error_exit_code ) )
@@ -180,10 +181,11 @@ let _ =
 				^ "\n" ^ "\t" ^ "Missing EoF at end of token stream (bad lexer input?)" 
 				in
 				prerr_endline msg;
-			| _ -> 
+			| err -> 
 				let msg = "Unknown Error:" 
 				^ "\n" ^ "\t" ^ "Contact the compiler vendor for more details and possibly include source code, or try simplifying the program" 
 				in
 				prerr_endline msg;
+				raise(err)
 		in
 		ignore( exit Error.compiler_error_exit_code )
