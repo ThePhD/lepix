@@ -93,7 +93,7 @@ let token_source_to_string t =
 let token_list_to_string token_list = 
 	let rec helper = function
 	| (token, pos) :: tail -> 
-		"[" ^ "id " ^ ( string_of_int pos.Driver.token_number ) ^ ( token_to_string token ) ^ ":" 
+		"[" ^ ( token_to_string token ) ^ ":" 
 		^ token_source_to_string pos ^ "] " 
 		^ helper tail
 	| [] -> "\n" in helper token_list
@@ -190,3 +190,32 @@ let rec string_of_definition = function
 
 let string_of_program p = 
 	(String.concat "" (List.map string_of_definition p) )
+
+(* Error message helpers *)
+let line_of_source src token_info =
+	let ( absb, abse ) = token_info.Driver.token_character_range 
+	and linestart = token_info.Driver.token_line_start
+	in
+	let ( lineend, _ ) =
+		let f (endindex, should_skip) idx =
+			let c = src.[idx] in
+			if should_skip then (endindex, true) else
+			(endindex + 1, c = '\n' || c = ';' || c = '}' || c = '{')
+		in
+		Polyfill.foldi f ( linestart, false ) linestart ( ( String.length src ) - linestart )
+	in
+	let srcline = String.sub src linestart (lineend - linestart) in
+	let srclinelen = String.length srcline in
+	let ( srcindent, _ ) = 
+		let f (s, should_skip) idx = 
+			let c = srcline.[idx] in
+			let ws = not ( Polyfill.is_whitespace c ) in
+			if should_skip || ws then (s, false) else
+			(s ^ ( String.make 1 c ), true)
+		in
+		Polyfill.foldi f ( "", false ) 0 srclinelen
+	in
+	let indentlen = String.length srcindent
+	and tokenlen = lineend - absb
+	in
+	( srcline, srcindent, (max ( srclinelen - indentlen - tokenlen ) 0 ) )

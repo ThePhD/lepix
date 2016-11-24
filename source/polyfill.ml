@@ -28,6 +28,14 @@ This is that thing, for OCrapml. *)
 (* Integer *)
 let int_of_bool b = if b then 1 else 0
 
+(* Char *)
+let is_whitespace = function
+	| ' ' -> true
+	| '\t' -> true
+	| '\n' -> true
+	| '\r' -> true
+	| _ -> false
+
 (* String *)
 let string_to_list s =
 	let l = ref [] in
@@ -45,7 +53,10 @@ let foldi f value start_index len =
 	for i = start_index to end_index do
 		accumulated := ( f !accumulated i )
 	done;
-	!accumulated
+	!accumulated	
+
+let foldi_to f value start_index end_index =
+	foldi f value start_index (end_index - start_index)
 
 let iteri f start_index len =
 	let end_index = start_index + len - 1 in

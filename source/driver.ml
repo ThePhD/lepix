@@ -27,17 +27,16 @@ type token_source = {
      token_source_name : string;
 	token_number : int;
      token_line_number : int;
+     token_line_start : int;
 	token_column_range : int * int;
 	token_character_range : int * int;
 }
 
 type driver_context = {
-     mutable parser_source_name : string;
-     mutable parser_line_number : int;
-	mutable parser_token : Parser.token;
-	mutable parser_token_count : int;
-	mutable parser_token_number : int;
-	mutable parser_token_range : int * int;
+     mutable driver_source_code : string;
+	mutable driver_token_count : int;
+     mutable driver_source_name : string;
+     mutable driver_token : Parser.token * token_source;
 }
 
 type options_context = {
@@ -265,18 +264,22 @@ let lex lexbuf sourcename =
 	Scanner.sourcename := sourcename;
 	let tokennumber = ref 0 in
 	let rec acc lexbuf tokens =
-		let next_token = Scanner.token lexbuf in
-		let startp = Lexing.lexeme_start_p lexbuf in
-		let endp = Lexing.lexeme_end_p lexbuf in
-		let line = startp.Lexing.pos_lnum in
-		let relpos = 1 + startp.Lexing.pos_cnum - startp.Lexing.pos_bol in
-		let endrelpos = 1 + endp.Lexing.pos_cnum - endp.Lexing.pos_bol in
-		let abspos = startp.Lexing.pos_cnum in
-		let endabspos = endp.Lexing.pos_cnum in
+		let next_token = Scanner.token lexbuf
+		and startp = Lexing.lexeme_start_p lexbuf
+		and endp = Lexing.lexeme_end_p lexbuf
+		in
+		let line = startp.Lexing.pos_lnum
+		and relpos = (1 + startp.Lexing.pos_cnum - startp.Lexing.pos_bol)
+		and endrelpos = (1 + endp.Lexing.pos_cnum - endp.Lexing.pos_bol) 
+		and abspos = startp.Lexing.pos_cnum
+		and endabspos = endp.Lexing.pos_cnum
+		in
 		let create_token token =
-			let t = ( token, { token_source_name = sourcename; token_number = !tokennumber; token_line_number = line; 
-			token_column_range = (relpos, endrelpos); token_character_range = (abspos, endabspos) } ) in
-			tokennumber := 1 + !tokennumber; 
+			let t = ( token, { token_source_name = sourcename; token_number = !tokennumber; 
+				token_line_number = line; token_line_start = startp.Lexing.pos_bol; 
+				token_column_range = (relpos, endrelpos); token_character_range = (abspos, endabspos) } 
+			) in
+			tokennumber := 1 + !tokennumber;
 			t
 		in
 		match next_token with
@@ -293,12 +296,9 @@ let parse token_list context =
 	let tokenizer _ = match !tokenlist with
 	(* Break each token down into pieces, info and all*)
 	| (token, info) :: rest -> 
-		context.parser_token_count <- 1 + context.parser_token_count;
-		context.parser_token_number <- info.token_number;
-		context.parser_line_number <- info.token_line_number;
-		context.parser_token <- token;
-		context.parser_token_range <- info.token_character_range;
-		context.parser_source_name <- info.token_source_name;
+		context.driver_source_name <- info.token_source_name;
+		context.driver_token_count <- 1 + context.driver_token_count;
+		context.driver_token <- ( token, info );
 		(* Shift the list down by one by referencing 
 		the beginning of the rest of the list *)
 		tokenlist := rest;

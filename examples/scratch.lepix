@@ -1,6 +1,6 @@
 fun main () : int {
-	?
 	parallel {
 				
 	}
+	var x : BAD = 24;
 }

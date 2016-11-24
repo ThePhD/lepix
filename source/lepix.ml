@@ -27,12 +27,14 @@ let _ =
 	let action = ref Driver.Llvm in
 	let specified = ref [] in
 	let context = { 
-		Driver.parser_line_number = 0; 
-		Driver.parser_token = Parser.EOF;
-		Driver.parser_token_count = 0;
-		Driver.parser_token_number = 0;
-		Driver.parser_token_range = (0, 0);
-		Driver.parser_source_name = "";
+		Driver.driver_source_code = "";
+		Driver.driver_source_name = "";
+		Driver.driver_token_count = 0;
+		Driver.driver_token = ( Parser.EOF, 
+			{ Driver.token_source_name = ""; Driver.token_number = 0; 
+			Driver.token_line_number = 0; Driver.token_line_start = 0;
+			Driver.token_column_range = (0, 0); Driver.token_character_range = (0, 0) } 
+		);
 	} in
 	let ocontext = { 
 		Driver.options_help = fun (s) -> ( "" ); 
@@ -80,14 +82,14 @@ let _ =
 	try 
 		let allactions = !specified in
 		let source_name = ( Driver.target_to_pipe_string !input true ) in
-		let source_channel = match !input with
-			| Driver.Pipe -> stdin
-			| Driver.File(s) -> ( open_in s )
-		in 
+		let source_text = match !input with
+			| Driver.Pipe -> Io.read_text stdin
+			| Driver.File(f) -> (Io.read_file_text f )
+		in
 		let output_string ( s ) = match !output with
 			| Driver.Pipe -> ( print_endline s )
-			| Driver.File(f) -> ( Io.write_text s f )
-		in 
+			| Driver.File(f) -> ( Io.write_file_text f s )
+		in
 		let print_predicate b =
 			fun v -> ( v = b ) 
 		in
@@ -96,17 +98,20 @@ let _ =
 				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
 				print_endline msg	
 			| Driver.Tokens -> 
-				let lexbuf = Lexing.from_channel source_channel in
+				context.Driver.driver_source_code <- source_text;
+				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex lexbuf source_name in
 				output_string( Representation.token_list_to_string tokenstream )
 			| Driver.Ast -> 
-				let lexbuf = Lexing.from_channel source_channel in
+				context.Driver.driver_source_code <- source_text;
+				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex lexbuf source_name in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
 				output_string (Representation.string_of_program program)
 			| Driver.Semantic ->
-				let lexbuf = Lexing.from_channel source_channel in
+				context.Driver.driver_source_code <- source_text;
+				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex lexbuf source_name in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
@@ -114,7 +119,8 @@ let _ =
 				let semanticprogram = Driver.analyze program in 
 				output_string (Representation.string_of_program semanticprogram)
 			| Driver.Llvm -> 
-				let lexbuf = Lexing.from_channel source_channel in
+				context.Driver.driver_source_code <- source_text;
+				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex lexbuf source_name in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
@@ -124,7 +130,8 @@ let _ =
 				let m = Codegen.generate semanticprogram in
 				output_string (Llvm.string_of_llmodule m)
 			| Driver.Compile -> 
-				let lexbuf = Lexing.from_channel source_channel in
+				context.Driver.driver_source_code <- source_text;
+				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex lexbuf source_name in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
@@ -140,22 +147,32 @@ let _ =
 		| err -> let _ = match err with
 			(* Lexer Errors *)
 			| Error.UnknownCharacter( src, c, (s, e) ) ->
-				let relpos = 1 + s.Lexing.pos_cnum - s.Lexing.pos_bol in
-				let endrelpos = 1 + e.Lexing.pos_cnum - e.Lexing.pos_bol in		
+				let abspos = s.Lexing.pos_cnum in
+				let endabspos = e.Lexing.pos_cnum in
+				let relpos = 1 + abspos - s.Lexing.pos_bol in
+				let endrelpos = 1 + endabspos - e.Lexing.pos_bol in		
 				let msg = "Lexing Error in " ^ src ^ ":"
 				^ "\n" ^ "\t" ^ "Unrecognized character in program: " ^  c
 				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
-				^ "\n" ^ "\t" ^ "Character: " ^ Representation.token_range_to_string ( relpos, endrelpos )	
+				^ "\n" ^ "\t" ^ "Column: " ^ Representation.token_range_to_string ( relpos, endrelpos )
 				in
 				prerr_endline msg;
 		
 			(* Parser Errors *)
 			| Parsing.Parse_error ->
-				let msg = "Parsing Error in " ^ context.Driver.parser_source_name ^ ":" 
-				^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int context.Driver.parser_token_count )
-				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int context.Driver.parser_line_number
-				^ "\n" ^ "\t" ^ "Character: " ^ Representation.token_range_to_string context.Driver.parser_token_range
-					^ ": [id " ^ string_of_int context.Driver.parser_token_number ^ ":" ^ Representation.token_to_string context.Driver.parser_token ^ "]"
+				let ( t, info ) = context.Driver.driver_token in
+				let ( source_line, source_indentation, columns_after_indent ) = 
+					( Representation.line_of_source context.Driver.driver_source_code info ) 
+				in
+				let column_range = info.Driver.token_column_range in
+				let msg = "Parsing Error in " ^ context.Driver.driver_source_name ^ ":" 
+				^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int context.Driver.driver_token_count )
+					^ ": [id " ^ string_of_int info.Driver.token_number ^ ":" ^ Representation.token_to_string t ^ "]"
+				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int info.Driver.token_line_number
+				^ "\n" ^ "\t" ^ "Columns: " ^ Representation.token_range_to_string column_range
+				^ "\n"
+				^ "\n" ^ source_line
+				^ "\n" ^ source_indentation ^ ( String.make columns_after_indent ' ' ) ^ "^~~"
 				in
 				prerr_endline msg;
 			| Error.MissingEoF ->
