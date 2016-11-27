@@ -1,4 +1,5 @@
 fun main () : int {
+	var s : string = "STRING LITERAL!";
 	parallel {
 				
 	}

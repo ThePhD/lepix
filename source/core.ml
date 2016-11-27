@@ -18,23 +18,25 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* A listing of exceptions and the methods that power them
-to make the parser more expressive *)
+(* Drives the typical lexing and parsing algorithm
+while adding pertinent source, line and character information. *)
 
-(* Driver and Related class of errors *)
-let option_error_exit_code = 1
+type token_source = {
+     token_source_name : string;
+	token_number : int;
+     token_line_number : int;
+     token_line_start : int;
+	token_column_range : int * int;
+	token_character_range : int * int;
+}
 
-(* Option Errors *)
-exception NoOption
-exception BadOption of string
-exception MissingOption of string
-exception OptionFileNotFound of string
+type context = {
+     mutable source_code : string;
+	mutable token_count : int;
+     mutable source_name : string;
+     mutable token : Parser.token * token_source;
+}
 
-(* Compiler class of Errors *)
-let compiler_error_exit_code = 2
-(* Lexer Errors *)
-exception UnknownCharacter of string * ( Lexing.position * Lexing.position )
-
-(* Parser Errors *)
-exception MissingEoF
-exception BadToken
+type options_context = {
+     mutable options_help : string -> string;
+}

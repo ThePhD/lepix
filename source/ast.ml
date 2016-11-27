@@ -28,11 +28,13 @@ type prefix_unary_op =
 	| Neg | Not
 
 type builtin_type = 
-	| Int 
-	| Bool 
-	| Void 
 	| Float 
+	| Int 
+	| Bool
+	| String 
+	| Void 
 	| Array of builtin_type * int
+	| Reference of builtin_type
 
 type bind = string * builtin_type * bool
 
@@ -42,6 +44,7 @@ type qualified_id = string list
 type expr =
 	| BoolLit of bool
 	| IntLit of int
+	| StringLit of string
 	| FloatLit of float
 	| Id of qualified_id
 	| Call of expr * expr list
@@ -85,4 +88,4 @@ type definition =
 	| VarDef of variable_definition
 	| NamespaceDef of string list * definition list
 
-type prog = definition list
+type program = definition list

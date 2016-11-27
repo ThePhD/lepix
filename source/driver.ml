@@ -21,28 +21,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 (* Drives the typical lexing and parsing algorithm
 while adding pertinent source, line and character information. *)
 
-open Parser
-
-type token_source = {
-     token_source_name : string;
-	token_number : int;
-     token_line_number : int;
-     token_line_start : int;
-	token_column_range : int * int;
-	token_character_range : int * int;
-}
-
-type driver_context = {
-     mutable driver_source_code : string;
-	mutable driver_token_count : int;
-     mutable driver_source_name : string;
-     mutable driver_token : Parser.token * token_source;
-}
-
-type options_context = {
-     mutable options_help : string -> string;
-}
-
 type target =
 	| Pipe
 	| File of string
@@ -57,6 +35,7 @@ let target_to_pipe_string i b = match i with
 
 type action = 
 	| Help
+	| Preprocess
 	| Tokens
 	| Ast
 	| Semantic
@@ -65,11 +44,12 @@ type action =
 
 let action_to_int = function
 	| Help -> -1
-	| Tokens -> 0
-	| Ast -> 1
-	| Semantic -> 2
-	| Llvm -> 3
-	| Compile -> 100
+	| Preprocess -> 0
+	| Tokens -> 1
+	| Ast -> 10
+	| Semantic -> 100
+	| Llvm -> 1000
+	| Compile -> 10000
 
 type option =
 	| Dash of string
@@ -97,7 +77,10 @@ let read_options ocontext =
 		( 1, "h", "help", "print the help message", 
 			fun _ _ -> ( update_action(Help) ) 
 		);
-		( 1, "p", "pipe", "Take input from standard in (default: stdin)", 
+		( 1, "p", "preprocess", "Preprocess and display source", 
+			fun _ _ -> ( update_action(Preprocess) ) 
+		);
+		( 1, "i", "input", "Take input from standard in (default: stdin)", 
 			fun _ _ -> ( input := Pipe; seen_stdin := true ) 
 		);
 		( 2, "o", "output", "Set the output file (default: stdout)", 
@@ -161,7 +144,7 @@ let read_options ocontext =
 		in
 		msg
 	in
-	ocontext.options_help <- help;
+	ocontext.Core.options_help <- help;
 	(* Exit early if possible *)
 	if argc < 1 then
 		(!input, !output, !action, !specified)
@@ -260,11 +243,14 @@ let read_options ocontext =
 	(* Return tuple of input, output, action *)
 	( !input, !output, !action, !specified )
 
-let lex lexbuf sourcename =
-	Scanner.sourcename := sourcename;
+
+let preprocess source_name source_text =
+	source_text
+
+let lex lexfunc sourcename lexbuf =
 	let tokennumber = ref 0 in
 	let rec acc lexbuf tokens =
-		let next_token = Scanner.token lexbuf
+		let next_token = lexfunc lexbuf
 		and startp = Lexing.lexeme_start_p lexbuf
 		and endp = Lexing.lexeme_end_p lexbuf
 		in
@@ -275,18 +261,17 @@ let lex lexbuf sourcename =
 		and endabspos = endp.Lexing.pos_cnum
 		in
 		let create_token token =
-			let t = ( token, { token_source_name = sourcename; token_number = !tokennumber; 
-				token_line_number = line; token_line_start = startp.Lexing.pos_bol; 
-				token_column_range = (relpos, endrelpos); token_character_range = (abspos, endabspos) } 
+			let t = ( token, { Core.token_source_name = sourcename; Core.token_number = !tokennumber; 
+				Core.token_line_number = line; Core.token_line_start = startp.Lexing.pos_bol; 
+				Core.token_column_range = (relpos, endrelpos); Core.token_character_range = (abspos, endabspos) } 
 			) in
 			tokennumber := 1 + !tokennumber;
 			t
 		in
 		match next_token with
-		| EOF as token -> ( create_token token ) :: tokens
+		| Parser.EOF as token -> ( create_token token ) :: tokens
 		| token -> ( create_token token ) :: ( acc lexbuf tokens )
 	in acc lexbuf []
-;;
 
 let parse token_list context =
 	(* Keep a reference to the original token list
@@ -296,12 +281,12 @@ let parse token_list context =
 	let tokenizer _ = match !tokenlist with
 	(* Break each token down into pieces, info and all*)
 	| (token, info) :: rest -> 
-		context.driver_source_name <- info.token_source_name;
-		context.driver_token_count <- 1 + context.driver_token_count;
-		context.driver_token <- ( token, info );
+		context.Core.source_name <- info.Core.token_source_name;
+		context.Core.token_count <- 1 + context.Core.token_count;
+		context.Core.token <- ( token, info );
 		(* Shift the list down by one by referencing 
 		the beginning of the rest of the list *)
-		tokenlist := rest;
+		tokenlist := rest; 
 		(* return token we care about *)
 		token
 	(* The parser stops calling the tokenizer when 
@@ -313,11 +298,9 @@ let parse token_list context =
 	internal function *)
 	let program = Parser.program tokenizer (Lexing.from_string "") in
 	program
-;;
 
 let analyze program =
 	(* TODO: other important checks and semantic analysis here 
 	that will create a proper checked program type*)
 	let sem = Semant.check program in
 	sem
-;;

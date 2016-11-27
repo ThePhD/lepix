@@ -27,17 +27,17 @@ let _ =
 	let action = ref Driver.Llvm in
 	let specified = ref [] in
 	let context = { 
-		Driver.driver_source_code = "";
-		Driver.driver_source_name = "";
-		Driver.driver_token_count = 0;
-		Driver.driver_token = ( Parser.EOF, 
-			{ Driver.token_source_name = ""; Driver.token_number = 0; 
-			Driver.token_line_number = 0; Driver.token_line_start = 0;
-			Driver.token_column_range = (0, 0); Driver.token_character_range = (0, 0) } 
+		Core.source_code = "";
+		Core.source_name = "";
+		Core.token_count = 0;
+		Core.token = ( Parser.EOF, 
+			{ Core.token_source_name = ""; Core.token_number = 0; 
+			Core.token_line_number = 0; Core.token_line_start = 0;
+			Core.token_column_range = (0, 0); Core.token_character_range = (0, 0) } 
 		);
 	} in
 	let ocontext = { 
-		Driver.options_help = fun (s) -> ( "" ); 
+		Core.options_help = fun (s) -> ( "" ); 
 	} in
 	(* Call options Parser for Driver *)
 	let _ =
@@ -52,22 +52,22 @@ let _ =
 			| Error.BadOption(s) ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "Unrecognized option: " ^ s
-				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
+				^ "\n" ^ ( ocontext.Core.options_help "\t" ) in
 				prerr_endline msg
 			| Error.NoOption ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "No inputs or options specified"
-				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
+				^ "\n" ^ ( ocontext.Core.options_help "\t" ) in
 				prerr_endline msg
 			| Error.MissingOption(o) ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "Flag " ^ o ^ " needs an additional argument after it that is not dashed"
-				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
+				^ "\n" ^ ( ocontext.Core.options_help "\t" ) in
 				prerr_endline msg
 			| Error.OptionFileNotFound(f) ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "File " ^ f ^ " was not found"
-				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
+				^ "\n" ^ ( ocontext.Core.options_help "\t" ) in
 				prerr_endline msg
 			| err -> 
 				let msg = "Unknown Error:" 
@@ -94,35 +94,36 @@ let _ =
 		let print_predicate b =
 			fun v -> ( v = b ) 
 		in
+		context.Core.source_name <- source_name;
+		context.Core.source_code <- source_text;
 		let _ = match !action with
 			| Driver.Help -> let msg = "Help:"
-				^ "\n" ^ ( ocontext.Driver.options_help "\t" ) in
+				^ "\n" ^ ( ocontext.Core.options_help "\t" ) in
 				print_endline msg	
+			| Driver.Preprocess -> 
+				let processed_source_text = Driver.preprocess source_name source_text in
+				output_string( processed_source_text )
 			| Driver.Tokens -> 
-				context.Driver.driver_source_code <- source_text;
 				let lexbuf = Lexing.from_string source_text in
-				let tokenstream = Driver.lex lexbuf source_name in
+				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
 				output_string( Representation.token_list_to_string tokenstream )
 			| Driver.Ast -> 
-				context.Driver.driver_source_code <- source_text;
 				let lexbuf = Lexing.from_string source_text in
-				let tokenstream = Driver.lex lexbuf source_name in
+				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
 				output_string (Representation.string_of_program program)
 			| Driver.Semantic ->
-				context.Driver.driver_source_code <- source_text;
 				let lexbuf = Lexing.from_string source_text in
-				let tokenstream = Driver.lex lexbuf source_name in
+				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
 				if ( List.exists (print_predicate Driver.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
 				output_string (Representation.string_of_program semanticprogram)
 			| Driver.Llvm -> 
-				context.Driver.driver_source_code <- source_text;
 				let lexbuf = Lexing.from_string source_text in
-				let tokenstream = Driver.lex lexbuf source_name in
+				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
 				if ( List.exists (print_predicate Driver.Ast) allactions ) then print_endline( Representation.string_of_program program );
@@ -131,9 +132,8 @@ let _ =
 				let m = Codegen.generate semanticprogram in
 				output_string (Llvm.string_of_llmodule m)
 			| Driver.Compile -> 
-				context.Driver.driver_source_code <- source_text;
 				let lexbuf = Lexing.from_string source_text in
-				let tokenstream = Driver.lex lexbuf source_name in
+				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
 				if ( List.exists (print_predicate Driver.Ast) allactions ) then print_endline( Representation.string_of_program program );
@@ -147,12 +147,12 @@ let _ =
 	with
 		| err -> let _ = match err with
 			(* Lexer Errors *)
-			| Error.UnknownCharacter( src, c, (s, e) ) ->
+			| Error.UnknownCharacter( c, (s, e) ) ->
 				let abspos = s.Lexing.pos_cnum in
 				let endabspos = e.Lexing.pos_cnum in
 				let relpos = 1 + abspos - s.Lexing.pos_bol in
 				let endrelpos = 1 + endabspos - e.Lexing.pos_bol in		
-				let msg = "Lexing Error in " ^ src ^ ":"
+				let msg = "Lexing Error in " ^ context.Core.source_name ^ ":"
 				^ "\n" ^ "\t" ^ "Unrecognized character in program: " ^  c
 				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
 				^ "\n" ^ "\t" ^ "Column: " ^ Representation.token_range_to_string ( relpos, endrelpos )
@@ -161,15 +161,15 @@ let _ =
 		
 			(* Parser Errors *)
 			| Parsing.Parse_error ->
-				let ( t, info ) = context.Driver.driver_token in
+				let ( t, info ) = context.Core.token in
 				let ( source_line, source_indentation, columns_after_indent ) = 
-					( Representation.line_of_source context.Driver.driver_source_code info ) 
+					( Representation.line_of_source context.Core.source_code info ) 
 				in
-				let column_range = info.Driver.token_column_range in
-				let msg = "Parsing Error in " ^ context.Driver.driver_source_name ^ ":" 
-				^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int context.Driver.driver_token_count )
-					^ ": [id " ^ string_of_int info.Driver.token_number ^ ":" ^ Representation.token_to_string t ^ "]"
-				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int info.Driver.token_line_number
+				let column_range = info.Core.token_column_range in
+				let msg = "Parsing Error in " ^ context.Core.source_name ^ ":" 
+				^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int context.Core.token_count )
+					^ ": [id " ^ string_of_int info.Core.token_number ^ ":" ^ Representation.token_to_string t ^ "]"
+				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int info.Core.token_line_number
 				^ "\n" ^ "\t" ^ "Columns: " ^ Representation.token_range_to_string column_range
 				^ "\n"
 				^ "\n" ^ source_line
@@ -177,7 +177,7 @@ let _ =
 				in
 				prerr_endline msg;
 			| Error.MissingEoF ->
-				let msg = "Parsing Error:" 
+				let msg = "Parsing Error in" ^ context.Core.source_name ^ ":" 
 				^ "\n" ^ "\t" ^ "Missing EoF at end of token stream (bad lexer input?)" 
 				in
 				prerr_endline msg;

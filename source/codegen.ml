@@ -29,31 +29,44 @@ module R = Representation
 
 module StringMap = Map.Make(String)
 
-type scope = {
-	scope_name : string;
-	scope_variables : L.llvalue StringMap.t;
-	scope_functions : L.llvalue StringMap.t;
-}
+type function_value = L.llvalue
+type function_map = function_value StringMap.t
+type variable_value = L.llvalue
+type variable_map = variable_value StringMap.t
 
-let context = L.global_context();;
-let context_builder = L.builder context;;
-let m = L.create_module context "lepix";;
-let f32_t   = L.float_type   context;;
-let f64_t   = L.double_type  context;;
-let i8_t    = L.i8_type      context;;
-(* for 'char' type to printf -- even if they resolve to same type, we differentiate*)
-let char_t  = L.i8_type      context;;
-let i32_t   = L.i32_type     context;;
-let i64_t   = L.i64_type     context;;
-(* LLVM treats booleans as 1-bit integers, not distinct types with their own true / false *)
-let bool_t  = L.i1_type      context;;
-let void_t  = L.void_type    context;;
+
 (* TODO: clean up this hack and implement proper scoping and finding of functions
 and other scoped / namespaced / runtime libraries *)
-let printf_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |];;
-let printf_func = L.declare_function "printf" printf_t m;;
 
 let generate (ast) =
+	let context = L.global_context() in
+	let context_builder = L.builder context in
+	let m = Llvm.create_module context "lepix"
+	and f32_t   = Llvm.float_type   context
+	(*and f64_t   = Llvm.double_type  context*)
+	and i8_t    = Llvm.i8_type      context
+	(* for 'char' type to printf -- even if they resolve to same type, we differentiate*)
+	and char_t  = Llvm.i8_type      context
+	and i32_t   = Llvm.i32_type     context
+	(*and i64_t   = L.i64_type     context*)
+	(* LLVM treats booleans as 1-bit integers, not distinct types with their own true / false *)
+	and bool_t  = Llvm.i1_type      context
+	and void_t  = Llvm.void_type    context
+	in
+	let p_i8_t  = Llvm.pointer_type i8_t
+	and p_char_t  = Llvm.pointer_type char_t
+	in
+
+	let printf_t = Llvm.var_arg_function_type i32_t [| p_char_t |] in
+	let printf_func = Llvm.declare_function "printf" printf_t m in
+	let set_up_external_handler context lmod = 
+		(* Assume *Nix handling with `dl` library *)
+		let dlopen = Llvm.declare_function "dlopen" ( Llvm.function_type p_i8_t [| p_i8_t; i32_t |] ) lmod in
+		let dlsym = Llvm.declare_function "dlsym" ( Llvm.function_type p_i8_t [| p_i8_t; p_char_t |] ) lmod in
+		let dlclose = Llvm.declare_function "dlclose" ( Llvm.function_type i32_t [| p_i8_t |] ) lmod in
+		dlsym
+	in
+
 	(* Function to convert Ast types to LLVM Types
 	Applies itself recursively, using the above 
 	created types on the context *)
@@ -61,8 +74,10 @@ let generate (ast) =
 		| A.Bool -> bool_t
 		| A.Int -> i32_t
 		| A.Float -> f32_t
+		| A.String -> p_char_t
 		| A.Void -> void_t
-		| A.Array(t, d) -> L.array_type (ast_to_llvm_type t) d
+		| A.Array(t, d) -> Llvm.array_type (ast_to_llvm_type t) d
+		| A.Reference(t) -> Llvm.pointer_type (ast_to_llvm_type t)
 	in
 
 	let rec gen_expression = function 
@@ -74,6 +89,9 @@ let generate (ast) =
 				printf_func
 		| A.BoolLit(value) -> L.const_int bool_t (if value then 1 else 0) (* bool_t is still an integer, must convert *)
 		| A.IntLit(value) -> L.const_int i32_t value
+		| A.StringLit(value) -> 
+			let str = L.build_global_string value "data.1" context_builder in
+			str
 		| A.FloatLit(value) -> L.const_float f32_t value
 		| A.Call(e, el) -> 
 			let target = gen_expression e in 

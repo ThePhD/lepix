@@ -23,7 +23,7 @@ infrastructure of the compiler, to make it easy to understand what the fuck we'r
 
 (* Lexer types: dumping and pretty printing tokens *)
 
-let token_to_string = function
+let parser_token_to_string = function
 	| Parser.LPAREN -> "LPAREN"	
 	| Parser.RPAREN -> "RPAREN"	
 	| Parser.LBRACE -> "LBRACE"	
@@ -67,16 +67,21 @@ let token_to_string = function
 	| Parser.INT -> "INT"
 	| Parser.FLOAT -> "FLOAT"	
 	| Parser.BOOL -> "BOOL"	
+	| Parser.STRING -> "STRING"	
 	| Parser.VOID -> "VOID"
 	| Parser.TRUE -> "TRUE"	
 	| Parser.FALSE -> "FALSE"	
 	| Parser.BREAK -> "BREAK"	
 	| Parser.CONTINUE -> "CONTINUE"	
+	| Parser.STRINGLITERAL(s) -> "STRINGLITERAL(" ^ s ^ ")"
 	| Parser.INTLITERAL(i) -> "INTLITERAL(" ^ string_of_int i ^ ")"
 	| Parser.FLOATLITERAL(f) -> "FLOATLITERAL(" ^ string_of_float f ^ ")"
 	| Parser.ID(s) -> "ID(" ^ s ^ ")"
 	| Parser.MODULO -> "MODULO"
 	| Parser.EOF -> "EOF"
+
+let token_to_string t = 
+	parser_token_to_string t
 
 let token_range_to_string (x, y) =
 	let range_is_wide = ( y - x > 1 ) in
@@ -86,9 +91,9 @@ let token_range_to_string (x, y) =
 		string_of_int x
 
 let token_source_to_string t =
-	string_of_int t.Driver.token_line_number 
+	string_of_int t.Core.token_line_number 
 	^ ":" 
-	^ token_range_to_string t.Driver.token_column_range
+	^ token_range_to_string t.Core.token_column_range
 
 let token_list_to_string token_list = 
 	let rec helper = function
@@ -123,6 +128,7 @@ let rec string_of_expr = function
 	| Ast.IntLit(l) -> string_of_int l
 	| Ast.BoolLit(true) -> "true"
 	| Ast.BoolLit(false) -> "false"
+	| Ast.StringLit(s) -> s
 	| Ast.FloatLit(f) -> string_of_float f
 	| Ast.Id(sl) -> String.concat "." sl
 	| Ast.BinaryOp(e1, o, e2) ->
@@ -145,11 +151,13 @@ let rec string_of_expr_list = function
 	| s::l -> string_of_expr s ^ "," ^ string_of_expr_list l
 
 let rec string_of_typename = function
+	| Ast.Float -> "float"
 	| Ast.Int -> "int"
 	| Ast.Bool -> "bool"
+	| Ast.String -> "string"
 	| Ast.Void -> "void"
-	| Ast.Float -> "float"
 	| Ast.Array(t, d) -> string_of_typename t ^ ( String.make d '[' ) ^ ( String.make d ']' )
+	| Ast.Reference(t) -> string_of_typename t ^ "&"
 
 let rec string_of_bind = function
 	| (n, t, r) -> n ^ " : " ^ ( if r then "&" else "" ) ^ string_of_typename t
@@ -192,9 +200,10 @@ let string_of_program p =
 	(String.concat "" (List.map string_of_definition p) )
 
 (* Error message helpers *)
+
 let line_of_source src token_info =
-	let ( absb, abse ) = token_info.Driver.token_character_range 
-	and linestart = token_info.Driver.token_line_start
+	let ( absb, abse ) = token_info.Core.token_character_range 
+	and linestart = token_info.Core.token_line_start
 	in
 	let ( lineend, _ ) =
 		let f (endindex, should_skip) idx =
