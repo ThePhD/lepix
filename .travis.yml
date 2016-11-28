@@ -9,7 +9,7 @@ before_install:
 
 script:
      - docker run -v${PWD}:/ci_repo ubuntu:yakkety -it
-	 - bash
+     - bash
      - cd ci_repo
      - chmod +x ci/travis_run.sh
      - source ci/travis_run.sh
