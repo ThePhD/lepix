@@ -27,3 +27,8 @@ source/preprocessor/parser.mli
 source/preprocessor/pp.cmi
 source/preprocessor/pp.cmo
 .vs/
+*.pyproj
+*.user
+*.sln
+*.vcxproj
+*.filters
