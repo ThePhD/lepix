@@ -47,7 +47,7 @@ class hello_world_test(unittest.TestCase):
 		typed_output = int(self.output);
 		self.assertEqual(self.returncode, 0)
 		self.assertEqual(self.output, "24\n")
-		self.assertEqual(typed_output, 23)
+		self.assertEqual(typed_output, 24)
 		self.assertEqual(self.error, "")
 
 if __name__ == '__main__':

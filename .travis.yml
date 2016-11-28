@@ -1,15 +1,18 @@
+language: python
+
 install:
-	- sudo apt install python python3
-	- sudo apt install build-essential npm ocaml opam llvm llvm-dev git llvm.3.8
-	- sudo npm install -g ocamlBetterErrors
-	- opam install llvm
-	- opam install llvm.3.8
-	- opam llvm depext llvm
-	- opam llvm depext llvm.3.8
-	- eval $(opam config env)
+     - sudo apt install python python3
+     - sudo apt install build-essential npm ocaml opam llvm llvm-dev git llvm.3.8
+     - sudo npm install -g ocamlBetterErrors
+     - opam install llvm
+     - opam install llvm.3.8
+     - opam llvm depext llvm
+     - opam llvm depext llvm.3.8
+     - eval $(opam config env)
 
 script:
-	cd source
-	make lepix
-	cd ..
-	python tests/tests.py
+     cd source
+     make lepix
+     cd ..
+     python tests/tests.py
+     cd ..
