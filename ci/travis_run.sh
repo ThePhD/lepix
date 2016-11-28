@@ -1,4 +1,4 @@
-apt install update
+apt-get update
 apt install git python python3 build-essential ocaml opam llvm llvm-dev llvm.3.8
 opam init
 opam install llvm
