@@ -35,9 +35,6 @@ type variable_value = L.llvalue
 type variable_map = variable_value StringMap.t
 
 
-(* TODO: clean up this hack and implement proper scoping and finding of functions
-and other scoped / namespaced / runtime libraries *)
-
 let generate (ast) =
 	let context = L.global_context() in
 	let context_builder = L.builder context in

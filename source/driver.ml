@@ -136,9 +136,10 @@ let read_options ocontext =
 			in
 			(List.fold_left builder "" options)
 		in
+		let (_, input_short, input_long, _, _) = List.nth options 2 in
 		let msg = "Help:"
 			^ "\n" ^ tabulation ^ "lepix [options] filename [filenames...]" 
-			^ "\n" ^ tabulation ^ "\t" ^ "filename | filenames can have one option -p or --pipe"
+			^ "\n" ^ tabulation ^ "\t" ^ "filename | filenames can have one option -" ^ input_short ^ " or --" ^ input_long
 			^ "\n" ^ tabulation ^ "options:"
 			^ ( concat_options (tabulation ^ "\t") )
 		in

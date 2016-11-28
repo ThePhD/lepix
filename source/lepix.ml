@@ -70,7 +70,7 @@ let _ =
 				^ "\n" ^ ( ocontext.Core.options_help "\t" ) in
 				prerr_endline msg
 			| err -> 
-				let msg = "Unknown Error:" 
+				let msg = "Unknown Error during Option parsing:" 
 				^ "\n" ^ "\t" ^ "Contact the compiler vendor for more details and possibly include source code, or try simplifying the program" 
 				in
 				prerr_endline msg;
@@ -85,11 +85,11 @@ let _ =
 		let source_name = ( Driver.target_to_pipe_string !input true ) in
 		let source_text = match !input with
 			| Driver.Pipe -> Io.read_text stdin
-			| Driver.File(f) -> (Io.read_file_text f )
+			| Driver.File(f) -> ( Io.read_file_text f )
 		in
-		let output_string ( s ) = match !output with
+		let output_to_target ( s ) = match !output with
 			| Driver.Pipe -> ( print_endline s )
-			| Driver.File(f) -> ( Io.write_file_text f s )
+			| Driver.File(f) -> ( Io.write_file_text s f )
 		in
 		let print_predicate b =
 			fun v -> ( v = b ) 
@@ -102,17 +102,17 @@ let _ =
 				print_endline msg	
 			| Driver.Preprocess -> 
 				let processed_source_text = Driver.preprocess source_name source_text in
-				output_string( processed_source_text )
+				output_to_target( processed_source_text )
 			| Driver.Tokens -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
-				output_string( Representation.token_list_to_string tokenstream )
+				output_to_target( Representation.token_list_to_string tokenstream )
 			| Driver.Ast -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
 				if ( List.exists (print_predicate Driver.Tokens) allactions ) then print_endline( Representation.token_list_to_string tokenstream );
 				let program = Driver.parse tokenstream context in 
-				output_string (Representation.string_of_program program)
+				output_to_target (Representation.string_of_program program)
 			| Driver.Semantic ->
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
@@ -120,7 +120,7 @@ let _ =
 				let program = Driver.parse tokenstream context in 
 				if ( List.exists (print_predicate Driver.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
-				output_string (Representation.string_of_program semanticprogram)
+				output_to_target (Representation.string_of_program semanticprogram)
 			| Driver.Llvm -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
@@ -130,7 +130,7 @@ let _ =
 				let semanticprogram = Driver.analyze program in 
 				(* if ( List.exists (print_predicate Driver.Semantic) allactions ) then print_endline( Representation.string_of_program program ); *)
 				let m = Codegen.generate semanticprogram in
-				output_string (Llvm.string_of_llmodule m)
+				output_to_target (Llvm.string_of_llmodule m)
 			| Driver.Compile -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex Scanner.token source_name lexbuf in
@@ -141,11 +141,17 @@ let _ =
 				(* if ( List.exists (print_predicate Driver.Semantic) allactions ) then print_endline( Representation.string_of_program program ); *)
 				let m = Codegen.generate semanticprogram in
 				Llvm_analysis.assert_valid_module m;
-				output_string (Llvm.string_of_llmodule m)
+				output_to_target (Llvm.string_of_llmodule m)
 		in
 		()
 	with
 		| err -> let _ = match err with
+			(* Common Errors *)
+			| Sys_error(s) ->
+				let msg = "Sys_error: " ^ s
+				in
+				prerr_endline msg
+
 			(* Lexer Errors *)
 			| Error.UnknownCharacter( c, (s, e) ) ->
 				let abspos = s.Lexing.pos_cnum in
@@ -157,7 +163,7 @@ let _ =
 				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
 				^ "\n" ^ "\t" ^ "Column: " ^ Representation.token_range_to_string ( relpos, endrelpos )
 				in
-				prerr_endline msg;
+				prerr_endline msg
 		
 			(* Parser Errors *)
 			| Parsing.Parse_error ->
@@ -175,14 +181,14 @@ let _ =
 				^ "\n" ^ source_line
 				^ "\n" ^ source_indentation ^ ( String.make columns_after_indent ' ' ) ^ "^~~"
 				in
-				prerr_endline msg;
+				prerr_endline msg
 			| Error.MissingEoF ->
 				let msg = "Parsing Error in" ^ context.Core.source_name ^ ":" 
 				^ "\n" ^ "\t" ^ "Missing EoF at end of token stream (bad lexer input?)" 
 				in
-				prerr_endline msg;
+				prerr_endline msg
 			| err -> 
-				let msg = "Unknown Error:" 
+				let msg = "Unknown Error during Compilation:" 
 				^ "\n" ^ "\t" ^ "Contact the compiler vendor for more details and possibly include source code, or try simplifying the program" 
 				in
 				prerr_endline msg;

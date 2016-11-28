@@ -31,24 +31,22 @@ let read_characters_in f v chan =
 		!rv
 	with
 		| End_of_file -> close_in chan; !rv
-;;
 
 let read_text chan =
 	(* Read all the lines into a reference and return
 	the value itself *)
-	read_characters_in ( fun v c -> v ^ String.make 1 c ) "" chan
-;;
+	let buf = Buffer.create 1024 in
+	let buf = read_characters_in ( fun b c -> Buffer.add_char b c; b ) buf chan in
+	Buffer.contents buf
 
 let read_file_text filename =
 	(* Read all the lines into a reference and return
 	the value itself *)
 	let chan = open_in filename in
 	read_text chan
-;;
 
 let write_file_text text filename =
 	let chan = open_out filename in (* create or truncate file, return channel *)
 		Printf.fprintf chan "%s" text; (* write something *)
 	(* flush and close the channel *)
 	close_out chan
-;; 
