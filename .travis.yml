@@ -1,4 +1,6 @@
-language: python
+language: cpp
+sudo: required
+dist: trusty
 
 install:
      - sudo apt install python python3
