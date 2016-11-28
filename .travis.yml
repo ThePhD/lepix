@@ -1,23 +1,14 @@
-language: cpp
-sudo: required
 dist: trusty
+sudo: required
 
-install:
-     - sudo apt install python python3
-     - sudo apt install build-essential ocaml opam llvm llvm-dev git llvm.3.8
-     - opam init
-     - opam install llvm
-     - opam install llvm.3.8
-     - opam llvm depext llvm
-     - opam llvm depext llvm.3.8
-     - eval $(opam config env)
+services:
+     - docker
+
+before_install:
+     - docker pull ubuntu:latest
 
 script:
-     cd source
-     make lepix
-     cd ..
-     python tests/tests.py
-     cd ..
+     - docker run -v${PWD}: -t ubuntu:yakkety bash -c "apt install update && apt install python python3 build-essential ocaml opam llvm llvm-dev git llvm.3.8 && opam init && opam install llvm && opam install llvm.3.8 && eval $(opam config env) && cd source && make lepix && cd .. && python tests/tests.py && cd .."
 
 notifications:
      email:
