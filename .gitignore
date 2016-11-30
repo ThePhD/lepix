@@ -34,3 +34,4 @@ source/preprocessor/pp.cmo
 *.filters
 source/obj/
 source/lepixc
+tests/output/

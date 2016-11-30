@@ -12,6 +12,8 @@ is_windows = 'win32' in sys.platform
 lepix = 'source/lepixc'
 lli = 'lli'
 
+os.makedirs(os.path.join("tests", "output"), exist_ok=True)
+
 def output_file(f):
 	return os.path.join("tests", "output", f)
 
