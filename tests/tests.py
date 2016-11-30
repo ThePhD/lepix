@@ -37,11 +37,13 @@ def compile_and_run(input, output = None):
 
 class hello_world_test(unittest.TestCase):
 	def setUp(self):
-		print('In setUp()')
+		#print('In setUp()')
+		pass
 
 	def tearDown(self):
-		print('In tearDown()')
-		
+		#print('In tearDown()')
+		pass
+
 	def test(self):
 		self.returncode, self.output, self.error = compile_and_run("examples/hello_world.lepix", "hello_world.lepix.ll")
 		typed_output = int(self.output);

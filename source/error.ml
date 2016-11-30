@@ -38,3 +38,5 @@ exception UnknownCharacter of string * ( Lexing.position * Lexing.position )
 (* Parser Errors *)
 exception MissingEoF
 exception BadToken
+
+(* Semantic Errors *)
