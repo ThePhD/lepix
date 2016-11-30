@@ -17,8 +17,8 @@ script:
      - docker exec lepix_ci bash -e -v -c "eval $(opam config env)"
      - docker exec lepix_ci bash -e -v -c "opam install -y llvm.3.8"
      - docker exec lepix_ci bash -e -v -c "eval $(opam config env)"
-     - docker exec lepix_ci bash -e -v -c "cd ci_repo/source && make lepix"
-     - docker exec lepix_ci bash -e -v -c "cd ci_repo && python tests/tests.py
+     - docker exec lepix_ci bash -e -v -c "cd ci_repo/source \\&\\& make lepix"
+     - docker exec lepix_ci bash -e -v -c "cd ci_repo \\&\\& python tests/tests.py
 
 notifications:
      email:
