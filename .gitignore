@@ -32,3 +32,5 @@ source/preprocessor/pp.cmo
 *.sln
 *.vcxproj
 *.filters
+source/obj/ast.ml
+source/lepixc
