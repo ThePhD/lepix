@@ -10,9 +10,7 @@ before_install:
      - docker pull ubuntu:latest
 
 script:
-     - docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:yakkety sleep 10 m
-     - docker exec lepix_ci command1
-     - docker exec lepix_ci command2
+     - docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:yakkety sleep infinity
      - docker exec lepix_ci cd ci_repo
      - docker exec lepix_ci apt-get update
      - docker exec lepix_ci apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8
