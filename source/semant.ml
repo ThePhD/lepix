@@ -24,10 +24,11 @@ and type promotions / conversions organized for operators. *)
 
 module StringMap = Map.Make(String)
 
-open Semast
+(*open Semast*)
 
 let check (ast) = 
-	let collect_declarations astprogram = 
+	(**)
+	(*let collect_declarations astprogram = 
 		let acc v dec = let ( prefix, map ) = v in
 			match dec with 
 				| Ast.FuncDef(f) -> 
@@ -37,7 +38,7 @@ let check (ast) =
 		in
 		List.foldl acc ("", StringMap.empty) astprogram
 	in
-	decls = collect_declarations ast;
+	decls = collect_declarations ast;*)
 	ast
 
 
