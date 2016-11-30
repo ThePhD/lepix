@@ -22,7 +22,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 representation of a LePiX program. *)
 
 type binary_op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
-	| And | Or
+	| And | Or | Modulo
 
 type prefix_unary_op = 
 	| Neg | Not
