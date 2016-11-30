@@ -8,7 +8,7 @@ services:
 
 before_install:
      - docker pull ubuntu:latest
-     - docker run --rm -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:latest sleep infinity
+     - docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:latest sleep infinity
      - docker exec lepix_ci bash -e -v -c "apt-get update"
      - docker exec lepix_ci bash -e -v -c "apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8"
      - docker exec lepix_ci bash -e -v -c "opam init -y"
