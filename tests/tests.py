@@ -9,7 +9,7 @@ is_x64 = sys.maxsize > 2**32
 is_nix = 'linux' in sys.platform
 is_windows = 'win32' in sys.platform
 
-lepix = 'source/_build/lepix.native'
+lepix = 'source/lepixc'
 lli = 'lli'
 
 def run_process(target, *args):
