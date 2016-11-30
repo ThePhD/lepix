@@ -10,7 +10,7 @@ before_install:
      - docker pull ubuntu:latest
 
 script: |
-     docker run -v${PWD}:/ci_repo --rm ubuntu:yakkety bash -e -v -c << END
+     docker run -v${PWD}:/ci_repo --rm ubuntu:yakkety bash -e -v << END
      cd ci_repo
      apt-get update
      apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8
