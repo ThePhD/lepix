@@ -1,5 +1,5 @@
 apt-get update
-apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml opam llvm llvm-dev llvm.3.8
+apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8
 opam init -y
 eval $(opam config env)
 opam install -y llvm

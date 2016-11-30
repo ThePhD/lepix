@@ -8,7 +8,7 @@ before_install:
      - docker pull ubuntu:latest
 
 script:
-     - docker run -v${PWD}:/ci_repo -t ubuntu:yakkety bash -c "cd ci_repo && chmod +x ci/travis_run.sh && source ci/travis_run.sh"
+     - docker run -v${PWD}:/ci_repo -t ubuntu:yakkety bash -e -c "cd ci_repo && chmod +x ci/travis_run.sh && source ci/travis_run.sh"
 
 notifications:
      email:
