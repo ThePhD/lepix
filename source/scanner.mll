@@ -74,6 +74,7 @@ rule token = parse
 | "true"   { TRUE }
 | "false"  { FALSE }
 | "var"    { VAR }
+| "let"    { LET }
 | "fun"	    { FUN }
 | "parallel" { PARALLEL }
 | "break" { BREAK }

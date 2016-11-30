@@ -1,4 +1,4 @@
-(* LePiX Language Compiler Implementation
+(* LePiX - LePiX Language Compiler Implementation
 Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
@@ -18,21 +18,20 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Drives the typical lexing and parsing algorithm
-while adding pertinent source, line and character information. *)
+(* Routines for preprocessing source code. *)
 
-type context = {
+type pre_context = {
      mutable source_name : string;
      mutable source_code : string;
-	mutable original_source_code : string;
+     mutable original_source_code : string;
 	mutable token_count : int;
-     mutable token : Parser.token * Core.token_source;
+     mutable token : Preparser.token * Core.token_source;
 }
 
-let lex sourcename lexbuf =
+let pre_lex sourcename lexbuf =
 	let tokennumber = ref 0 in
 	let rec acc lexbuf tokens =
-		let next_token = Scanner.token lexbuf
+		let next_token = Prescanner.token lexbuf
 		and startp = Lexing.lexeme_start_p lexbuf
 		and endp = Lexing.lexeme_end_p lexbuf
 		in
@@ -50,12 +49,15 @@ let lex sourcename lexbuf =
 			tokennumber := 1 + !tokennumber;
 			t
 		in
-		match next_token with
-		| Parser.EOF as token -> ( create_token token ) :: tokens
-		| token -> ( create_token token ) :: ( acc lexbuf tokens )
+		let rec matcher = function 
+			| [] -> raise (Error.MissingEoF)
+			| Preparser.EOF :: [] -> ( create_token Preparser.EOF ) :: tokens
+			| token :: [] -> ( create_token token ) :: ( acc lexbuf tokens )
+			| token :: rest -> ( create_token token ) :: ( matcher rest )
+		in matcher next_token
 	in acc lexbuf []
 
-let parse context token_list =
+let pre_parse context token_list =
 	(* Keep a reference to the original token list
 	And use that to dereference rather than whatever crap we get from
 	the channel *)
@@ -78,11 +80,27 @@ let parse context token_list =
 	(* Pass in an empty channel built off a cheap string
 	and then ignore the fuck out of it in our 'tokenizer' 
 	internal function *)
-	let program = Parser.program tokenizer (Lexing.from_string "") in
-	program
+	let past = Preparser.source tokenizer (Lexing.from_string "") in
+	past
 
-let analyze program =
-	(* TODO: other important checks and semantic analysis here 
-	that will create a proper checked program type*)
-	let sem = Semant.check program in
-	sem
+let rec pre_process context source source_text =
+	let source_name = Core.target_to_string source in
+	context.source_name <- source_name;
+	context.source_code <- source_text;
+	let reldir = match source with
+		| Core.Pipe -> ( Sys.getcwd () )
+		| Core.File(f) -> Filename.dirname f
+	in
+	let generate v p = match p with
+		| Preast.Text(s) -> v ^ s
+		| Preast.ImportString(f) -> v ^ "\"" ^ Io.read_file_text (Filename.concat reldir f) ^ "\""
+		| Preast.ImportSource(f) -> let realf = (Filename.concat reldir f) in
+			let ftext = Io.read_file_text realf in
+			let processedtext = ( pre_process context ( Core.File(f) ) ftext ) in
+			v ^ processedtext
+	in
+	let tokenstream = pre_lex source_name ( Lexing.from_string source_text ) in
+	(*TODO: debug shit tokens at a later date*)
+	(*print_endline ( Representation.preparser_token_list_to_string tokenstream );*)
+	let past = pre_parse context tokenstream in
+	List.fold_left generate "" past

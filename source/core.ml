@@ -18,8 +18,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Drives the typical lexing and parsing algorithm
-while adding pertinent source, line and character information. *)
+(* Core types and routines. *)
 
 type token_source = {
      token_source_name : string;
@@ -30,13 +29,32 @@ type token_source = {
 	token_character_range : int * int;
 }
 
-type context = {
-     mutable source_code : string;
-	mutable token_count : int;
-     mutable source_name : string;
-     mutable token : Parser.token * token_source;
-}
+type target =
+	| Pipe
+	| File of string
 
-type options_context = {
-     mutable options_help : string -> string;
-}
+let target_to_string = function
+	| Pipe -> "pipe"
+	| File(s) -> "file: " ^ s
+
+let target_to_pipe_string i b = match i with
+	| Pipe -> if b then "stdin" else "stdout"
+	| File(s) -> "file: " ^ s
+
+type action = 
+	| Help
+	| Preprocess
+	| Tokens
+	| Ast
+	| Semantic
+	| Llvm
+	| Compile
+
+let action_to_int = function
+	| Help -> -1
+	| Preprocess -> 0
+	| Tokens -> 1
+	| Ast -> 10
+	| Semantic -> 100
+	| Llvm -> 1000
+	| Compile -> 10000

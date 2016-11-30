@@ -9,8 +9,15 @@ is_x64 = sys.maxsize > 2**32
 is_nix = 'linux' in sys.platform
 is_windows = 'win32' in sys.platform
 
-lepix = 'source/_build/lepix.native'
+lepix = 'source/lepixc'
 lli = 'lli'
+
+def output_file(f):
+	return os.path.join(["tests", "out", f])
+
+def input_file(f):
+	return os.path.join(["tests"])
+	
 
 def run_process(target, *args):
 	sp = subprocess.Popen([target] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -27,7 +34,7 @@ def run_lli(*args):
 
 def compile_and_run(input, output = None):
 	if output is None:
-		output = input + ".ll";
+		output = output_file(os.path.basename(input)) + ".ll";
 	compiler_r, compiler_out, compiler_err = run_compiler("-l",  "-o", output, input)
 	if compiler_r != 0:
 		return compiler_r, compiler_out, compiler_err
@@ -37,13 +44,15 @@ def compile_and_run(input, output = None):
 
 class hello_world_test(unittest.TestCase):
 	def setUp(self):
-		print('In setUp()')
+		#print('In setUp()')
+		pass
 
 	def tearDown(self):
-		print('In tearDown()')
-		
+		#print('In tearDown()')
+		pass
+
 	def test(self):
-		self.returncode, self.output, self.error = compile_and_run("examples/hello_world.lepix", "hello_world.lepix.ll")
+		self.returncode, self.output, self.error = compile_and_run(input_file("hello_world.lepix"))
 		typed_output = int(self.output);
 		self.assertEqual(self.returncode, 0)
 		self.assertEqual(self.output, "24\n")

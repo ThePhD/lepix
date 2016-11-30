@@ -1,4 +1,5 @@
-(* LePiX Language Compiler Implementation
+%{
+(* LePiX - LePiX Language Compiler Implementation
 Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
@@ -18,25 +19,28 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* A listing of exceptions and the methods that power them
-to make the parser more expressive *)
+(* Parser for the LePiX preprocessor: compatible with both ocamlyacc and 
+menhir, as we have developed against both for testing purposes. *)
 
-(* Driver and Related class of errors *)
-let option_error_exit_code = 1
+%}
 
-(* Option Errors *)
-exception NoOption
-exception BadOption of string
-exception MissingOption of string
-exception OptionFileNotFound of string
+%token HASH
+%token IMPORT STRING
+%token <string> TEXT
+%token <string> STRINGLITERAL
+%token EOF
 
-(* Compiler class of Errors *)
-let compiler_error_exit_code = 2
-(* Lexer Errors *)
-exception UnknownCharacter of string * ( Lexing.position * Lexing.position )
+%start source
+%type<Preast.pre_source> source
+%%
 
-(* Parser Errors *)
-exception MissingEoF
-exception BadToken
+blob:
+| HASH IMPORT STRINGLITERAL { Preast.ImportSource($3) }
+| HASH IMPORT STRING STRINGLITERAL { Preast.ImportString($4) }
+| TEXT { Preast.Text($1) }
 
-(* Semantic Errors *)
+blob_list: { [] }
+| blob_list blob { $2 :: $1 }
+
+source:
+| blob_list EOF { List.rev $1 }

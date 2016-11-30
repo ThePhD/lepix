@@ -22,9 +22,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 representation of a LePiX program. *)
 
 type binary_op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
-	| And | Or
+	| And | Or | Modulo
 
-type prefix_unary_op = 
+type prefix_op = 
 	| Neg | Not
 
 type builtin_type = 
@@ -51,7 +51,7 @@ type expr =
 	| Access of expr * expr list
 	| MemberAccess of expr * name 
 	| BinaryOp of expr * binary_op * expr
-	| PrefixUnaryOp of prefix_unary_op * expr 
+	| PrefixUnaryOp of prefix_op * expr 
 	| Assign of string list * expr   
 	| ArrayLit of expr list
 	| Noexpr
