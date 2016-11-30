@@ -11,18 +11,14 @@ before_install:
 
 script:
      - docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:yakkety sleep infinity
-     - docker exec lepix_ci cd ci_repo
-     - docker exec lepix_ci apt-get update
-     - docker exec lepix_ci apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8
-     - docker exec lepix_ci opam init -y
-     - docker exec lepix_ci eval $(opam config env)
-     - docker exec lepix_ci opam install -y llvm.3.8
-     - docker exec lepix_ci eval $(opam config env)
-     - docker exec lepix_ci cd source
-     - docker exec lepix_ci make lepix
-     - docker exec lepix_ci cd ..
-     - docker exec lepix_ci python tests/tests.py
-     - docker exec lepix_ci cd ..
+     - docker exec lepix_ci bash -e -v -c "apt-get update"
+     - docker exec lepix_ci bash -e -v -c "apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8"
+     - docker exec lepix_ci bash -e -v -c "opam init -y"
+     - docker exec lepix_ci bash -e -v -c "eval $(opam config env)"
+     - docker exec lepix_ci bash -e -v -c "opam install -y llvm.3.8"
+     - docker exec lepix_ci bash -e -v -c "eval $(opam config env)"
+     - docker exec lepix_ci bash -e -v -c "cd ci_repo/source && make lepix"
+     - docker exec lepix_ci bash -e -v -c "cd ci_repo && python tests/tests.py
 
 notifications:
      email:
