@@ -32,13 +32,15 @@ let check (ast) =
 		let acc v dec = let ( prefix, map ) = v in
 			match dec with 
 				| Ast.FuncDef(f) -> 
-					let qualname = prefix ^ f.Ast.func_name 
+					let qualname = prefix ^ f.Ast.func_name in
+					if StringMap.find
 				| Ast.VarDef(v) ->
 				| Ast.NamespaceDef(n) ->
 		in
 		List.foldl acc ("", StringMap.empty) astprogram
 	in
-	decls = collect_declarations ast;*)
+	decls = collect_declarations ast;
+	*)
 	ast
 
 
