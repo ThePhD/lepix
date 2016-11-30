@@ -13,10 +13,10 @@ lepix = 'source/lepixc'
 lli = 'lli'
 
 def output_file(f):
-	return os.path.join(["tests", "out", f])
+	return os.path.join("tests", "output", f)
 
 def input_file(f):
-	return os.path.join(["tests"])
+	return os.path.join("tests", f)
 	
 
 def run_process(target, *args):
@@ -41,6 +41,8 @@ def compile_and_run(input, output = None):
 	lli_r, lli_out, lli_err = run_lli(output)
 	return lli_r, lli_out, lli_err
 
+def compile_and_run_case(input):
+	return compile_and_run(input_file(input))
 
 class hello_world_test(unittest.TestCase):
 	def setUp(self):
@@ -52,7 +54,7 @@ class hello_world_test(unittest.TestCase):
 		pass
 
 	def test(self):
-		self.returncode, self.output, self.error = compile_and_run(input_file("hello_world.lepix"))
+		self.returncode, self.output, self.error = compile_and_run_case("hello_world.lepix")
 		typed_output = int(self.output);
 		self.assertEqual(self.returncode, 0)
 		self.assertEqual(self.output, "24\n")
