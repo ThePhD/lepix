@@ -9,21 +9,22 @@ services:
 before_install:
      - docker pull ubuntu:latest
 
-script: |
-     docker run -v${PWD}:/ci_repo --rm ubuntu:yakkety bash -e -v << END
-     cd ci_repo
-     apt-get update
-     apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8
-     opam init -y
-     eval $(opam config env)
-     opam install -y llvm.3.8
-     eval $(opam config env)
-     cd source
-     make lepix
-     cd ..
-     python tests/tests.py
-     cd ..
-     END
+script:
+     - docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:yakkety sleep 10 m
+     - docker exec lepix_ci command1
+     - docker exec lepix_ci command2
+     - docker exec lepix_ci cd ci_repo
+     - docker exec lepix_ci apt-get update
+     - docker exec lepix_ci apt install -y git python python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8
+     - docker exec lepix_ci opam init -y
+     - docker exec lepix_ci eval $(opam config env)
+     - docker exec lepix_ci opam install -y llvm.3.8
+     - docker exec lepix_ci eval $(opam config env)
+     - docker exec lepix_ci cd source
+     - docker exec lepix_ci make lepix
+     - docker exec lepix_ci cd ..
+     - docker exec lepix_ci python tests/tests.py
+     - docker exec lepix_ci cd ..
 
 notifications:
      email:
