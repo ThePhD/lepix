@@ -1,0 +1,16 @@
+fun gcd(a:int, b:int): int {
+  while (a != b)
+  {
+    if (a > b) {a = a - b;}
+    else {b = b - a;}
+  }
+  return a;
+}
+
+fun main(): int
+{
+  lib.print(gcd(14,21));
+  lib.print(gcd(8,36));
+  lib.print(gcd(99,121));
+  return 0;
+}

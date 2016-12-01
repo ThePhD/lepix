@@ -1,0 +1,9 @@
+fun foo(a: int, b: bool) : void
+{
+}
+
+fun main(): int
+{
+  foo(42, true);
+  foo(42, 42); /* Fail: int, not bool */
+}

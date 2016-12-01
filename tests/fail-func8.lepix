@@ -1,0 +1,13 @@
+fun foo(a : int, b : bool) : void
+{
+}
+
+fun bar() : void
+{
+}
+
+fun main(): int
+{
+  foo(42, true);
+  foo(42, bar()); /* int and void, not int and bool */
+}

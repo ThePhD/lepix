@@ -1,0 +1,14 @@
+fun foo(a:int, b:int):int
+{
+  var c : int;
+  var d : bool;
+
+  c = a;
+
+  return c + 10;
+}
+
+fun main(): int {
+ lib.print(foo(37, false));
+ return 0;
+}

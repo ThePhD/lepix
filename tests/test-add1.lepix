@@ -1,0 +1,10 @@
+fun add(x:int, y:int) : int
+{
+  return x + y;
+}
+
+fun main(): int
+{
+  lib.print( add(17, 25) );
+  return 0;
+}

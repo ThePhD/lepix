@@ -1,0 +1,13 @@
+var a:int;
+
+fun foo(c:int):void
+{
+  a = c + 42;
+}
+
+fun main(): int
+{
+  foo(73);
+  lib.print(a);
+  return 0;
+}

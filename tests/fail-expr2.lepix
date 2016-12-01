@@ -1,0 +1,14 @@
+var a :int;
+var b:bool;
+
+fun foo(c:int, d:bool) : void    
+{
+  var d :int;
+  var e :bool;
+  b + a; /* Error: bool + int */
+}
+
+fun main(): int
+{
+  return 0;
+}

@@ -1,0 +1,30 @@
+var a:int;
+var b:int;
+
+fun printa(): void
+{
+  lib.print(a);
+}
+
+fun printb(): void
+{
+  lib.print(b);
+}
+
+fun incab(): void
+{
+  a = a + 1;
+  b = b + 1;
+}
+
+fun main(): int
+{
+  a = 42;
+  b = 21;
+  printa();
+  printb();
+  incab();
+  printa();
+  printb();
+  return 0;
+}

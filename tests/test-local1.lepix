@@ -1,0 +1,13 @@
+fun foo(i:bool): void
+{
+  var i:int; /* Should hide the formal i */
+
+  i = 42;
+  lib.print(i + i);
+}
+
+fun main(): int
+{
+  foo(true);
+  return 0;
+}
