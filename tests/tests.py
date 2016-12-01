@@ -24,7 +24,7 @@ def input_file(f):
 def run_process(target, *args):
 	sp = subprocess.Popen([target] + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	out, err = sp.communicate()
-	return sp.returncode, out, err
+	return sp.returncode, str(out), str(err)
 
 def run_compiler(*args):
 	r, sout, serr = run_process(lepix, *args)
