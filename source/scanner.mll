@@ -66,8 +66,8 @@ rule token = parse
 | "by"     { BY }
 | "to"     { TO }
 | "return" { RETURN }
-| "int"    { INT }
-| "float"  { FLOAT }
+| "int"    { INT(32) }
+| "float"  { FLOAT(32) }
 | "bool"   { BOOL }
 | "string"   { STRING }
 | "void"   { VOID }

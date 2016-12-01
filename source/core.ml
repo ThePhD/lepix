@@ -58,3 +58,5 @@ let action_to_int = function
 	| Semantic -> 100
 	| Llvm -> 1000
 	| Compile -> 10000
+
+let entry_point_name = "main"

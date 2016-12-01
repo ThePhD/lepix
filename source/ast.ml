@@ -21,71 +21,101 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 (* Types and routines for the abstract syntax tree and 
 representation of a LePiX program. *)
 
-type binary_op = Add | Sub | Mult | Div | Equal | Neq | Less | Leq | Greater | Geq 
+type id = string
+
+type qualified_id = id list
+
+type struct_type = 
+	qualified_id (* Name *)
+
+type builtin_type =
+	| Void
+	| Bool
+	| Int of int
+	| Float of int
+	| String
+
+type type_name =
+	| BuiltinType of builtin_type
+	| StructType of struct_type
+	| Array of type_name * int
+	| Function of type_name * type_name list
+
+type constness = bool
+type referenceness = bool
+
+type qualified_type = type_name * constness * referenceness
+
+type binding = id * qualified_type
+
+type binary_op = Add | Sub | Mult | Div 
+	| Equal | Neq | Less | Leq | Greater | Geq 
 	| And | Or | Modulo
 
 type prefix_op = 
 	| Neg | Not
 
-type builtin_type = 
-	| Float 
-	| Int 
-	| Bool
-	| String 
-	| Void 
-	| Array of builtin_type * int
-	| Reference of builtin_type
-
-type bind = string * builtin_type * bool
-
-type name = string
-type qualified_id = string list
-
-type expr =
+type literal =
 	| BoolLit of bool
 	| IntLit of int
-	| StringLit of string
 	| FloatLit of float
-	| Id of qualified_id
-	| Call of expr * expr list
-	| Access of expr * expr list
-	| MemberAccess of expr * name 
-	| BinaryOp of expr * binary_op * expr
-	| PrefixUnaryOp of prefix_op * expr 
-	| Assign of string list * expr   
-	| ArrayLit of expr list
-	| Noexpr
+	| StringLit of string
+
+type expression =
+	| Literal of literal
+	| Id of id
+	| Member of expression * id
+	| Call of expression * expression list
+	| Index of expression * expression list
+	| Initializer of expression list
+	| BinaryOp of expression * binary_op * expression
+	| PrefixUnaryOp of prefix_op * expression
+	| Assignment of expression * expression
+	| NoOp
+
+type parallel_expression =
+	| Invocations of expression
+	| ThreadCount of expression
 
 type variable_definition = 
-	| VarBinding of bind * expr
+	| VarBinding of binding * expression
+	| LetBinding of binding * expression
 
-type parallel_expr =
-	| Invocations of expr
-	| ThreadCount of expr
+type general_statement =
+	| ExpressionStatement of expression
+	| VariableDefinition of variable_definition 
 
-type stmt =
-	| Expr of expr
-	| Return of expr
-	| If of expr * stmt list * stmt list
-	| For of expr * expr * expr * stmt list
-	| ForBy of expr * expr * expr * stmt list
-	| While of expr * stmt list 
+type control_initializer = general_statement list * expression
+
+type statement = 
+	| General of general_statement
+	| Return of expression
 	| Break of int
 	| Continue
-	| Var of variable_definition
-	| Parallel of parallel_expr list * stmt list
-	| Atomic of stmt list
+	| ParallelBlock of parallel_expression list * statement list
+	| AtomicBlock of statement list
+	| IfBlock of control_initializer * statement list
+	| IfElseBlock of control_initializer * statement list * statement list
+	| WhileBlock of control_initializer * statement list
+	| ForBlock of control_initializer * expression list * statement list
+	| ForByToBlock of expression * expression * expression * statement list
 
-type function_definition = {
-	func_name : string;
-	func_parameters : bind list;
-	func_return_type : builtin_type;
-	func_body : stmt list; 
-}
+type function_definition = 
+	qualified_id (* Name *)
+	* binding list (* Parameters *)
+	* qualified_type (* Name *)
+	* binding list (* Locals *)
+	* statement list (* Body *)
 
-type definition =
-	| FuncDef of function_definition
-	| VarDef of variable_definition
-	| NamespaceDef of string list * definition list
+type basic_definition = 	
+	| VariableDefinition of variable_definition
+	| FunctionDefinition of function_definition
+
+type struct_definition = struct_type * basic_definition list
+
+type definition = 
+	| Basic of basic_definition
+	| Structure of struct_definition
+	| Namespace of qualified_id * definition list
 
 type program = definition list

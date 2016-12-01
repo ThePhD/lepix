@@ -24,23 +24,31 @@ and type promotions / conversions organized for operators. *)
 
 module StringMap = Map.Make(String)
 
-(*open Semast*)
+let generate_function_signature return_type parameter_list =
+	
+
 
 let check (ast) = 
 	(**)
-	(*let collect_declarations astprogram = 
-		let acc v dec = let ( prefix, map ) = v in
+	let collect_declarations astprogram = 
+		let acc v dec = let ( prefix, map, has_main ) = v in
 			match dec with 
 				| Ast.FuncDef(f) -> 
-					let qualname = prefix ^ f.Ast.func_name in
-					if StringMap.find
-				| Ast.VarDef(v) ->
-				| Ast.NamespaceDef(n) ->
+					let qualname = prefix ^ "." ^ f.Ast.func_name in
+					if StringMap.mem qualname map then (raise Errors.FunctionAlreadyExists(qualname)) else
+					( prefix, ( StringMap.add qualname "" map ), qualname = Core.entry_point_name )
+				| Ast.VarDef(VarBinding((name, t, isref))) ->	
+					let qualname = prefix ^ "." ^ name in
+					if StringMap.mem prefix map then (raise Errors.VariableAlreadyExists(qualname)) else
+					if qualname = Core.entry_point_name then (raise Errors.BadMain(qualname))
+					( prefix, ( StringMap.add qualname "" map ), has_main )
+				| Ast.NamespaceDef(n) -> ( prefix ^ "." ^ n, map, has_main )
 		in
-		List.foldl acc ("", StringMap.empty) astprogram
+		let (_, decls, _) = List.fold_left acc ("", StringMap.empty, false) astprogram in
+		decls
 	in
 	decls = collect_declarations ast;
-	*)
+	StringMap.fold_left
 	ast
 
 

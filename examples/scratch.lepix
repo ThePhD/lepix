@@ -1,7 +1,22 @@
+fun a () : int {
+	return 10;
+}
+
+fun b () : int {
+	return 20;
+}
+
+namespace fuck.this {
+
+	fun bullshit (x: int) : int {
+		return x + 2;
+	}
+}
+
 fun main () : int {
 	var s : string = "STRING LITERAL!";
 	parallel {
 				
 	}
-	var x : BAD = 24;
+	var x : int = 24;
 }

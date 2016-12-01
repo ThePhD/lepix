@@ -40,3 +40,5 @@ exception MissingEoF
 exception BadToken
 
 (* Semantic Errors *)
+exception FunctionAlreadyExists of string
+exception VariableAlreadyExists of string
