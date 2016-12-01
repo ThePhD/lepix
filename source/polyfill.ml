@@ -28,6 +28,14 @@ This is that thing, for OCrapml. *)
 (* Integer *)
 let int_of_bool b = if b then 1 else 0
 
+(* Char *)
+let is_whitespace = function
+	| ' ' -> true
+	| '\t' -> true
+	| '\n' -> true
+	| '\r' -> true
+	| _ -> false
+
 (* String *)
 let string_to_list s =
 	let l = ref [] in
@@ -37,37 +45,62 @@ let string_to_list s =
 	String.iter acc s;
 	List.rev !l
 
-let string_split v s =
-	let b = ref 0 in
-	let e = String.length s in
-	let vlen = String.length v in
-	let lastmatch = ref 0 in
-	if vlen >= e then
-		[s]
-	else
-		let slist = ref [] in
-		let add_sub start len =
-			let fresh = ( String.sub s start len ) in 
-			slist := fresh :: !slist;
-			lastmatch := start + len + vlen;
-			b := !lastmatch;
-		in
-		while (!b < e) do
-			if s.[!b] <> v.[0] then
-				b := 1 + !b
-			else 
-				let start = !b in
-				let currb = ref (1 + start) in
-				let found = ref true in
-				for vb = 1 to (vlen - 1) do
-					found := !found && ( s.[!currb] = v.[vb] );
-					currb := !currb + 1
-				done;
-				let len = start - !lastmatch in
-				if !found then (add_sub !lastmatch len)
-		done;
-		if !lastmatch < e then
-			add_sub !lastmatch (e - !lastmatch);
+let foldi f value start_index len =
+	let end_index = start_index + len - 1 in
+	if start_index >= end_index then value else
+	let accumulated = ref value 
+	in
+	for i = start_index to end_index do
+		accumulated := ( f !accumulated i )
+	done;
+	!accumulated	
 
-		(* Return complete split list *)
-		List.rev !slist
+let foldi_to f value start_index end_index =
+	foldi f value start_index (end_index - start_index)
+
+let iteri f start_index len =
+	let end_index = start_index + len - 1 in
+	if start_index < end_index then
+		for i = start_index to end_index do
+			( f i )
+		done
+
+let string_split v s =
+	let e = String.length s
+	and vlen = String.length v 
+	in 
+	if vlen >= e then [s] else
+	let forward_search start =
+		let acc found idx =
+			found && ( s.[start + idx] = v.[idx] )
+		in
+		foldi acc true 1 (vlen - 1)
+	in
+	let add_sub start len slist =
+		if len < 1 then ( start, slist ) else
+		let fresh = ( String.sub s start len ) 
+		and last = start + len + vlen in
+		( last, fresh :: slist )
+	in
+	let acc (last, slist) start =
+		if (start < last) then (last, slist) else
+		if ( s.[start] = v.[0] ) then
+			if (forward_search start) then 
+				let len = start - last in
+				(add_sub last len slist)
+			else
+				(last, slist) 
+		else 
+			if ( start = ( e - 1 ) ) then
+				let len = e - last in
+				(add_sub last len slist)			
+			else
+				(last, slist)
+	in
+	let (_, slist) = ( foldi acc (0, []) 0 e ) in
+	(* Return complete split list *)
+	List.rev slist
+
+let string_starts_with str pre =
+	let prelen = (String.length pre) in
+	prelen <= (String.length str ) && pre = (String.sub str 0 prelen)

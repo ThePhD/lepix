@@ -1,6 +1,7 @@
 fun main () : int {
-	?
+	var s : string = "STRING LITERAL!";
 	parallel {
 				
 	}
+	var x : BAD = 24;
 }

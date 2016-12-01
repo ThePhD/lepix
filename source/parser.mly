@@ -38,9 +38,10 @@ open Ast
 %token VAR LET
 %token FUN TO BY 
 %token RETURN CONTINUE BREAK IF ELSE FOR WHILE
-%token INT BOOL VOID FLOAT
+%token INT BOOL VOID FLOAT STRING
 %token NAMESPACE
 %token <string> ID
+%token <string> STRINGLITERAL
 %token <int> INTLITERAL
 %token <float> FLOATLITERAL
 %token EOF
@@ -53,12 +54,12 @@ open Ast
 %left EQ NEQ
 %left LT GT LEQ GEQ
 %left PLUS MINUS
-%left TIMES DIVIDE
+%left TIMES DIVIDE MODULO
 %right NOT NEG
 %left DOT
 
 %start program
-%type<Ast.prog> program
+%type<Ast.program> program
 %%
 
 args_list: { [] }
@@ -74,7 +75,8 @@ type_name:
 | FLOAT { Float }
 | BOOL { Bool }
 | VOID { Void }
-| type_name array_spec { Array($1, $2); }
+| STRING { String }
+| type_name array_spec { Array($1, $2) }
 
 qualified_id_builder:
 | ID { [$1] }
@@ -87,6 +89,7 @@ expr:
 | qualified_id { Id($1) }
 | INTLITERAL { IntLit($1) }
 | FLOATLITERAL { FloatLit($1) }
+| STRINGLITERAL { StringLit($1) }
 | TRUE { BoolLit(true) }
 | FALSE { BoolLit(false) }
 | LSQUARE args_list RSQUARE { ArrayLit($2) }
@@ -98,6 +101,7 @@ expr:
 | expr DIVIDE expr { BinaryOp($1, Div, $3)  }
 | expr PLUS expr { BinaryOp($1, Add, $3) }
 | expr MINUS expr { BinaryOp($1, Sub, $3) }
+| expr MODULO expr { BinaryOp($1, Modulo, $3) }
 | expr LT expr { BinaryOp($1, Less, $3) }
 | expr GT expr { BinaryOp($1, Greater, $3) }
 | expr LEQ expr { BinaryOp($1, Leq, $3) }
@@ -110,17 +114,19 @@ expr:
 | LPAREN expr RPAREN { $2 }
 
 binding:
-| ID COLON type_name { ($1,$3, false) }
+| ID COLON type_name { ($1, $3, false) }
+| ID COLON AMP type_name { ($1, $4, true) }
 
 params_list: { [] }
-| ID COLON type_name { [($1,$3, false)] }
-| ID COLON type_name COMMA params_list { ($1,$3, false)::$5 }
+| ID COLON type_name { [($1, $3, false)] }
+| ID COLON type_name COMMA params_list { ($1, $3, false)::$5 }
 
 variable_definition:
-| VAR binding ASSIGN expr SEMI { VarBinding($2,$4) }
+| VAR binding ASSIGN expr SEMI { VarBinding($2, $4) }
+| LET binding ASSIGN expr SEMI { VarBinding($2, $4) }
 
 fun_decl:
-FUN ID LPAREN params_list RPAREN COLON type_name LBRACE statement_list RBRACE { { func_name=$2; func_parameters=$4; func_return_type=$7; func_body=$9} }
+| FUN ID LPAREN params_list RPAREN COLON type_name LBRACE statement_list RBRACE { { func_name=$2; func_parameters=$4; func_return_type=$7; func_body=$9} }
 
 statement_list_builder: { [] }
 | statement_list_builder statement { $2::$1 }
@@ -151,8 +157,8 @@ statement:
 | BREAK INTLITERAL SEMI { Break($2) }
 | CONTINUE SEMI { Continue }
 | variable_definition { Var($1) }
-| PARALLEL LPAREN parallel_binding_list RPAREN LBRACE statement_list RBRACE  { Parallel($3,$6) }
-| PARALLEL LBRACE statement_list RBRACE  { Parallel([ThreadCount(IntLit(-1)); Invocations(IntLit(-1))],$3) }
+| PARALLEL LPAREN parallel_binding_list RPAREN LBRACE statement_list RBRACE  { Parallel($3, $6) }
+| PARALLEL LBRACE statement_list RBRACE  { Parallel([ThreadCount(IntLit(-1)); Invocations(IntLit(-1))], $3) }
 | ATOMIC LBRACE statement_list RBRACE { Atomic($3) }
 
 decls_list : { [] }

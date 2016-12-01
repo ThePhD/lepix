@@ -1,0 +1,27 @@
+dist: trusty
+sudo: required
+
+language: cpp
+
+services:
+     - docker
+
+before_install:
+     - docker pull ubuntu:latest
+     - docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:latest sleep infinity
+     - docker exec lepix_ci bash -e -v -c "apt-get update"
+     - docker exec lepix_ci bash -e -v -c "apt install -y git python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8"
+     - docker exec lepix_ci bash -e -v -c "opam init -y"
+     - docker exec lepix_ci bash -e -v -c "opam install -y depext llvm.3.8"
+
+script:
+     - docker exec lepix_ci bash -e -v -c "source ci_repo/ci/travis.sh"
+
+after_script:
+     - docker stop lepix_ci
+     - docker rm lepix_ci
+
+notifications:
+     email:
+          on_success: change
+          on_failure: change

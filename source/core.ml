@@ -18,178 +18,43 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Semantic checking for the Lepix compiler that will produce a new 
-SemanticProgram type with things like locals group into a single type 
-and type promotions / conversions organized for operators. *)
-
-module StringMap = Map.Make(String)
-
-(*open Semast*)
-
-let check (ast) = 
-	(**)
-	(*let collect_declarations astprogram = 
-		let acc v dec = let ( prefix, map ) = v in
-			match dec with 
-				| Ast.FuncDef(f) -> 
-					let qualname = prefix ^ f.Ast.func_name in
-					if StringMap.find
-				| Ast.VarDef(v) ->
-				| Ast.NamespaceDef(n) ->
-		in
-		List.foldl acc ("", StringMap.empty) astprogram
-	in
-	decls = collect_declarations ast;
-	*)
-	ast
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(* Core types and routines. *)
+
+type token_source = {
+     token_source_name : string;
+	token_number : int;
+     token_line_number : int;
+     token_line_start : int;
+	token_column_range : int * int;
+	token_character_range : int * int;
+}
+
+type target =
+	| Pipe
+	| File of string
+
+let target_to_string = function
+	| Pipe -> "pipe"
+	| File(s) -> "file: " ^ s
+
+let target_to_pipe_string i b = match i with
+	| Pipe -> if b then "stdin" else "stdout"
+	| File(s) -> "file: " ^ s
+
+type action = 
+	| Help
+	| Preprocess
+	| Tokens
+	| Ast
+	| Semantic
+	| Llvm
+	| Compile
+
+let action_to_int = function
+	| Help -> -1
+	| Preprocess -> 0
+	| Tokens -> 1
+	| Ast -> 10
+	| Semantic -> 100
+	| Llvm -> 1000
+	| Compile -> 10000

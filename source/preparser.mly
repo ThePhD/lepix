@@ -1,4 +1,5 @@
-(* LePiX Language Compiler Implementation
+%{
+(* LePiX - LePiX Language Compiler Implementation
 Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
@@ -18,178 +19,28 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Semantic checking for the Lepix compiler that will produce a new 
-SemanticProgram type with things like locals group into a single type 
-and type promotions / conversions organized for operators. *)
-
-module StringMap = Map.Make(String)
-
-(*open Semast*)
-
-let check (ast) = 
-	(**)
-	(*let collect_declarations astprogram = 
-		let acc v dec = let ( prefix, map ) = v in
-			match dec with 
-				| Ast.FuncDef(f) -> 
-					let qualname = prefix ^ f.Ast.func_name in
-					if StringMap.find
-				| Ast.VarDef(v) ->
-				| Ast.NamespaceDef(n) ->
-		in
-		List.foldl acc ("", StringMap.empty) astprogram
-	in
-	decls = collect_declarations ast;
-	*)
-	ast
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(* Parser for the LePiX preprocessor: compatible with both ocamlyacc and 
+menhir, as we have developed against both for testing purposes. *)
+
+%}
+
+%token HASH
+%token IMPORT STRING
+%token <string> TEXT
+%token <string> STRINGLITERAL
+%token EOF
+
+%start source
+%type<Preast.pre_source> source
+%%
+
+blob:
+| HASH IMPORT STRINGLITERAL { Preast.ImportSource($3) }
+| HASH IMPORT STRING STRINGLITERAL { Preast.ImportString($4) }
+| TEXT { Preast.Text($1) }
+
+blob_list: { [] }
+| blob_list blob { $2 :: $1 }
+
+source:
+| blob_list EOF { List.rev $1 }

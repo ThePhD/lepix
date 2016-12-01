@@ -22,23 +22,31 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 working with the file system, since we are not using Batteries Included of Jane Street's
 Core.Std and the like in our implementation so far... *)
 
-let lines_in_file f filename =
-	let chan = open_in filename in
-	try while true do f(input_line chan) done
-	with End_of_file -> close_in chan
-;;
+let read_characters_in f v chan =
+	let rv = ref v in
+	try 
+		while true do 
+			rv := (f !rv (input_char chan)) 
+		done;
+		!rv
+	with
+		| End_of_file -> close_in chan; !rv
 
-let read_text filename =
+let read_text chan =
 	(* Read all the lines into a reference and return
 	the value itself *)
-	let result = ref "" in
-	lines_in_file ( fun line -> result := !result ^ line ) filename;
-	!result
-;;
+	let buf = Buffer.create 1024 in
+	let buf = read_characters_in ( fun b c -> Buffer.add_char b c; b ) buf chan in
+	Buffer.contents buf
 
-let write_text text filename =
+let read_file_text filename =
+	(* Read all the lines into a reference and return
+	the value itself *)
+	let chan = open_in filename in
+	read_text chan
+
+let write_file_text text filename =
 	let chan = open_out filename in (* create or truncate file, return channel *)
-		Printf.fprintf chan "%s\n" text; (* write something *)
+		Printf.fprintf chan "%s" text; (* write something *)
 	(* flush and close the channel *)
 	close_out chan
-;; 

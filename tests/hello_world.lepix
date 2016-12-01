@@ -1,0 +1,4 @@
+fun main () : int {
+	lib.print(24);
+	return 0;
+}

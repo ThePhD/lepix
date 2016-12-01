@@ -18,12 +18,10 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Ocamllex Scanner for LePiX *)
+(* Ocamllex Scanner for LePiX Preprocessor *)
 
 { 
 	open Parser
-
-    let sourcename = ref ""
 }
 
 let whitespace = [' ' '\t' '\r']
@@ -34,6 +32,7 @@ rule token = parse
 | newline  { Lexing.new_line lexbuf; token lexbuf }
 | "/*"     { multi_comment 0 lexbuf }
 | "//"	   { single_comment lexbuf }
+| '"'      { string_literal ( Buffer.create 128 ) lexbuf }
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
@@ -70,10 +69,12 @@ rule token = parse
 | "int"    { INT }
 | "float"  { FLOAT }
 | "bool"   { BOOL }
+| "string"   { STRING }
 | "void"   { VOID }
 | "true"   { TRUE }
 | "false"  { FALSE }
 | "var"    { VAR }
+| "let"    { LET }
 | "fun"	    { FUN }
 | "parallel" { PARALLEL }
 | "break" { BREAK }
@@ -87,13 +88,19 @@ rule token = parse
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
-| _ as c { raise (Error.UnknownCharacter(!sourcename, String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+| _ as c { raise (Error.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+
+and string_literal string_buffer = parse
+| newline as c { Lexing.new_line lexbuf; Buffer.add_char string_buffer c; string_literal string_buffer lexbuf }
+| '"' { let v = STRINGLITERAL( Buffer.contents string_buffer ) in v }
+| "\\\"" as s { Buffer.add_string string_buffer s; string_literal string_buffer lexbuf }
+| _ as c { Buffer.add_char string_buffer c; string_literal string_buffer lexbuf }
 
 and multi_comment level = parse
 | newline { Lexing.new_line lexbuf; multi_comment level lexbuf }
 |  "*/" { if level = 0 then token lexbuf else multi_comment (level-1) lexbuf }
 |  "/*" { multi_comment (level+1) lexbuf }
-| _    { multi_comment level  lexbuf }
+| _    { multi_comment level lexbuf }
 
 and single_comment = parse
 | newline { Lexing.new_line lexbuf; token lexbuf }

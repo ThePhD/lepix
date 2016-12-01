@@ -23,20 +23,29 @@ infrastructure of the compiler, to make it easy to understand what the fuck we'r
 
 (* Lexer types: dumping and pretty printing tokens *)
 
-let token_to_string = function
-	| Parser.LPAREN -> "LPAREN"	
-	| Parser.RPAREN -> "RPAREN"	
-	| Parser.LBRACE -> "LBRACE"	
-	| Parser.RBRACE -> "RBRACE"	
+let preparser_token_to_string = function
+	| Preparser.HASH -> "HASH"
+	| Preparser.IMPORT -> "IMPORT"
+	| Preparser.STRING -> "STRING"
+	| Preparser.TEXT(s) -> "TEXT(" ^ s ^ ")"
+	| Preparser.STRINGLITERAL(s) -> "STRINGLITERAL(" ^ s ^ ")"
+	| Preparser.EOF -> "EOF"
+
+
+let parser_token_to_string = function
+	| Parser.LPAREN -> "LPAREN"
+	| Parser.RPAREN -> "RPAREN"
+	| Parser.LBRACE -> "LBRACE"
+	| Parser.RBRACE -> "RBRACE"
 	| Parser.LSQUARE -> "LSQUARE"
 	| Parser.RSQUARE -> "RSQUARE"
-	| Parser.SEMI -> "SEMI"	
-	| Parser.COMMA -> "COMMA"	
-	| Parser.PLUS -> "PLUS"	
-	| Parser.MINUS -> "MINUS"	
-	| Parser.TIMES -> "TIMES"	
-	| Parser.DIVIDE -> "DIVIDE"	
-	| Parser.ASSIGN -> "ASSIGN"	
+	| Parser.SEMI -> "SEMI"
+	| Parser.COMMA -> "COMMA"
+	| Parser.PLUS -> "PLUS"
+	| Parser.MINUS -> "MINUS"
+	| Parser.TIMES -> "TIMES"
+	| Parser.DIVIDE -> "DIVIDE"
+	| Parser.ASSIGN -> "ASSIGN"
 	| Parser.EQ -> "EQ"
 	| Parser.NEQ -> "NEQ"
 	| Parser.LT -> "LT"
@@ -49,6 +58,7 @@ let token_to_string = function
 	| Parser.DOT -> "DOT"
 	| Parser.AMP -> "AMPERSAND"
 	| Parser.COLON -> "COLON"
+	| Parser.MODULO -> "MODULO"
 	| Parser.PARALLEL -> "PARALLEL"
 	| Parser.INVOCATIONS -> "INVOCATIONS"
 	| Parser.THREADCOUNT -> "THREADCOUNT"
@@ -58,24 +68,25 @@ let token_to_string = function
 	| Parser.FUN -> "FUN"
 	| Parser.NAMESPACE -> "NAMESPACE"
 	| Parser.IF -> "IF"
-	| Parser.ELSE -> "ELSE"	
+	| Parser.ELSE -> "ELSE"
 	| Parser.FOR -> "FOR"
 	| Parser.TO -> "TO"
 	| Parser.BY -> "BY"
-	| Parser.WHILE -> "WHILE"	
-	| Parser.RETURN -> "RETURN"	
+	| Parser.WHILE -> "WHILE"
+	| Parser.RETURN -> "RETURN"
 	| Parser.INT -> "INT"
-	| Parser.FLOAT -> "FLOAT"	
-	| Parser.BOOL -> "BOOL"	
+	| Parser.FLOAT -> "FLOAT"
+	| Parser.BOOL -> "BOOL"
+	| Parser.STRING -> "STRING"
 	| Parser.VOID -> "VOID"
-	| Parser.TRUE -> "TRUE"	
-	| Parser.FALSE -> "FALSE"	
-	| Parser.BREAK -> "BREAK"	
-	| Parser.CONTINUE -> "CONTINUE"	
+	| Parser.TRUE -> "TRUE"
+	| Parser.FALSE -> "FALSE"
+	| Parser.BREAK -> "BREAK"
+	| Parser.CONTINUE -> "CONTINUE"
+	| Parser.STRINGLITERAL(s) -> "STRINGLITERAL(" ^ s ^ ")"
 	| Parser.INTLITERAL(i) -> "INTLITERAL(" ^ string_of_int i ^ ")"
 	| Parser.FLOATLITERAL(f) -> "FLOATLITERAL(" ^ string_of_float f ^ ")"
 	| Parser.ID(s) -> "ID(" ^ s ^ ")"
-	| Parser.MODULO -> "MODULO"
 	| Parser.EOF -> "EOF"
 
 let token_range_to_string (x, y) =
@@ -86,14 +97,22 @@ let token_range_to_string (x, y) =
 		string_of_int x
 
 let token_source_to_string t =
-	string_of_int t.Driver.token_line_number 
+	string_of_int t.Core.token_line_number 
 	^ ":" 
-	^ token_range_to_string t.Driver.token_column_range
+	^ token_range_to_string t.Core.token_column_range
 
-let token_list_to_string token_list = 
+let preparser_token_list_to_string token_list = 
 	let rec helper = function
 	| (token, pos) :: tail -> 
-		"[" ^ "id " ^ ( string_of_int pos.Driver.token_number ) ^ ( token_to_string token ) ^ ":" 
+		"[" ^ ( preparser_token_to_string token ) ^ ":" 
+		^ token_source_to_string pos ^ "] " 
+		^ helper tail
+	| [] -> "\n" in helper token_list
+
+let parser_token_list_to_string token_list = 
+	let rec helper = function
+	| (token, pos) :: tail -> 
+		"[" ^ ( parser_token_to_string token ) ^ ":" 
 		^ token_source_to_string pos ^ "] " 
 		^ helper tail
 	| [] -> "\n" in helper token_list
@@ -114,6 +133,7 @@ let string_of_binary_op = function
 	| Ast.Geq -> ">="
 	| Ast.And -> "&&"
 	| Ast.Or -> "||"
+	| Ast.Modulo -> "%"
 
 let string_of_unary_op = function
 	| Ast.Neg -> "-"
@@ -123,6 +143,7 @@ let rec string_of_expr = function
 	| Ast.IntLit(l) -> string_of_int l
 	| Ast.BoolLit(true) -> "true"
 	| Ast.BoolLit(false) -> "false"
+	| Ast.StringLit(s) -> s
 	| Ast.FloatLit(f) -> string_of_float f
 	| Ast.Id(sl) -> String.concat "." sl
 	| Ast.BinaryOp(e1, o, e2) ->
@@ -145,11 +166,13 @@ let rec string_of_expr_list = function
 	| s::l -> string_of_expr s ^ "," ^ string_of_expr_list l
 
 let rec string_of_typename = function
+	| Ast.Float -> "float"
 	| Ast.Int -> "int"
 	| Ast.Bool -> "bool"
+	| Ast.String -> "string"
 	| Ast.Void -> "void"
-	| Ast.Float -> "float"
 	| Ast.Array(t, d) -> string_of_typename t ^ ( String.make d '[' ) ^ ( String.make d ']' )
+	| Ast.Reference(t) -> string_of_typename t ^ "&"
 
 let rec string_of_bind = function
 	| (n, t, r) -> n ^ " : " ^ ( if r then "&" else "" ) ^ string_of_typename t
@@ -190,3 +213,33 @@ let rec string_of_definition = function
 
 let string_of_program p = 
 	(String.concat "" (List.map string_of_definition p) )
+
+(* Error message helpers *)
+
+let line_of_source src token_info =
+	let ( absb, abse ) = token_info.Core.token_character_range 
+	and linestart = token_info.Core.token_line_start
+	in
+	let ( lineend, _ ) =
+		let f (endindex, should_skip) idx =
+			let c = src.[idx] in
+			if should_skip then (endindex, true) else
+			(endindex + 1, c = '\n' || c = ';' || c = '}' || c = '{')
+		in
+		Polyfill.foldi f ( linestart, false ) linestart ( ( String.length src ) - linestart )
+	in
+	let srcline = String.sub src linestart (lineend - linestart) in
+	let srclinelen = String.length srcline in
+	let ( srcindent, _ ) = 
+		let f (s, should_skip) idx = 
+			let c = srcline.[idx] in
+			let ws = not ( Polyfill.is_whitespace c ) in
+			if should_skip || ws then (s, false) else
+			(s ^ ( String.make 1 c ), true)
+		in
+		Polyfill.foldi f ( "", false ) 0 srclinelen
+	in
+	let indentlen = String.length srcindent
+	and tokenlen = lineend - absb
+	in
+	( srcline, srcindent, (max ( srclinelen - indentlen - tokenlen ) 0 ) )
