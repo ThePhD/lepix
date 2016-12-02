@@ -24,15 +24,45 @@ and type promotions / conversions organized for operators. *)
 
 module StringMap = Map.Make(String)
 
-type symbol_table = ( type_name, is_constant ) StringMap
+type symbol_table = ( Ast.type_name * bool ) StringMap
 
-type semantic_program = symbol_table * definition list
+type s_expression = 
+	| SExpression of Ast.type_name * Ast.expression
 
-(* Helper utilities *)
-let rec ast_to_sem_type = function
-	| Ast.Float -> ( Float(32), false, false )
-	| Ast.Int -> ( Int(32), false, false )
-	| Ast.Void -> ( Void, false, false )
-	| Ast.String -> ( String, false, false )
-	| Ast.Array(t, d) -> ( Array(ast_to_sem_type t, d), false, false )
-	
+type s_locals =
+	| SLocals of Ast.binding list
+
+type s_block =
+	| SBlock of s_locals * Ast.statement list
+
+type s_parameters =
+	| SParameters of Ast.binding list
+
+type s_function_defintion =
+	| SFunctionDefinition of Ast.qualified_id * s_parameters
+	* Ast.type_name * s_block
+
+type s_statement =
+	| SGeneral of Ast.general_statement
+	| SReturn of Ast.expression
+	| SBreak of int
+	| SContinue
+	| SParallelBlock of Ast.parallel_expression list * s_block
+	| SAtomicBlock of s_block
+	| SIfBlock of s_block * s_expression * s_block
+	| SIfElseBlock of s_block * s_expression * s_block * s_block
+	| SWhileBlock of s_block * s_expression * s_block
+	| SForBlock of s_block * s_expression * s_block * s_statement list
+
+type s_basic_definition = 	
+	| SVariableDefinition of Ast.variable_definition
+	| SFunctionDefinition of s_function_definition
+
+type s_struct_definition = Ast.struct_type * s_basic_definition list
+
+type s_definition = 
+	| SBasic of s_basic_definition
+	| SStructure of s_struct_definition * symbol_table
+	| SNamespace of qualified_id * s_definition list
+
+type s_program = symbol_table * s_definition list

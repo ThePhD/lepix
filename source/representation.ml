@@ -65,6 +65,7 @@ let parser_token_to_string = function
 	| Parser.ATOMIC -> "ATOMIC"
 	| Parser.VAR -> "VAR"
 	| Parser.LET -> "LET"
+	| Parser.CONST -> "CONST"
 	| Parser.FUN -> "FUN"
 	| Parser.NAMESPACE -> "NAMESPACE"
 	| Parser.IF -> "IF"
@@ -154,7 +155,7 @@ let rec string_of_expr = function
 		string_of_expr e1 ^ " " ^ string_of_binary_op o ^ " " ^ string_of_expr e2
 	| Ast.PrefixUnaryOp(o, e) -> string_of_unary_op o ^ string_of_expr e
 	| Ast.Index(e, l) -> string_of_expr e ^ "[" ^ (String.concat ", " (List.map string_of_expr l)) ^ "]"
-	| Ast.Member(e, s) -> string_of_expr e ^ "." ^ s
+	| Ast.Member(e, qid) -> string_of_expr e ^ "." ^ string_of_qualified_id qid
 	| Ast.Assignment(e1, e2) -> string_of_expr e1 ^ " = " ^ string_of_expr e2
 	| Ast.Call(e, el) ->
 		string_of_expr e ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
@@ -169,7 +170,6 @@ let rec string_of_expr_list = function
 	| [] -> ""
 	| s::l -> string_of_expr s ^ "," ^ string_of_expr_list l
 
-
 let rec string_of_builtin_type = function
 	| Ast.Float(b) -> "float" ^ string_of_int b
 	| Ast.Int(b) -> "int" ^ string_of_int b
@@ -177,25 +177,27 @@ let rec string_of_builtin_type = function
 	| Ast.String -> "string"
 	| Ast.Void -> "void"
 
-let rec string_of_typename = function
-	| Ast.BuiltinType(t) -> string_of_builtin_type t
-	| Ast.StructType(sl) -> String.concat "." sl
-	| Ast.Array(t, d) -> string_of_typename t ^ ( String.make d '[' ) ^ ( String.make d ']' )
-	| Ast.Function(r, args) -> string_of_typename r ^ " ( " ^  ( String.concat ", " ( List.map ( fun v -> string_of_typename v ) args ) ) ^ " )"
+let string_of_type_qualifier = function
+	| (c, r) -> ( if c then "const" else "" ) ^ ( if r then "&" else "" )
 
-let string_of_qualified_type = function
-	| (t, c, r) -> ( if c then "const" else "" ) ^ ( if r then "&" else "" ) ^ string_of_typename t
+let rec string_of_type_name = function
+	| Ast.BuiltinType(t, tq) -> string_of_type_qualifier tq ^ string_of_builtin_type t
+	| Ast.StructType(sl, tq) -> string_of_type_qualifier tq ^ String.concat "." sl
+	| Ast.Array(t, d, tq) -> string_of_type_qualifier tq ^ string_of_type_name t ^ ( String.make d '[' ) ^ ( String.make d ']' )
+	| Ast.Function(r, args, tq) -> string_of_type_qualifier tq ^ string_of_type_name r ^ " ( " ^  ( String.concat ", " ( List.map ( fun v -> string_of_type_name v ) args ) ) ^ " )"
 
-let rec string_of_binding = function
-	| (n, qt) -> n ^ " : " ^ string_of_qualified_type qt
+let string_of_binding = function
+	| (n, t) -> n ^ " : " ^ string_of_type_name t
 
 let string_of_variable_definition = function 
-	| Ast.VarBinding(b, e) -> "var " ^ string_of_binding b ^ " = " ^ string_of_expr e ^ ";\n"
-	| Ast.LetBinding(b, e) -> "let " ^ string_of_binding b ^ " = " ^ string_of_expr e ^ ";\n"
+	| Ast.VarBinding(b, Ast.NoOp) -> "var " ^ string_of_binding b
+	| Ast.LetBinding(b, Ast.NoOp) -> "let " ^ string_of_binding b
+	| Ast.VarBinding(b, e) -> "var " ^ string_of_binding b ^ " = " ^ string_of_expr e
+	| Ast.LetBinding(b, e) -> "let " ^ string_of_binding b ^ " = " ^ string_of_expr e
 
 let string_of_general_statement = function
 	| Ast.ExpressionStatement(e) -> string_of_expr e
-	| Ast.VariableDefinition(v) -> string_of_variable_defintion v
+	| Ast.VariableDefinition(v) -> string_of_variable_definition v
 
 let string_of_condition_initializer = function
 	| (il, cond) -> ( String.concat "; " ( List.map string_of_general_statement il ) ) ^ string_of_expr cond
@@ -209,12 +211,13 @@ let rec string_of_stmt_list = function
 		| Ast.Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
 		| Ast.IfBlock(ilcond, s) -> "if (" ^ string_of_condition_initializer ilcond ^ ")" 
 			^ "{\n" ^  string_of_stmt_list s ^ "}\n"
-		| Ast.IfelseBlock(ilcond, s, s2) -> "if (" ^ string_of_condition_initializer ilcond ^ ")" 
+		| Ast.IfElseBlock(ilcond, s, s2) -> "if (" ^ string_of_condition_initializer ilcond ^ ")" 
 			^ "{\n" ^  string_of_stmt_list s ^ "}\n" 
 			^ "else {\n" ^ string_of_stmt_list s2 ^ "}\n"
-		| Ast.ForBlock((il, cond), e3, sl) -> "for (" ^ string_of_expr e1  ^ " ; " ^ string_of_expr e2 ^ " ; " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
-		| Ast.ForByBlock(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " to " ^ string_of_expr e2 ^ " by " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
-		| Ast.While(e, s) -> "while (" ^ string_of_expr e ^ ") " ^ string_of_stmt_list s
+		| Ast.ForBlock(ilcond, incrl, sl) -> "for (" ^ string_of_condition_initializer ilcond  ^ "; " 
+			^ string_of_expr_list incrl  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
+		| Ast.ForByToBlock(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " to " ^ string_of_expr e2 ^ " by " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
+		| Ast.WhileBlock(ilcond, s) -> "while (" ^ string_of_condition_initializer ilcond ^ ") " ^ string_of_stmt_list s
 		| Ast.Break(n) -> ( if n == 1 then "break" else "break" ^ string_of_int n ) ^ ";\n"
 		| Ast.Continue -> "continue;\n"
 		| Ast.ParallelBlock(pel,sl) -> "parallel(" ^ (String.concat ", " (List.map string_of_parallel_expr pel)) ^ " ) {"
@@ -223,23 +226,23 @@ let rec string_of_stmt_list = function
 
 let string_of_function_definition = function
 	| ( name, parameters, return_type, locals, body) ->
-	"fun " ^ name 
+	"fun " ^ string_of_qualified_id name 
     ^ "(" ^ (String.concat ", " (List.map string_of_binding parameters)) ^ ") : " 
-    ^ string_of_typename return_type  ^ " {\n" 
+    ^ string_of_type_name return_type  ^ " {\n" 
     ^ string_of_stmt_list body 
     ^ "}\n"
 
 let rec string_of_basic_definition = function
 	| Ast.FunctionDefinition(fdef) -> string_of_function_definition fdef
-	| Ast.VariableDefinition(vdef) -> string_of_binding vdef
+	| Ast.VariableDefinition(vdef) -> string_of_variable_definition vdef ^ ";\n"
 
-let string_of_struct_defintion = function
+let string_of_struct_definition = function
 	| (_,_) -> "UNSUPPORTED"
 
 let rec string_of_definition = function
-	| Ast.BasicDefinition(bdef) -> string_of_basic_definition bdef
-	| Ast.StructDefinition(sdef) -> string_of_struct_definition sdef
-	| Ast.NamespaceDefinition(qid, defs) -> "namespace " ^ string_of_qualified_id qid ^ "{\n" 
+	| Ast.Basic(bdef) -> string_of_basic_definition bdef
+	| Ast.Structure(sdef) -> string_of_struct_definition sdef
+	| Ast.Namespace(qid, defs) -> "namespace " ^ string_of_qualified_id qid ^ "{\n" 
 		^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
 
 let string_of_program p = 

@@ -11,4 +11,4 @@ clean :
 #Build top level lepix executable
 lepix :
 	ocamlbuild -use-ocamlfind -use-menhir -pkgs llvm,llvm.analysis -build-dir obj lepix.native
-	cp -u obj/lepix.native lepixc
+	cp -f obj/lepix.native lepixc

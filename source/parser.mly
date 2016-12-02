@@ -31,14 +31,14 @@ menhir, as we have developed against both for testing purposes. *)
 %token PLUS MINUS TIMES DIVIDE ASSIGN 
 %token MODULO
 %token NOT AND OR EQ NEQ LT LEQ GT GEQ
-%token AMP
 %token TRUE FALSE
 %token VAR LET
 %token FUN TO BY 
 %token RETURN CONTINUE BREAK IF ELSE FOR WHILE
-%token BOOL VOID STRING
+%token AMP CONST
 %token <int> INT 
 %token <int> FLOAT 
+%token BOOL VOID STRING
 %token NAMESPACE
 %token <string> ID
 %token <string> STRINGLITERAL
@@ -46,8 +46,6 @@ menhir, as we have developed against both for testing purposes. *)
 %token <float> FLOATLITERAL
 %token EOF
 
-%nonassoc NOELSE
-%nonassoc ELSE
 %right ASSIGN
 %left OR
 %left AND
@@ -57,6 +55,8 @@ menhir, as we have developed against both for testing purposes. *)
 %left TIMES DIVIDE MODULO
 %right NOT NEG
 %left DOT
+%left LSQUARE
+%left LPAREN
 
 %start program
 %type<Ast.program> program
@@ -80,25 +80,31 @@ array_spec:
 | LSQUARE RSQUARE { 1 }
 | LSQUARE array_spec RSQUARE { 1 + $2 }
 
-type_name_list_builder: { [] }
-| type_name { [$1] }
-| type_name_list_builder COMMA type_name { $2 :: $1 }
+type_category: { (false, false) }
+| AMP { (false, true) }
+| CONST AMP { (true, true) }
+| CONST { (true, false) }
 
-type_name_list:
-| type_name_list_builder { List.rev $1 }
+sub_type_name:
+| type_category builtin_type             { Ast.BuiltinType($2, $1) }
+| type_category qualified_id             { Ast.StructType($2, $1) }
+| type_category builtin_type array_spec  { Ast.Array(Ast.BuiltinType($2, $1), $3, Ast.no_qualifiers) }
+| type_category qualified_id array_spec  { Ast.Array(Ast.StructType($2, $1), $3, Ast.no_qualifiers) }
+
+sub_type_name_list_builder: { [] }
+| sub_type_name { [$1] }
+| sub_type_name_list_builder COMMA sub_type_name { $3 :: $1 }
+
+sub_type_name_list:
+| sub_type_name_list_builder { List.rev $1 }
 
 type_name:
-| builtin_type                           { Ast.BuiltinType($1) }
-| qualified_id                           { Ast.StructType($1) }
-| type_name array_spec                   { Ast.Array($1, $2) }
+| sub_type_name { $1 }
+| type_category LPAREN sub_type_name_list RPAREN sub_type_name { Ast.Function($5, $3, $1) }
 
-qualified_type_name:
-| type_name        { ($1, false, false) }
-| AMP type_name    { ($2, false, true) }
-
-args_list: { [] }
-| expression                 { [$1] }
-| expression COMMA args_list { $1 :: $3 }
+expression_comma_list:                   { [] }
+| expression                             { [$1] }
+| expression COMMA expression_comma_list { $1 :: $3 }
 
 expression:
 | INTLITERAL { Ast.Literal(Ast.IntLit($1)) }
@@ -106,11 +112,11 @@ expression:
 | STRINGLITERAL { Ast.Literal(Ast.StringLit($1)) }
 | TRUE { Ast.Literal(Ast.BoolLit(true)) }
 | FALSE { Ast.Literal(Ast.BoolLit(false)) }
-| LSQUARE args_list RSQUARE { Ast.Initializer($2) }
+| LSQUARE expression_comma_list RSQUARE { Ast.Initializer($2) }
 | ID { Ast.Id($1) }
-| expression DOT ID { Ast.Member($1, $3) }
-| expression LSQUARE args_list RSQUARE { Ast.Index($1, $3)  }
-| expression LPAREN args_list RPAREN { Ast.Call($1, $3)  }
+| expression DOT ID { Ast.Member($1, [$3]) }
+| expression LSQUARE expression_comma_list RSQUARE { Ast.Index($1, $3)  }
+| expression LPAREN expression_comma_list RPAREN { Ast.Call($1, $3)  }
 | MINUS expression %prec NEG { Ast.PrefixUnaryOp(Ast.Neg, $2) }
 | NOT expression { Ast.PrefixUnaryOp(Ast.Not, $2) }
 | expression TIMES expression { Ast.BinaryOp($1, Ast.Mult, $3) }
@@ -130,7 +136,7 @@ expression:
 | LPAREN expression RPAREN { $2 }
 
 type_spec:
-| COLON qualified_type_name { $2 }
+| COLON type_name { $2 }
 
 binding:
 | ID type_spec { ($1, $2) }
@@ -163,8 +169,9 @@ parallel_binding_list:
 | parallel_binding_list_builder { List.rev $1 }
 
 statement:
-| expression SEMI { Ast.Basic(Ast.ExpressionStatement($1)) }
-| IF LPAREN expression RPAREN LBRACE statement_list RBRACE %prec NOELSE { Ast.IfBlock(([], $3),$6) }
+| expression SEMI { Ast.General(Ast.ExpressionStatement($1)) }
+| variable_definition { Ast.General(Ast.VariableDefinition($1)) }
+| IF LPAREN expression RPAREN LBRACE statement_list RBRACE { Ast.IfBlock(([], $3),$6) }
 | IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE { Ast.IfElseBlock(([], $3),$6,$10)  }
 | WHILE LPAREN expression RPAREN LBRACE statement_list RBRACE { Ast.WhileBlock(([], $3), $6) }
 | FOR LPAREN expression TO expression BY expression RPAREN LBRACE statement_list RBRACE { Ast.ForBlock(([], $3), [$5; $7], $10) }
@@ -173,13 +180,12 @@ statement:
 | BREAK SEMI { Ast.Break(1) }
 | BREAK INTLITERAL SEMI { Ast.Break($2) }
 | CONTINUE SEMI { Ast.Continue }
-| variable_definition { Ast.Basic(Ast.VariableDefinition($1)) }
 | PARALLEL LPAREN parallel_binding_list RPAREN LBRACE statement_list RBRACE  { Ast.ParallelBlock($3, $6) }
 | PARALLEL LBRACE statement_list RBRACE  { Ast.ParallelBlock([Ast.ThreadCount(Ast.Literal(Ast.IntLit(-1))); Ast.Invocations(Ast.Literal(Ast.IntLit(-1)))], $3) }
 | ATOMIC LBRACE statement_list RBRACE { Ast.AtomicBlock($3) }
 
 function_definition:
-| FUN ID LPAREN binding_list RPAREN type_spec LBRACE statement_list RBRACE { ([$2], $4, $6, [], $8) }
+| FUN ID LPAREN binding_list RPAREN type_spec LBRACE statement_list RBRACE { ([$2], $4, $6, $8) }
 
 definition_list : { [] }
 | definition_list function_definition { Ast.Basic(Ast.FunctionDefinition($2)) :: $1 }

@@ -24,180 +24,38 @@ and type promotions / conversions organized for operators. *)
 
 module StringMap = Map.Make(String)
 
-let generate_function_signature return_type parameter_list =
-	
-
-
 let check (ast) = 
 	(**)
-	let collect_declarations astprogram = 
-		let acc v dec = let ( prefix, map, has_main ) = v in
-			match dec with 
-				| Ast.FuncDef(f) -> 
-					let qualname = prefix ^ "." ^ f.Ast.func_name in
-					if StringMap.mem qualname map then (raise Errors.FunctionAlreadyExists(qualname)) else
-					( prefix, ( StringMap.add qualname "" map ), qualname = Core.entry_point_name )
-				| Ast.VarDef(VarBinding((name, t, isref))) ->	
+	let build_global_symbol_table astprogram = 
+		let rec acc v def = let ( prefix, map ) = v in
+			match def with 
+				| Ast.Basic(Ast.FunctionDefinition((qid, args, rt, _, _))) -> 
+					let argst = List.map Ast.binding_type args in
+					let qualname = prefix ^ "." ^ Representation.string_of_qualified_id qid in
+					if StringMap.mem qualname map then raise (Error.FunctionAlreadyExists(qualname)) else
+					let qt = Ast.Function(rt, argst, Ast.no_qualifiers) in
+					( prefix, ( StringMap.add qualname qt map ) )
+				| Ast.Basic(Ast.VariableDefinition(v)) -> 
+					let (name, qt) = match v with
+						| Ast.VarBinding((name, qt), _) -> (name, qt)
+						| Ast.LetBinding((name, qt), _) -> (name, qt)
+					in
 					let qualname = prefix ^ "." ^ name in
-					if StringMap.mem prefix map then (raise Errors.VariableAlreadyExists(qualname)) else
-					if qualname = Core.entry_point_name then (raise Errors.BadMain(qualname))
-					( prefix, ( StringMap.add qualname "" map ), has_main )
-				| Ast.NamespaceDef(n) -> ( prefix ^ "." ^ n, map, has_main )
+					if StringMap.mem prefix map then raise (Error.VariableAlreadyExists(qualname)) else
+					( prefix, ( StringMap.add qualname qt map ) )
+				| Ast.Namespace(n, dl) -> 
+					let qualname = prefix ^ "." ^ Representation.string_of_qualified_id n in
+					List.fold_left acc ( qualname, map ) dl
+				| Ast.Structure(_) -> 
+					(* Unsupported right now: warn maybe? *) 
+					( prefix, map )
 		in
-		let (_, decls, _) = List.fold_left acc ("", StringMap.empty, false) astprogram in
-		decls
+		let (_, defns) = List.fold_left acc ("", StringMap.empty) astprogram in
 	in
-	decls = collect_declarations ast;
-	StringMap.fold_left
+	let generate_semantic symbolsl =
+		
+	in
+	let defns = build_global_symbol_table ast in
+	( defns, ( generate_semantic [defns] )
+	
 	ast
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

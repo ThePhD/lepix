@@ -35,18 +35,20 @@ type builtin_type =
 	| Float of int
 	| String
 
-type type_name =
-	| BuiltinType of builtin_type
-	| StructType of struct_type
-	| Array of type_name * int
-	| Function of type_name * type_name list
-
 type constness = bool
 type referenceness = bool
 
-type qualified_type = type_name * constness * referenceness
+type type_qualifier = constness * referenceness
 
-type binding = id * qualified_type
+let no_qualifiers = (false, false)
+
+type type_name =
+	| BuiltinType of builtin_type * type_qualifier
+	| StructType of struct_type * type_qualifier
+	| Array of type_name * int * type_qualifier
+	| Function of type_name * type_name list * type_qualifier
+
+type binding = id * type_name
 
 type binary_op = Add | Sub | Mult | Div 
 	| Equal | Neq | Less | Leq | Greater | Geq 
@@ -64,7 +66,7 @@ type literal =
 type expression =
 	| Literal of literal
 	| Id of id
-	| Member of expression * id
+	| Member of expression * qualified_id
 	| Call of expression * expression list
 	| Index of expression * expression list
 	| Initializer of expression list
@@ -103,8 +105,7 @@ type statement =
 type function_definition = 
 	qualified_id (* Name *)
 	* binding list (* Parameters *)
-	* qualified_type (* Name *)
-	* binding list (* Locals *)
+	* type_name (* Return Type *)
 	* statement list (* Body *)
 
 type basic_definition = 	
@@ -119,3 +120,10 @@ type definition =
 	| Namespace of qualified_id * definition list
 
 type program = definition list
+
+(* Useful destructuring and common operations *)
+let binding_type = function
+	| (_, qt) -> qt
+
+let binding_name = function
+	| (n, _) -> n
