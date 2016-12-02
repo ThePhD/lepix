@@ -1,0 +1,18 @@
+var a:int;
+var b:bool;
+
+fun foo(c:int, d:bool) : void    
+{
+  var dd: int;
+  var e: bool;
+  a + c;
+  c - a;
+  a * 3;
+  c / 2;
+  d + a; /* Error: bool + int */
+}
+
+fun main(): int
+{
+  return 0;
+}

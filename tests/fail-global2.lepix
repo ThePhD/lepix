@@ -1,0 +1,9 @@
+var b : int;
+var c : bool;
+var a : int;
+var b : int; /* Duplicate global variable */
+
+fun main(): int
+{
+  return 0;
+}

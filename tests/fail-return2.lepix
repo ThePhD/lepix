@@ -1,0 +1,10 @@
+fun foo() : void
+{
+  if (true) {return 42;} /* Should return void */
+  else {return;}
+}
+
+fun main(): int
+{
+  return 42;
+}

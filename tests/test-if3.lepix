@@ -1,0 +1,6 @@
+fun main(): int
+{
+  if (false) {lib.print(42);}
+  lib.print(17);
+  return 0;
+}

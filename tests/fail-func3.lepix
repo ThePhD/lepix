@@ -1,0 +1,8 @@
+fun foo(a:int, b:bool, c:int): int { }
+
+fun bar(a:int, b:void, c:int): void {} /* Error: illegal void formal b */
+
+fun main(): int
+{
+  return 0;
+}

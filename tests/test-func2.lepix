@@ -1,0 +1,16 @@
+fun func(x:int, y:int): int
+{
+  return 0;
+}
+
+fun main(): int
+{
+  var i : int;
+  i = 1;
+
+  func(i = 2, i = i+1);
+
+  lib.print(i);
+  return 0;
+}
+
