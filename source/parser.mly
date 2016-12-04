@@ -146,10 +146,10 @@ binding_list: { [] }
 | binding COMMA binding_list { $1 :: $3 }
 
 variable_definition:
-| VAR binding ASSIGN expression SEMI { Ast.VarBinding($2, $4) }
-| LET binding ASSIGN expression SEMI { Ast.LetBinding($2, $4) }
-| VAR binding SEMI { Ast.VarBinding($2, Ast.NoOp) }
-| LET binding SEMI { Ast.LetBinding($2, Ast.NoOp) }
+| VAR binding ASSIGN expression { Ast.VarBinding($2, $4) }
+| LET binding ASSIGN expression { Ast.LetBinding($2, $4) }
+| VAR binding { Ast.VarBinding($2, Ast.NoOp) }
+| LET binding { Ast.LetBinding($2, Ast.NoOp) }
 
 statement_list_builder: { [] }
 | statement_list_builder statement { $2 :: $1 }
@@ -168,14 +168,34 @@ parallel_binding_list_builder: { [] }
 parallel_binding_list:
 | parallel_binding_list_builder { List.rev $1 }
 
+sub_general_statement:
+| expression { Ast.ExpressionStatement($1) }
+| variable_definition { Ast.VariableStatement($1) }
+
+general_statement:
+| sub_general_statement SEMI { Ast.General($1) }
+
+control_initializer_builder:
+| sub_general_statement { ( [$1], 1 ) }
+| control_initializer_builder SEMI sub_general_statement { let (l, c) = $1 in ( $3 :: l, 1 + c ) }
+
+control_initializer:
+| control_initializer_builder { let ( il, c ) = $1 in if c < 2 then ([], List.hd il) else (List.rev ( List.tl il ), List.hd il) }
+
+sub_general_statement_list_builder: { [] }
+| sub_general_statement { [$1] }
+| sub_general_statement_list_builder COMMA sub_general_statement { $3 :: $1 }
+
+sub_general_statement_list:
+| sub_general_statement_list_builder { List.rev $1 }
+
 statement:
-| expression SEMI { Ast.General(Ast.ExpressionStatement($1)) }
-| variable_definition { Ast.General(Ast.VariableDefinition($1)) }
-| IF LPAREN expression RPAREN LBRACE statement_list RBRACE { Ast.IfBlock(([], $3),$6) }
-| IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE { Ast.IfElseBlock(([], $3),$6,$10)  }
-| WHILE LPAREN expression RPAREN LBRACE statement_list RBRACE { Ast.WhileBlock(([], $3), $6) }
-| FOR LPAREN expression TO expression BY expression RPAREN LBRACE statement_list RBRACE { Ast.ForBlock(([], $3), [$5; $7], $10) }
-| FOR LPAREN expression SEMI expression SEMI expression RPAREN LBRACE statement_list RBRACE { Ast.ForByToBlock($3, $5, $7, $10) }
+| general_statement { $1 }
+| IF LPAREN control_initializer RPAREN LBRACE statement_list RBRACE { Ast.IfBlock($3,$6) }
+| IF LPAREN control_initializer RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE { Ast.IfElseBlock($3,$6,$10)  }
+| WHILE LPAREN control_initializer RPAREN LBRACE statement_list RBRACE { Ast.WhileBlock($3, $6) }
+| FOR LPAREN sub_general_statement_list SEMI expression SEMI expression_comma_list RPAREN LBRACE statement_list RBRACE { Ast.ForBlock($3, $5, $7, $10) }
+| FOR LPAREN expression TO expression BY expression RPAREN LBRACE statement_list RBRACE { Ast.ForByToBlock($3, $5, $7, $10) }
 | RETURN expression SEMI { Ast.Return($2) }
 | BREAK SEMI { Ast.Break(1) }
 | BREAK INTLITERAL SEMI { Ast.Break($2) }

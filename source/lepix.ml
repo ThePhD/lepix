@@ -141,7 +141,7 @@ let _ =
 				let program = Driver.parse context tokenstream in 
 				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
-				output_to_target (Representation.string_of_program semanticprogram)
+				output_to_target (Representation.string_of_semantic_program semanticprogram)
 			| Core.Llvm -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
@@ -149,7 +149,7 @@ let _ =
 				let program = Driver.parse context tokenstream in 
 				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
-				(* if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_program program ); *)
+				(* if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program program ); *)
 				let m = Codegen.generate semanticprogram in
 				output_to_target (Llvm.string_of_llmodule m)
 			| Core.Compile -> 
@@ -159,7 +159,7 @@ let _ =
 				let program = Driver.parse context tokenstream in 
 				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
-				(* if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_program program ); *)
+				(* if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program program ); *)
 				let m = Codegen.generate semanticprogram in
 				Llvm_analysis.assert_valid_module m;
 				output_to_target (Llvm.string_of_llmodule m)
@@ -172,7 +172,7 @@ let _ =
 			| Preparser.Error ->
 				let ( t, info ) = pcontext.Predriver.token in
 				let ( source_line, source_indentation, columns_after_indent ) = 
-					( Representation.line_of_source pcontext.Predriver.source_code info ) 
+					( Core.line_of_source pcontext.Predriver.source_code info ) 
 				in
 				let column_range = info.Core.token_column_range in
 				let msg = "Preprocessing Error in " ^ pcontext.Predriver.source_name ^ ":" 
@@ -201,10 +201,11 @@ let _ =
 				prerr_endline msg
 		
 			(* Parser Errors *)
+			| Parser.Error
 			| Parsing.Parse_error ->
 				let ( t, info ) = context.Driver.token in
 				let ( source_line, source_indentation, columns_after_indent ) = 
-					( Representation.line_of_source context.Driver.source_code info ) 
+					( Core.line_of_source context.Driver.source_code info ) 
 				in
 				let column_range = info.Core.token_column_range in
 				let msg = "Parsing Error in " ^ context.Driver.source_name ^ ":" 

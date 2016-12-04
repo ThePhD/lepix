@@ -60,3 +60,49 @@ let action_to_int = function
 	| Compile -> 10000
 
 let entry_point_name = "main"
+
+(* Error message helpers *)
+
+let line_of_source src token_info =
+	let ( absb, abse ) = token_info.token_character_range 
+	and linestart = token_info.token_line_start
+	in
+	let ( lineend, _ ) =
+		let f idx (endindex, should_skip) =
+			let c = src.[idx] in
+			if should_skip || c = '\n' then (endindex, true) else
+			(endindex + 1, false)
+		in
+		Polyfill.foldi f ( linestart, false ) linestart ( ( String.length src ) - linestart )
+	in
+	let srcline = String.sub src linestart (lineend - linestart) in
+	let srclinelen = String.length srcline in
+	let ( srcindent, _ ) = 
+		let f idx (s, should_skip) = 
+			let c = srcline.[idx] in
+			let ws = not ( Polyfill.is_whitespace c ) in
+			if should_skip || ws then (s, false) else
+			(s ^ ( String.make 1 c ), true)
+		in
+		Polyfill.foldi f ( "", false ) 0 srclinelen
+	in
+	let indentlen = String.length srcindent
+	and tokenlen = lineend - absb
+	in
+	( srcline, srcindent, (max ( srclinelen - indentlen - tokenlen ) 0 ) )
+
+
+let brace_tabulate str tabs =
+	let len = ( String.length str ) in
+	let lines = Polyfill.string_split_with "\n" str Polyfill.KeepDelimeter in
+	let lineslen = ( List.length lines ) in
+	let buf = Buffer.create ( len + ( lineslen * 4 ) ) in
+	let acc ( buf, t ) line = 
+		let tmod = 0 - ( Polyfill.int_of_bool ( String.contains line '}' ) ) in
+		let t = t + tmod in
+		Buffer.add_string buf (String.make t '\t'); Buffer.add_string buf line;
+		let t = t + ( Polyfill.int_of_bool ( String.contains line '{' ) ) in
+		(buf, t)
+	in
+	let (buf, _) = List.fold_left acc ( buf, tabs ) lines in
+	Buffer.contents buf

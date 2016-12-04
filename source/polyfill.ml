@@ -51,7 +51,7 @@ let foldi f value start_index len =
 	let accumulated = ref value 
 	in
 	for i = start_index to end_index do
-		accumulated := ( f !accumulated i )
+		accumulated := ( f i !accumulated )
 	done;
 	!accumulated	
 
@@ -65,13 +65,17 @@ let iteri f start_index len =
 			( f i )
 		done
 
-let string_split v s =
+type split_option =
+	| RemoveDelimeter
+	| KeepDelimeter
+
+let string_split_with v s opt =
 	let e = String.length s
 	and vlen = String.length v 
 	in 
 	if vlen >= e then [s] else
 	let forward_search start =
-		let acc found idx =
+		let acc idx found =
 			found && ( s.[start + idx] = v.[idx] )
 		in
 		foldi acc true 1 (vlen - 1)
@@ -80,9 +84,14 @@ let string_split v s =
 		if len < 1 then ( start, slist ) else
 		let fresh = ( String.sub s start len ) 
 		and last = start + len + vlen in
-		( last, fresh :: slist )
+		begin match opt with
+			| RemoveDelimeter -> ( last, fresh :: slist )
+			| KeepDelimeter -> 
+				let slist = v :: slist in
+				( last, fresh :: slist )
+		end
 	in
-	let acc (last, slist) start =
+	let acc start (last, slist) =
 		if (start < last) then (last, slist) else
 		if ( s.[start] = v.[0] ) then
 			if (forward_search start) then 
@@ -104,3 +113,6 @@ let string_split v s =
 let string_starts_with str pre =
 	let prelen = (String.length pre) in
 	prelen <= (String.length str ) && pre = (String.sub str 0 prelen)
+
+let string_split v s =
+	string_split_with v s RemoveDelimeter

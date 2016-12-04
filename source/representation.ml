@@ -119,7 +119,8 @@ let parser_token_list_to_string token_list =
 	| [] -> "\n" in helper token_list
 
 
-(* Program types: Dump and Pretty-Printing Functions *)
+(* Program types: 
+dumping and Pretty-Printing *)
 
 let string_of_id i = i
 
@@ -166,9 +167,8 @@ let string_of_parallel_expr = function
 	| Ast.ThreadCount(e) -> "thread_count = " ^ string_of_expr e
 	| Ast.Invocations(e) -> "invocations = " ^ string_of_expr e
 
-let rec string_of_expr_list = function
-	| [] -> ""
-	| s::l -> string_of_expr s ^ "," ^ string_of_expr_list l
+let rec string_of_expr_list el =
+	String.concat ", " ( List.map string_of_expr el )
 
 let rec string_of_builtin_type = function
 	| Ast.Float(b) -> "float" ^ string_of_int b
@@ -197,47 +197,52 @@ let string_of_variable_definition = function
 
 let string_of_general_statement = function
 	| Ast.ExpressionStatement(e) -> string_of_expr e
-	| Ast.VariableDefinition(v) -> string_of_variable_definition v
+	| Ast.VariableStatement(v) -> string_of_variable_definition v
 
 let string_of_condition_initializer = function
-	| (il, cond) -> ( String.concat "; " ( List.map string_of_general_statement il ) ) ^ string_of_expr cond
+	| (il, cond) -> ( String.concat "; " ( List.map string_of_general_statement il ) ) 
+	^ ( if ( List.length il ) > 0 then ";" else "" )
+	^ ( string_of_general_statement cond )
 
-let rec string_of_stmt_list = function
-	| [] -> ""
-	| hd::[] -> string_of_stmt hd
-	| hd::tl -> string_of_stmt hd ^ string_of_stmt_list tl
-	and string_of_stmt = function
+let rec string_of_statement s = 
+	let string_of_statement_list sl = String.concat "" (List.map string_of_statement sl) in
+	match s with
 		| Ast.General(b) -> string_of_general_statement b ^ ";\n"; 
 		| Ast.Return(expr) -> "return " ^ string_of_expr expr ^ ";\n";
 		| Ast.IfBlock(ilcond, s) -> "if (" ^ string_of_condition_initializer ilcond ^ ")" 
-			^ "{\n" ^  string_of_stmt_list s ^ "}\n"
+			^ "{\n" ^  string_of_statement_list s ^ "}\n"
 		| Ast.IfElseBlock(ilcond, s, s2) -> "if (" ^ string_of_condition_initializer ilcond ^ ")" 
-			^ "{\n" ^  string_of_stmt_list s ^ "}\n" 
-			^ "else {\n" ^ string_of_stmt_list s2 ^ "}\n"
-		| Ast.ForBlock(ilcond, incrl, sl) -> "for (" ^ string_of_condition_initializer ilcond  ^ "; " 
-			^ string_of_expr_list incrl  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
-		| Ast.ForByToBlock(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " to " ^ string_of_expr e2 ^ " by " ^ string_of_expr e3  ^ ")\n{ " ^ string_of_stmt_list sl ^ "}"
-		| Ast.WhileBlock(ilcond, s) -> "while (" ^ string_of_condition_initializer ilcond ^ ") " ^ string_of_stmt_list s
+			^ "{\n" ^  string_of_statement_list s ^ "}\n" 
+			^ "else {\n" ^ string_of_statement_list s2 ^ "}\n"
+		| Ast.ForBlock(gsl, cond, incrl, sl) -> "for (" ^ (String.concat ", " (List.map string_of_general_statement gsl) ) ^ "; "
+			^ string_of_expr cond ^ "; "
+			^ string_of_expr_list incrl  ^ ") {\n" ^ string_of_statement_list sl ^ "}\n"
+		| Ast.ForByToBlock(e1, e2, e3, sl) -> "for (" ^ string_of_expr e1  ^ " to " ^ string_of_expr e2 ^ " by " ^ string_of_expr e3  ^ ") {\n" ^ string_of_statement_list sl ^ "}\n"
+		| Ast.WhileBlock(ilcond, s) -> "while (" ^ string_of_condition_initializer ilcond ^ ") {\n" 
+			^ string_of_statement_list s ^ "}\n"
 		| Ast.Break(n) -> ( if n == 1 then "break" else "break" ^ string_of_int n ) ^ ";\n"
 		| Ast.Continue -> "continue;\n"
 		| Ast.ParallelBlock(pel,sl) -> "parallel(" ^ (String.concat ", " (List.map string_of_parallel_expr pel)) ^ " ) {"
-			^ "\n" ^ string_of_stmt_list sl ^ "}\n"
-		| Ast.AtomicBlock(sl) -> "atomic {\n" ^ string_of_stmt_list sl ^ "}\n"
+			^ "\n" ^ string_of_statement_list sl ^ "}\n"
+		| Ast.AtomicBlock(sl) -> "atomic {\n" ^ string_of_statement_list sl ^ "}\n"
+
+let string_of_statement_list sl = 
+	String.concat "" (List.map string_of_statement sl)
 
 let string_of_function_definition = function
-	| ( name, parameters, return_type, locals, body) ->
-	"fun " ^ string_of_qualified_id name 
-    ^ "(" ^ (String.concat ", " (List.map string_of_binding parameters)) ^ ") : " 
-    ^ string_of_type_name return_type  ^ " {\n" 
-    ^ string_of_stmt_list body 
-    ^ "}\n"
+	| ( name, parameters, return_type, body) ->
+		"fun " ^ string_of_qualified_id name 
+	    ^ "(" ^ (String.concat ", " (List.map string_of_binding parameters)) ^ ") : " 
+	    ^ string_of_type_name return_type  ^ " {\n" 
+	    ^ string_of_statement_list body 
+	    ^ "}\n"
 
 let rec string_of_basic_definition = function
 	| Ast.FunctionDefinition(fdef) -> string_of_function_definition fdef
 	| Ast.VariableDefinition(vdef) -> string_of_variable_definition vdef ^ ";\n"
 
 let string_of_struct_definition = function
-	| (_,_) -> "UNSUPPORTED"
+	| (_,_) -> "{ UNSUPPORTED }\n"
 
 let rec string_of_definition = function
 	| Ast.Basic(bdef) -> string_of_basic_definition bdef
@@ -246,34 +251,40 @@ let rec string_of_definition = function
 		^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
 
 let string_of_program p = 
-	(String.concat "" (List.map string_of_definition p) )
+	let s = (String.concat "" (List.map string_of_definition p) ) in
+	Core.brace_tabulate s 0
 
-(* Error message helpers *)
+(* Semantic Program types: 
+dumping and pretty printing *)
 
-let line_of_source src token_info =
-	let ( absb, abse ) = token_info.Core.token_character_range 
-	and linestart = token_info.Core.token_line_start
-	in
-	let ( lineend, _ ) =
-		let f (endindex, should_skip) idx =
-			let c = src.[idx] in
-			if should_skip then (endindex, true) else
-			(endindex + 1, c = '\n' || c = ';' || c = '}' || c = '{')
-		in
-		Polyfill.foldi f ( linestart, false ) linestart ( ( String.length src ) - linestart )
-	in
-	let srcline = String.sub src linestart (lineend - linestart) in
-	let srclinelen = String.length srcline in
-	let ( srcindent, _ ) = 
-		let f (s, should_skip) idx = 
-			let c = srcline.[idx] in
-			let ws = not ( Polyfill.is_whitespace c ) in
-			if should_skip || ws then (s, false) else
-			(s ^ ( String.make 1 c ), true)
-		in
-		Polyfill.foldi f ( "", false ) 0 srclinelen
-	in
-	let indentlen = String.length srcindent
-	and tokenlen = lineend - absb
-	in
-	( srcline, srcindent, (max ( srclinelen - indentlen - tokenlen ) 0 ) )
+let string_of_locals = function
+	| Semast.SLocals(bl) -> String.concat ";\n" ( List.map string_of_binding bl )
+
+let string_of_s_block = function
+	| Semast.SBlock(locals, sl) -> "{\n" ^ string_of_locals locals
+		^ "\n" ^ string_of_statement_list sl 
+		^ "\n}\n"
+
+let string_of_s_parameters = function
+	| Semast.SParameters(parameters) -> String.concat ", " (List.map string_of_binding parameters)
+
+let string_of_s_function_definition = function
+	| ( qid, parameters, return_type, bodyblock ) -> 
+		"fun " ^ string_of_qualified_id qid
+		^ "(" ^ string_of_s_parameters parameters ^ ") : " 
+		^ string_of_type_name return_type  ^ " {\n" 
+		^ string_of_s_block bodyblock
+		^ "}\n"
+
+let string_of_s_basic_definition = function
+	| Semast.SVariableDefinition(v) -> string_of_variable_definition v
+	| Semast.SFunctionDefinition(f) -> string_of_s_function_definition f
+
+let rec string_of_s_definition = function
+	| Semast.SBasic(b) -> string_of_s_basic_definition b
+	| Semast.SStructure(_,_) -> "{ Unsupported }\n"
+	| Semast.SNamespace(qid, sdl) -> "namespace " ^ string_of_qualified_id qid ^ " {\n" ^ ( String.concat "" ( List.map string_of_s_definition sdl ) ) ^ "}\n"
+
+let string_of_semantic_program = function
+	| ( symboltable, sdl ) -> let s = String.concat "" (List.map string_of_s_definition sdl) in
+		Core.brace_tabulate s 0

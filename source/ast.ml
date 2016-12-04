@@ -85,9 +85,9 @@ type variable_definition =
 
 type general_statement =
 	| ExpressionStatement of expression
-	| VariableDefinition of variable_definition 
+	| VariableStatement of variable_definition
 
-type control_initializer = general_statement list * expression
+type control_initializer = general_statement list * general_statement
 
 type statement = 
 	| General of general_statement
@@ -99,7 +99,7 @@ type statement =
 	| IfBlock of control_initializer * statement list
 	| IfElseBlock of control_initializer * statement list * statement list
 	| WhileBlock of control_initializer * statement list
-	| ForBlock of control_initializer * expression list * statement list
+	| ForBlock of general_statement list * expression * expression list * statement list
 	| ForByToBlock of expression * expression * expression * statement list
 
 type function_definition = 

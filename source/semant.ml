@@ -29,7 +29,7 @@ let check (ast) =
 	let build_global_symbol_table astprogram = 
 		let rec acc v def = let ( prefix, map ) = v in
 			match def with 
-				| Ast.Basic(Ast.FunctionDefinition((qid, args, rt, _, _))) -> 
+				| Ast.Basic(Ast.FunctionDefinition((qid, args, rt, _))) -> 
 					let argst = List.map Ast.binding_type args in
 					let qualname = prefix ^ "." ^ Representation.string_of_qualified_id qid in
 					if StringMap.mem qualname map then raise (Error.FunctionAlreadyExists(qualname)) else
@@ -51,11 +51,11 @@ let check (ast) =
 					( prefix, map )
 		in
 		let (_, defns) = List.fold_left acc ("", StringMap.empty) astprogram in
+		defns
 	in
 	let generate_semantic symbolsl =
-		
+		[]
 	in
 	let defns = build_global_symbol_table ast in
-	( defns, ( generate_semantic [defns] )
+	( defns, ( generate_semantic [defns] ) )
 	
-	ast
