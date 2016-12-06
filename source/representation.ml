@@ -87,6 +87,7 @@ let parser_token_to_string = function
 	| Parser.BOOL -> "BOOL"
 	| Parser.STRING -> "STRING"
 	| Parser.VOID -> "VOID"
+	| Parser.AUTO -> "AUTO"
 	| Parser.TRUE -> "TRUE"
 	| Parser.FALSE -> "FALSE"
 	| Parser.BREAK -> "BREAK"
@@ -185,6 +186,7 @@ let rec string_of_expr_list el =
 	String.concat ", " ( List.map string_of_expr el )
 
 let rec string_of_builtin_type = function
+	| Ast.Auto -> "auto"
 	| Ast.Float(b) -> "float" ^ string_of_int b
 	| Ast.Int(b) -> "int" ^ string_of_int b
 	| Ast.Bool -> "bool"

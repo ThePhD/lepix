@@ -42,6 +42,7 @@ menhir, as we have developed against both for testing purposes. *)
 %token <int> INT 
 %token <int> FLOAT 
 %token BOOL VOID STRING
+%token AUTO
 %token NAMESPACE
 %token <string> ID
 %token <string> STRINGLITERAL
@@ -77,13 +78,14 @@ qualified_id:
 | qualified_id_builder { List.rev $1 }
 
 builtin_type:
+| AUTO { Ast.Auto }
 | VOID { Ast.Void }
 | BOOL { Ast.Bool }
 | INT { Ast.Int($1) }
 | FLOAT { Ast.Float($1) }
 | STRING { Ast.String }
 
-array_spec: 
+array_spec:
 | LSQUARE RSQUARE { 1 }
 | LSQUARE array_spec RSQUARE { 1 + $2 }
 
@@ -159,11 +161,15 @@ binding_list: { [] }
 | binding { [$1] }
 | binding COMMA binding_list { $1 :: $3 }
 
+var_binding:
+| ID type_spec { ($1, $2) }
+| ID { ($1, Ast.BuiltinType(Ast.Auto, Ast.no_qualifiers)) }
+
 variable_definition:
-| VAR binding ASSIGN expression { Ast.VarBinding($2, $4) }
-| LET binding ASSIGN expression { Ast.LetBinding($2, $4) }
-| VAR binding { Ast.VarBinding($2, Ast.NoOp) }
-| LET binding { Ast.LetBinding($2, Ast.NoOp) }
+| VAR var_binding ASSIGN expression { Ast.VarBinding($2, $4) }
+| LET var_binding ASSIGN expression { Ast.LetBinding($2, $4) }
+| VAR var_binding { Ast.VarBinding($2, Ast.NoOp) }
+| LET var_binding { Ast.LetBinding($2, Ast.NoOp) }
 
 statement_list_builder: { [] }
 | statement_list_builder statement { $2 :: $1 }

@@ -74,10 +74,11 @@ rule token = parse
 | "by"     { BY }
 | "to"     { TO }
 | "return" { RETURN }
+| "auto"   { AUTO }
 | "int"    { INT(32) }
 | "float"  { FLOAT(32) }
 | "bool"   { BOOL }
-| "string"   { STRING }
+| "string" { STRING }
 | "void"   { VOID }
 | "true"   { TRUE }
 | "false"  { FALSE }

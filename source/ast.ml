@@ -29,6 +29,7 @@ type struct_type =
 	qualified_id (* Name *)
 
 type builtin_type =
+	| Auto
 	| Void
 	| Bool
 	| Int of int
