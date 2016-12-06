@@ -8,7 +8,13 @@ fun b () : int {
 
 namespace fuck.this {
 
+	var global : int = 8;
+
 	fun bullshit (x: int) : int {
+		return x + 2;
+	}
+
+	fun deduced_bullshit (x: int) {
 		return x + 2;
 	}
 }
@@ -19,4 +25,7 @@ fun main () : int {
 				
 	}
 	var x : int = 24;
+	var y : int24 = 0x2F;
+	var z : int4 = 0b10;
+	var local : int = fuck.this.global;
 }

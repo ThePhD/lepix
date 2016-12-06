@@ -34,6 +34,7 @@ exception OptionFileNotFound of string
 let compiler_error_exit_code = 2
 (* Lexer Errors *)
 exception UnknownCharacter of string * ( Lexing.position * Lexing.position )
+exception BadNumericLiteral of string * ( Lexing.position * Lexing.position )
 
 (* Parser Errors *)
 exception MissingEoF

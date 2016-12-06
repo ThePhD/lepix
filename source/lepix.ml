@@ -200,6 +200,18 @@ let _ =
 				in
 				prerr_endline msg
 		
+			| Error.BadNumericLiteral( c, (s, e) ) ->
+				let abspos = s.Lexing.pos_cnum in
+				let endabspos = e.Lexing.pos_cnum in
+				let relpos = 1 + abspos - s.Lexing.pos_bol in
+				let endrelpos = 1 + endabspos - e.Lexing.pos_bol in		
+				let msg = "Lexing Error in " ^ context.Driver.source_name ^ ":"
+				^ "\n" ^ "\t" ^ "Bad character in integer literal: " ^  c
+				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
+				^ "\n" ^ "\t" ^ "Column: " ^ Representation.token_range_to_string ( relpos, endrelpos )
+				in
+				prerr_endline msg
+		
 			(* Parser Errors *)
 			| Parser.Error
 			| Parsing.Parse_error ->

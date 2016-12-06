@@ -97,8 +97,8 @@ type_category: { (false, false) }
 sub_type_name:
 | type_category builtin_type             { Ast.BuiltinType($2, $1) }
 | type_category qualified_id             { Ast.StructType($2, $1) }
-| type_category builtin_type array_spec  { Ast.Array(Ast.BuiltinType($2, $1), $3, Ast.no_qualifiers) }
-| type_category qualified_id array_spec  { Ast.Array(Ast.StructType($2, $1), $3, Ast.no_qualifiers) }
+| type_category builtin_type array_spec  { Ast.Array(Ast.BuiltinType($2, Ast.no_qualifiers), $3, $1) }
+| type_category qualified_id array_spec  { Ast.Array(Ast.StructType($2, Ast.no_qualifiers), $3, $1) }
 
 sub_type_name_list_builder: { [] }
 | sub_type_name { [$1] }
@@ -123,7 +123,7 @@ expression:
 | FALSE { Ast.Literal(Ast.BoolLit(false)) }
 | LSQUARE expression_comma_list RSQUARE { Ast.Initializer($2) }
 | ID { Ast.Id($1) }
-| expression DOT ID { Ast.Member($1, [$3]) }
+| expression DOT qualified_id { Ast.Member($1, $3) }
 | expression LSQUARE expression_comma_list RSQUARE { Ast.Index($1, $3)  }
 | expression LPAREN expression_comma_list RPAREN { Ast.Call($1, $3)  }
 | MINUS expression %prec NEG { Ast.PrefixUnaryOp(Ast.Neg, $2) }
@@ -152,6 +152,9 @@ expression:
 | LPAREN expression RPAREN { $2 }
 
 type_spec:
+| COLON type_name { $2 }
+
+maybe_type_spec: { Ast.BuiltinType(Ast.Auto, Ast.no_qualifiers) }
 | COLON type_name { $2 }
 
 binding:
@@ -225,12 +228,12 @@ statement:
 | ATOMIC LBRACE statement_list RBRACE { Ast.AtomicBlock($3) }
 
 function_definition:
-| FUN ID LPAREN binding_list RPAREN type_spec LBRACE statement_list RBRACE { ([$2], $4, $6, $8) }
+| FUN ID LPAREN binding_list RPAREN maybe_type_spec LBRACE statement_list RBRACE { ([$2], $4, $6, $8) }
 
 definition_list : { [] }
 | definition_list function_definition { Ast.Basic(Ast.FunctionDefinition($2)) :: $1 }
-| definition_list variable_definition { Ast.Basic(Ast.VariableDefinition($2)) :: $1 }
-| definition_list NAMESPACE qualified_id LBRACE definition_list RBRACE { Ast.Namespace($3, $5) :: $1 }
+| definition_list variable_definition SEMI { Ast.Basic(Ast.VariableDefinition($2)) :: $1 }
+| definition_list NAMESPACE qualified_id LBRACE definition_list RBRACE { Ast.Namespace($3, List.rev $5) :: $1 }
 
 program:
 | definition_list EOF { List.rev $1 }

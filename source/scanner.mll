@@ -26,13 +26,16 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
 let whitespace = [' ' '\t' '\r']
 let newline = ['\n']
+let binary_digit = '0' | '1'
+let hex_digit = ['0'-'9'] | ['A'-'F'] | ['a'-'f']
+let octal_digit = ['0'-'7']
+let decimal_digit = ['0'-'9']
 
 rule token = parse
 | whitespace { token lexbuf }
 | newline  { Lexing.new_line lexbuf; token lexbuf }
 | "/*"     { multi_comment 0 lexbuf }
 | "//"	   { single_comment lexbuf }
-| '"'      { string_literal ( Buffer.create 128 ) lexbuf }
 | '('      { LPAREN }
 | ')'      { RPAREN }
 | '{'      { LBRACE }
@@ -75,8 +78,8 @@ rule token = parse
 | "to"     { TO }
 | "return" { RETURN }
 | "auto"   { AUTO }
-| "int"    { INT(32) }
-| "float"  { FLOAT(32) }
+| "int" ((decimal_digit+)? as s) { let bits = if s = "" then 32 else ( int_of_string s ) in INT(bits) }
+| "float" ((decimal_digit+)? as s) { let bits = if s = "" then 32 else ( int_of_string s ) in FLOAT(bits) }
 | "bool"   { BOOL }
 | "string" { STRING }
 | "void"   { VOID }
@@ -93,12 +96,32 @@ rule token = parse
 | "thread_count" { THREADCOUNT }
 | "atomic" { ATOMIC }
 | "namespace" { NAMESPACE }
-| ['0'-'9']+ as lxm { INTLITERAL(int_of_string lxm) }
+| '"'      { string_literal ( Buffer.create 128 ) lexbuf }
+| decimal_digit+ as lxm { INTLITERAL(int_of_string lxm) }
+| "0c" { octal_int_literal lexbuf }
+| "0x" { hex_int_literal lexbuf }
+| "0b" { binary_int_literal lexbuf }
 | '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
 | ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
 | _ as c { raise (Error.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+
+
+and octal_int_literal = parse
+| octal_digit+ as s { INTLITERAL( int_of_string ( "0o" ^ s ) ) }
+| _ as c { raise (Error.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+
+
+and hex_int_literal = parse
+| hex_digit+ as s { INTLITERAL( int_of_string ( "0x" ^ s ) ) }
+| _ as c { raise (Error.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+
+
+and binary_int_literal = parse
+| binary_digit+ as s { INTLITERAL( int_of_string ( "0b" ^ s ) ) }
+| _ as c { raise (Error.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+
 
 and string_literal string_buffer = parse
 | newline as c { Lexing.new_line lexbuf; Buffer.add_char string_buffer c; string_literal string_buffer lexbuf }
@@ -106,13 +129,14 @@ and string_literal string_buffer = parse
 | "\\\"" as s { Buffer.add_string string_buffer s; string_literal string_buffer lexbuf }
 | _ as c { Buffer.add_char string_buffer c; string_literal string_buffer lexbuf }
 
+
 and multi_comment level = parse
 | newline { Lexing.new_line lexbuf; multi_comment level lexbuf }
-|  "*/" { if level = 0 then token lexbuf else multi_comment (level-1) lexbuf }
-|  "/*" { multi_comment (level+1) lexbuf }
+| "*/" { if level = 0 then token lexbuf else multi_comment (level-1) lexbuf }
+| "/*" { multi_comment (level+1) lexbuf }
 | _    { multi_comment level lexbuf }
+
 
 and single_comment = parse
 | newline { Lexing.new_line lexbuf; token lexbuf }
 | _    { single_comment lexbuf }
-
