@@ -46,7 +46,16 @@ rule token = parse
 | '-'      { MINUS }
 | '*'      { TIMES }
 | '/'      { DIVIDE }
+| "+="     { PLUSASSIGN }
+| "-="     { MINUSASSIGN }
+| "*="     { TIMESASSIGN }
+| "/="     { DIVIDEASSIGN }
+| "%="     { MODULOASSIGN }
+| "++"     { PLUSPLUS }
+| "--"     { MINUSMINUS }
+| "%"      { MODULO }
 | '='      { ASSIGN }
+| '&'      { AMP }
 | "=="     { EQ }
 | "!="     { NEQ }
 | '<'      { LT }
@@ -54,7 +63,6 @@ rule token = parse
 | ">"      { GT }
 | ">="     { GEQ }
 | "&&"     { AND }
-| "%"      { MODULO }
 | '.'      { DOT }
 | '&'      { AMP }
 | "||"     { OR }

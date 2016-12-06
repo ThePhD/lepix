@@ -50,12 +50,13 @@ type type_name =
 
 type binding = id * type_name
 
-type binary_op = Add | Sub | Mult | Div 
+type binary_op = Add | Sub | Mult | Div | Modulo
+	| AddAssign | SubAssign | MultAssign | DivAssign | ModuloAssign
 	| Equal | Neq | Less | Leq | Greater | Geq 
-	| And | Or | Modulo
+	| And | Or 
 
 type prefix_op = 
-	| Neg | Not
+	| Neg | Not | PreIncrement | PreDecrement
 
 type literal =
 	| BoolLit of bool

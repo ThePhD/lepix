@@ -28,8 +28,11 @@ menhir, as we have developed against both for testing purposes. *)
 %token LSQUARE RSQUARE COLON
 %token DOT 
 %token PARALLEL INVOCATIONS ATOMIC THREADCOUNT
+%token PLUSPLUS MINUSMINUS 
 %token PLUS MINUS TIMES DIVIDE ASSIGN 
 %token MODULO
+%token PLUSASSIGN MINUSASSIGN TIMESASSIGN DIVIDEASSIGN
+%token MODULOASSIGN
 %token NOT AND OR EQ NEQ LT LEQ GT GEQ
 %token TRUE FALSE
 %token VAR LET
@@ -47,6 +50,8 @@ menhir, as we have developed against both for testing purposes. *)
 %token EOF
 
 %right ASSIGN
+%right PLUSASSIGN MINUSASSIGN
+%right TIMESASSIGN DIVIDEASSIGN MODULOASSIGN
 %left OR
 %left AND
 %left EQ NEQ
@@ -57,6 +62,8 @@ menhir, as we have developed against both for testing purposes. *)
 %left DOT
 %left LSQUARE
 %left LPAREN
+%left MINUSMINUS
+%left PLUSPLUS
 
 %start program
 %type<Ast.program> program
@@ -119,11 +126,18 @@ expression:
 | expression LPAREN expression_comma_list RPAREN { Ast.Call($1, $3)  }
 | MINUS expression %prec NEG { Ast.PrefixUnaryOp(Ast.Neg, $2) }
 | NOT expression { Ast.PrefixUnaryOp(Ast.Not, $2) }
+| PLUSPLUS expression { Ast.PrefixUnaryOp(Ast.PreIncrement, $2) }
+| MINUSMINUS expression { Ast.PrefixUnaryOp(Ast.PreDecrement, $2) }
 | expression TIMES expression { Ast.BinaryOp($1, Ast.Mult, $3) }
 | expression DIVIDE expression { Ast.BinaryOp($1, Ast.Div, $3)  }
 | expression PLUS expression { Ast.BinaryOp($1, Ast.Add, $3) }
 | expression MINUS expression { Ast.BinaryOp($1, Ast.Sub, $3) }
 | expression MODULO expression { Ast.BinaryOp($1, Ast.Modulo, $3) }
+| expression TIMESASSIGN expression { Ast.BinaryOp($1, Ast.MultAssign, $3) }
+| expression DIVIDEASSIGN expression { Ast.BinaryOp($1, Ast.DivAssign, $3)  }
+| expression PLUSASSIGN expression { Ast.BinaryOp($1, Ast.AddAssign, $3) }
+| expression MINUSASSIGN expression { Ast.BinaryOp($1, Ast.SubAssign, $3) }
+| expression MODULOASSIGN expression { Ast.BinaryOp($1, Ast.ModuloAssign, $3) }
 | expression LT expression { Ast.BinaryOp($1, Ast.Less, $3) }
 | expression GT expression { Ast.BinaryOp($1, Ast.Greater, $3) }
 | expression LEQ expression { Ast.BinaryOp($1, Ast.Leq, $3) }
