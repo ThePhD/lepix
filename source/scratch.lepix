@@ -21,12 +21,15 @@ namespace fuck.this {
 
 fun main () : int {
 	var s : string = "STRING LITERAL!";
-	parallel {
-				
-	}
 	var x : int = 24;
 	var y : int24 = 0x2F;
 	var y2 : int24 = 0x2f;
 	var z : int4 = 0b10;
+	parallel {
+		var x = 20;
+		atomic {
+			y = "Bark";
+		}
+	}
 	var local : int = fuck.this.global;
 }

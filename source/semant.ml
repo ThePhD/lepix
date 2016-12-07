@@ -31,7 +31,7 @@ let check (ast) =
 			match def with 
 				| Ast.Basic(Ast.FunctionDefinition((qid, args, rt, _))) -> 
 					let argst = List.map Ast.binding_type args in
-					let qualname = prefix ^ "." ^ Representation.string_of_qualified_id qid in
+					let qualname = prefix ^ Representation.string_of_qualified_id qid in
 					if StringMap.mem qualname map then raise (Error.FunctionAlreadyExists(qualname)) else
 					let qt = Ast.Function(rt, argst, Ast.no_qualifiers) in
 					( prefix, ( StringMap.add qualname qt map ) )
@@ -40,12 +40,12 @@ let check (ast) =
 						| Ast.VarBinding((name, qt), _) -> (name, qt)
 						| Ast.LetBinding((name, qt), _) -> (name, qt)
 					in
-					let qualname = prefix ^ "." ^ name in
+					let qualname = prefix ^ name in
 					if StringMap.mem prefix map then raise (Error.VariableAlreadyExists(qualname)) else
 					( prefix, ( StringMap.add qualname qt map ) )
 				| Ast.Namespace(n, dl) -> 
-					let qualname = prefix ^ "." ^ Representation.string_of_qualified_id n in
-					List.fold_left acc ( qualname, map ) dl
+					let qualname = prefix ^ Representation.string_of_qualified_id n in
+					List.fold_left acc ( qualname ^ ".", map ) dl
 				| Ast.Structure(_) -> 
 					(* Unsupported right now: warn maybe? *) 
 					( prefix, map )

@@ -32,9 +32,6 @@ type s_expression =
 type s_locals =
 	| SLocals of Ast.binding list
 
-type s_block =
-	| SBlock of s_locals * Ast.statement list
-
 type s_parameters =
 	| SParameters of Ast.binding list
 
@@ -43,22 +40,39 @@ type s_general_statement =
 	| SVariableStatement of Ast.variable_definition
 
 type s_capture =
-	| ParallelCapture of Ast.binding list
+	| SParallelCapture of Ast.binding list
+
+type s_control_initializer =
+	| SControlInitializer of ( s_locals * s_general_statement list ) * s_expression
 
 type s_statement =
 	| SGeneral of s_general_statement
 	| SReturn of s_expression
 	| SBreak of int
 	| SContinue
-	| SParallelBlock of Ast.parallel_expression list * s_capture * s_block
-	| SAtomicBlock of s_block
-	| SIfBlock of s_block * s_expression * s_block
-	| SIfElseBlock of s_block * s_expression * s_block * s_block
-	| SWhileBlock of s_block * s_expression * s_block
-	| SForBlock of s_block * s_expression * s_block * s_statement list
+
+	| SParallelBlock of Ast.parallel_expression list (* Invocation parameters passed to kickoff function *)
+		* s_capture (* Capture list: references to outside variables *)
+		* ( s_locals * s_statement list ) (* Locals and their statements *)
+
+	| SAtomicBlock of ( s_locals * s_statement list ) (* code in the atomic block *)
+
+	| SIfBlock of s_control_initializer (* Init statements for an if block *)
+		* ( s_locals * s_statement list ) (* If code *)
+
+	| SIfElseBlock of s_control_initializer (* Init statements for an if-else block *)
+		* ( s_locals * s_statement list ) (* If code *)
+		* ( s_locals * s_statement list ) (* Else code *)
+
+	| SWhileBlock of s_control_initializer (* Init statements plus ending conditional for a while loop *)
+		* ( s_locals * s_statement list ) (* code inside the while block, locals and statements *)
+
+	| SForBlock of s_control_initializer  (* Init statements plus ending conditional for a for loop *)
+		* s_expression list (* Post-loop expressions (increment/decrement) *) 
+		* ( s_locals * s_statement list ) (* Code inside *)
 
 type s_function_definition = Ast.qualified_id * s_parameters
-	* Ast.type_name * s_block
+	* Ast.type_name * ( s_locals * s_statement list )
 
 type s_basic_definition = 	
 	| SVariableDefinition of Ast.variable_definition

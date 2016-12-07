@@ -149,7 +149,7 @@ let _ =
 				let program = Driver.parse context tokenstream in 
 				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
-				(* if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program program ); *)
+				if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program semanticprogram );
 				let m = Codegen.generate semanticprogram in
 				output_to_target (Llvm.string_of_llmodule m)
 			| Core.Compile -> 
@@ -159,7 +159,7 @@ let _ =
 				let program = Driver.parse context tokenstream in 
 				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
 				let semanticprogram = Driver.analyze program in 
-				(* if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program program ); *)
+				if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program semanticprogram );
 				let m = Codegen.generate semanticprogram in
 				Llvm_analysis.assert_valid_module m;
 				output_to_target (Llvm.string_of_llmodule m)
