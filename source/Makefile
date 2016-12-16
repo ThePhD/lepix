@@ -1,4 +1,4 @@
-#Clean intermediate files
+# Clean intermediate files
 clean :
 	ocamlbuild -use-menhir -build-dir obj -clean
 	rm -rf lepixc lepix
@@ -8,7 +8,7 @@ clean :
 	rm -rf parser.automaton preparser.automaton 
 	rm -rf parser.output preparser.output parser.conflicts preparser.conflicts 
 
-#Build top level lepix executable
+# Build top level lepix executable
 lepix :
-	ocamlbuild -use-ocamlfind -use-menhir -pkgs llvm,llvm.analysis -build-dir obj lepix.native
+	ocamlbuild -use-ocamlfind -use-menhir -tag thread -pkgs core,llvm,llvm.analysis -build-dir obj lepix.native
 	cp -f obj/lepix.native lepixc

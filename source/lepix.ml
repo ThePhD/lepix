@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -22,9 +22,9 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 check the resulting AST, generate LLVM IR, and dump the module *)
 
 let _ = 
-	let input = ref Core.Pipe in
-	let output = ref Core.Pipe in
-	let action = ref Core.Llvm in
+	let input = ref Base.Pipe in
+	let output = ref Base.Pipe in
+	let action = ref Base.Llvm in
 	let specified = ref [] in
 	let context = { 
 		Driver.source_name = "";
@@ -32,9 +32,9 @@ let _ =
 		Driver.original_source_code = "";
 		Driver.token_count = 0;
 		Driver.token = ( Parser.EOF, 
-			{ Core.token_source_name = ""; Core.token_number = 0; 
-			Core.token_line_number = 0; Core.token_line_start = 0;
-			Core.token_column_range = (0, 0); Core.token_character_range = (0, 0) } 
+			{ Base.token_source_name = ""; Base.token_number = 0; 
+			Base.token_line_number = 0; Base.token_line_start = 0;
+			Base.token_column_range = (0, 0); Base.token_character_range = (0, 0) } 
 		);
 	} 
 	and pcontext = {
@@ -43,9 +43,9 @@ let _ =
 		Predriver.original_source_code = "";
 		Predriver.token_count = 0;
 		Predriver.token = ( Preparser.EOF, 
-			{ Core.token_source_name = ""; Core.token_number = 0; 
-			Core.token_line_number = 0; Core.token_line_start = 0;
-			Core.token_column_range = (0, 0); Core.token_character_range = (0, 0) } 
+			{ Base.token_source_name = ""; Base.token_number = 0; 
+			Base.token_line_number = 0; Base.token_line_start = 0;
+			Base.token_column_range = (0, 0); Base.token_character_range = (0, 0) } 
 		);
      }
 	in
@@ -62,22 +62,22 @@ let _ =
 			specified := s
 	with
 		| err -> let _ = match err with
-			| Error.BadOption(s) ->
+			| Errors.BadOption(s) ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "Unrecognized option: " ^ s
 				^ "\n" ^ ( ocontext.Options.options_help "\t" ) in
 				prerr_endline msg
-			| Error.NoOption ->
+			| Errors.NoOption ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "No inputs or options specified"
 				^ "\n" ^ ( ocontext.Options.options_help "\t" ) in
 				prerr_endline msg
-			| Error.MissingOption(o) ->
+			| Errors.MissingOption(o) ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "Flag " ^ o ^ " needs an additional argument after it that is not dashed"
 				^ "\n" ^ ( ocontext.Options.options_help "\t" ) in
 				prerr_endline msg
-			| Error.OptionFileNotFound(f) ->
+			| Errors.OptionFileNotFound(f) ->
 				let msg = "Options Error:"
 				^ "\n" ^ "\t" ^ "File " ^ f ^ " was not found"
 				^ "\n" ^ ( ocontext.Options.options_help "\t" ) in
@@ -90,19 +90,19 @@ let _ =
 				raise(err)
 		in
 		(* Exit if arguments are wrong *)
-		ignore( ( exit Error.option_error_exit_code ) )
+		ignore( ( exit Errors.option_error_exit_code ) )
 	in
 	(* Perform actual lexing and parsing using the Driver here *)
 	try 
 		let allactions = !specified in
-		let source_name = ( Core.target_to_pipe_string !input true ) in
+		let source_name = ( Base.target_to_pipe_string !input true ) in
 		let pre_source_text = match !input with
-			| Core.Pipe -> Io.read_text stdin
-			| Core.File(f) -> ( Io.read_file_text f )
+			| Base.Pipe -> Io.read_text stdin
+			| Base.File(f) -> ( Io.read_file_text f )
 		in
 		let output_to_target ( s ) = match !output with
-			| Core.Pipe -> ( print_endline s )
-			| Core.File(f) -> ( Io.write_file_text s f )
+			| Base.Pipe -> ( print_endline s )
+			| Base.File(f) -> ( Io.write_file_text s f )
 		in
 		let print_predicate b =
 			fun v -> ( v = b ) 
@@ -112,57 +112,68 @@ let _ =
 			^ "\n" ^ ( ocontext.Options.options_help "\t" ) in
 			print_endline msg
 		in
-		if !action = Core.Help then begin
-			print_help ();
-			()	
+		if !action = Base.Help then begin
+			print_help ()
 		end else
+		(* Since we do the actions in these functions multiple times,
+		We refactor them out here to make our lives easier while we tweak 
+		stuff *)
+		let dump_tokens f tokenstream =
+			if ( List.exists (print_predicate Base.Tokens) allactions ) then f( Representation.parser_token_list_to_string tokenstream )
+		and dump_ast f program =
+			if ( List.exists (print_predicate Base.Ast) allactions ) then f( Representation.string_of_program program )
+		and dump_semantic f semanticprogram =
+			if ( List.exists (print_predicate Base.Semantic) allactions ) then f( Representation.string_of_s_program semanticprogram )
+		and dump_module f m =
+			f( Llvm.string_of_llmodule m )
+		in
 		let source_text = Predriver.pre_process pcontext !input pre_source_text in
 		context.Driver.source_name <- source_name;
 		context.Driver.original_source_code <- pre_source_text;
 		context.Driver.source_code <- source_text;
 		let _ = match !action with
-			| Core.Help -> print_help ()	
-			| Core.Preprocess -> 
+			| Base.Help -> print_help ()	
+			| Base.Preprocess -> 
 				output_to_target( source_text )
-			| Core.Tokens -> 
+			| Base.Tokens -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
-				output_to_target( Representation.parser_token_list_to_string tokenstream )
-			| Core.Ast -> 
+				( dump_tokens output_to_target tokenstream )
+			| Base.Ast -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
-				if ( List.exists (print_predicate Core.Tokens) allactions ) then print_endline( Representation.parser_token_list_to_string tokenstream );
+				( dump_tokens print_endline tokenstream );
 				let program = Driver.parse context tokenstream in 
-				output_to_target (Representation.string_of_program program)
-			| Core.Semantic ->
+				( dump_ast output_to_target program)
+			| Base.Semantic ->
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
-				if ( List.exists (print_predicate Core.Tokens) allactions ) then print_endline( Representation.parser_token_list_to_string tokenstream );
+				( dump_tokens print_endline tokenstream );
 				let program = Driver.parse context tokenstream in 
-				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
+				( dump_ast print_endline program );
 				let semanticprogram = Driver.analyze program in 
-				output_to_target (Representation.string_of_semantic_program semanticprogram)
-			| Core.Llvm -> 
+				( dump_semantic output_to_target semanticprogram )
+			| Base.Llvm -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
-				if ( List.exists (print_predicate Core.Tokens) allactions ) then print_endline( Representation.parser_token_list_to_string tokenstream );
+				( dump_tokens print_endline tokenstream );
 				let program = Driver.parse context tokenstream in 
-				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
+				( dump_ast print_endline program );
 				let semanticprogram = Driver.analyze program in 
-				if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program semanticprogram );
+				( dump_semantic print_endline semanticprogram );
 				let m = Codegen.generate semanticprogram in
-				output_to_target (Llvm.string_of_llmodule m)
-			| Core.Compile -> 
+				( dump_module output_to_target m )
+			| Base.Compile -> 
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
-				if ( List.exists (print_predicate Core.Tokens) allactions ) then print_endline( Representation.parser_token_list_to_string tokenstream );
+				( dump_tokens print_endline tokenstream );
 				let program = Driver.parse context tokenstream in 
-				if ( List.exists (print_predicate Core.Ast) allactions ) then print_endline( Representation.string_of_program program );
+				( dump_ast print_endline program );
 				let semanticprogram = Driver.analyze program in 
-				if ( List.exists (print_predicate Core.Semantic) allactions ) then print_endline( Representation.string_of_semantic_program semanticprogram );
+				( dump_semantic print_endline semanticprogram );
 				let m = Codegen.generate semanticprogram in
 				Llvm_analysis.assert_valid_module m;
-				output_to_target (Llvm.string_of_llmodule m)
+				( dump_module output_to_target m )
 		in
 		()
 	with
@@ -170,67 +181,28 @@ let _ =
 			(* Preprocessor-Specific Errors *)
 			(* Preprocessing Parser Errors *)
 			| Preparser.Error ->
-				let ( t, info ) = pcontext.Predriver.token in
-				let ( source_line, source_indentation, columns_after_indent ) = 
-					( Core.line_of_source pcontext.Predriver.source_code info ) 
-				in
-				let column_range = info.Core.token_column_range in
-				let msg = "Preprocessing Error in " ^ pcontext.Predriver.source_name ^ ":" 
-				^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int pcontext.Predriver.token_count )
-					^ ": [id " ^ string_of_int info.Core.token_number ^ ":" ^ Representation.preparser_token_to_string t ^ "]"
-				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int info.Core.token_line_number
-				^ "\n" ^ "\t" ^ "Columns: " ^ Representation.token_range_to_string column_range
-				^ "\n"
-				^ "\n" ^ source_line
-				^ "\n" ^ source_indentation ^ ( String.make columns_after_indent ' ' ) ^ "^~~"
-				in
+				let msg = Message.preprocessing_error pcontext in
 				prerr_endline msg
-
+			| Errors.PreUnknownCharacter( c, (s, e) ) ->
+				let msg = Message.preprocessing_lexer_error pcontext "Unrecognized character in program" c s e in
+				prerr_endline msg
+			
 			(* General Compiler Errors *)
 			(* Lexer Errors *)
-			| Error.UnknownCharacter( c, (s, e) ) ->
-				let abspos = s.Lexing.pos_cnum in
-				let endabspos = e.Lexing.pos_cnum in
-				let relpos = 1 + abspos - s.Lexing.pos_bol in
-				let endrelpos = 1 + endabspos - e.Lexing.pos_bol in		
-				let msg = "Lexing Error in " ^ context.Driver.source_name ^ ":"
-				^ "\n" ^ "\t" ^ "Unrecognized character in program: " ^  c
-				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
-				^ "\n" ^ "\t" ^ "Column: " ^ Representation.token_range_to_string ( relpos, endrelpos )
-				in
+			| Errors.UnknownCharacter( c, (s, e) ) ->
+				let msg = Message.lexer_error context "Unrecognized character in program" c s e in
 				prerr_endline msg
 		
-			| Error.BadNumericLiteral( c, (s, e) ) ->
-				let abspos = s.Lexing.pos_cnum in
-				let endabspos = e.Lexing.pos_cnum in
-				let relpos = 1 + abspos - s.Lexing.pos_bol in
-				let endrelpos = 1 + endabspos - e.Lexing.pos_bol in		
-				let msg = "Lexing Error in " ^ context.Driver.source_name ^ ":"
-				^ "\n" ^ "\t" ^ "Bad character in integer literal: " ^  c
-				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int s.Lexing.pos_lnum
-				^ "\n" ^ "\t" ^ "Column: " ^ Representation.token_range_to_string ( relpos, endrelpos )
-				in
+			| Errors.BadNumericLiteral( c, (s, e) ) ->
+				let msg = Message.lexer_error context "Bad character in numeric literal" c s e in
 				prerr_endline msg
 		
 			(* Parser Errors *)
 			| Parser.Error
 			| Parsing.Parse_error ->
-				let ( t, info ) = context.Driver.token in
-				let ( source_line, source_indentation, columns_after_indent ) = 
-					( Core.line_of_source context.Driver.source_code info ) 
-				in
-				let column_range = info.Core.token_column_range in
-				let msg = "Parsing Error in " ^ context.Driver.source_name ^ ":" 
-				^ "\n" ^ "\t" ^ "Unrecognizable parse pattern at token #" ^ ( string_of_int context.Driver.token_count )
-					^ ": [id " ^ string_of_int info.Core.token_number ^ ":" ^ Representation.parser_token_to_string t ^ "]"
-				^ "\n" ^ "\t" ^ "Line: " ^ string_of_int info.Core.token_line_number
-				^ "\n" ^ "\t" ^ "Columns: " ^ Representation.token_range_to_string column_range
-				^ "\n"
-				^ "\n" ^ source_line
-				^ "\n" ^ source_indentation ^ ( String.make columns_after_indent ' ' ) ^ "^~~"
-				in
+				let msg = Message.parser_error context "Unrecognizable parse pattern" in
 				prerr_endline msg
-			| Error.MissingEoF ->
+			| Errors.MissingEoF ->
 				let msg = "Parsing Error in" ^ context.Driver.source_name ^ ":" 
 				^ "\n" ^ "\t" ^ "Missing EoF at end of token stream (bad lexer input?)" 
 				in
@@ -239,7 +211,12 @@ let _ =
 			(* Common Errors *)
 			(* Missing File/Bad File Name, Bad System Calls *)
 			| Sys_error(s) ->
-				let msg = "Sys_error: " ^ s
+				let msg = "Sys_error: \n\t" ^ s
+				in
+				prerr_endline msg
+			(* Unsupported features *)
+			| Errors.Unsupported(s) ->
+				let msg = "Unsupported: \n\t" ^ s
 				in
 				prerr_endline msg
 
@@ -251,4 +228,4 @@ let _ =
 				prerr_endline msg;
 				raise(err)
 		in
-		ignore( exit Error.compiler_error_exit_code )
+		ignore( exit Errors.compiler_error_exit_code )

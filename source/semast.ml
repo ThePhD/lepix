@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -24,65 +24,132 @@ and type promotions / conversions organized for operators. *)
 
 module StringMap = Map.Make(String)
 
-type symbol_table = ( Ast.type_name * bool ) StringMap.t
+type s_literal = 
+	| SBoolLit of bool
+	| SIntLit of int
+	| SInt64Lit of int64
+	| SFloatLit of float
+	| SStringLit of string
 
 type s_expression = 
-	| SExpression of Ast.type_name * Ast.expression
+	| SObjectInitializer of s_expression list * Ast.type_name
+	| SArrayInitializer of s_expression list * Ast.type_name
+	| SLiteral of s_literal
+	| SQualifiedId of Ast.qualified_id * Ast.type_name
+	| SMember of s_expression * Ast.qualified_id * Ast.type_name
+	| SCall of s_expression * s_expression list * Ast.type_name
+	| SIndex of s_expression * s_expression list * Ast.type_name
+	| SBinaryOp of s_expression * Ast.binary_op * s_expression * Ast.type_name
+	| SPrefixUnaryOp of Ast.prefix_op * s_expression * Ast.type_name
+	| SAssignment of s_expression * s_expression * Ast.type_name
+	| SNoop
+
+type s_binding = (Ast.id * Ast.type_name)
 
 type s_locals =
-	| SLocals of Ast.binding list
+	| SLocals of s_binding list
 
 type s_parameters =
 	| SParameters of Ast.binding list
 
+type s_variable_definition =
+	| SVarBinding of s_binding * s_expression
+
 type s_general_statement =
+	| SGeneralBlock of s_locals * s_general_statement list
 	| SExpressionStatement of s_expression
-	| SVariableStatement of Ast.variable_definition
+	| SVariableStatement of s_variable_definition
 
 type s_capture =
-	| SParallelCapture of Ast.binding list
+	| SParallelCapture of s_binding list
 
 type s_control_initializer =
-	| SControlInitializer of ( s_locals * s_general_statement list ) * s_expression
+	| SControlInitializer of s_general_statement * s_expression
+
+type s_parallel_expression =
+	| SInvocations of s_expression
+	| SThreadCount of s_expression
 
 type s_statement =
+	| SBlock of s_locals * s_statement list
 	| SGeneral of s_general_statement
 	| SReturn of s_expression
 	| SBreak of int
 	| SContinue
 
-	| SParallelBlock of Ast.parallel_expression list (* Invocation parameters passed to kickoff function *)
+	| SParallelBlock of s_parallel_expression list (* Invocation parameters passed to kickoff function *)
 		* s_capture (* Capture list: references to outside variables *)
-		* ( s_locals * s_statement list ) (* Locals and their statements *)
+		* s_statement (* Locals and their statements *)
 
-	| SAtomicBlock of ( s_locals * s_statement list ) (* code in the atomic block *)
+	| SAtomicBlock of s_statement (* code in the atomic block *)
 
 	| SIfBlock of s_control_initializer (* Init statements for an if block *)
-		* ( s_locals * s_statement list ) (* If code *)
+		* s_statement (* If code *)
 
 	| SIfElseBlock of s_control_initializer (* Init statements for an if-else block *)
-		* ( s_locals * s_statement list ) (* If code *)
-		* ( s_locals * s_statement list ) (* Else code *)
+		* s_statement (* If code *)
+		* s_statement (* Else code *)
 
 	| SWhileBlock of s_control_initializer (* Init statements plus ending conditional for a while loop *)
-		* ( s_locals * s_statement list ) (* code inside the while block, locals and statements *)
+		* s_statement (* code inside the while block, locals and statements *)
 
 	| SForBlock of s_control_initializer  (* Init statements plus ending conditional for a for loop *)
 		* s_expression list (* Post-loop expressions (increment/decrement) *) 
-		* ( s_locals * s_statement list ) (* Code inside *)
+		* s_statement (* Code inside *)
 
-type s_function_definition = Ast.qualified_id * s_parameters
-	* Ast.type_name * ( s_locals * s_statement list )
+type s_function_definition = {
+	func_name : Ast.qualified_id;
+	func_parameters : s_parameters;
+     func_return_type : Ast.type_name;
+	func_body : s_statement list;
+}
 
 type s_basic_definition = 	
-	| SVariableDefinition of Ast.variable_definition
+	| SVariableDefinition of s_variable_definition
 	| SFunctionDefinition of s_function_definition
 
-type s_struct_definition = Ast.struct_type * s_basic_definition list
+type s_struct_definition = {
+	struct_name : Ast.struct_type;
+	struct_variables : Ast.variable_definition list;
+	struct_constructors : s_function_definition list;
+	struct_destructors : s_function_definition list;
+	struct_functions : s_function_definition list;
+	struct_definitions : s_basic_definition list;
+}
+
+type s_builtin_library =
+	| Lib
+
+let builtin_library_names = [
+	( "lib", Lib ) 
+]
+
+type s_loop =
+	| SFor
+	| SWhile
+
+type s_module =
+	| SCode of string
+	| SDynamic of string
+	| SBuiltin of s_builtin_library
 
 type s_definition = 
 	| SBasic of s_basic_definition
-	| SStructure of s_struct_definition * symbol_table
+	| SStructure of s_struct_definition
 	| SNamespace of Ast.qualified_id * s_definition list
 
-type s_program = symbol_table * s_definition list
+type s_attributes = {
+     attr_parallelism : bool;
+	attr_arrays : bool;
+}
+
+type s_environment = {
+	env_structs : ( s_struct_definition ) StringMap.t;
+     env_symbols : Ast.type_name StringMap.t;
+	env_types : Ast.qualified_id StringMap.t;
+	env_imports : s_module list;
+	env_loops : s_loop list;
+}
+
+type s_program = 
+	| SProgram of s_attributes * s_environment * s_definition list

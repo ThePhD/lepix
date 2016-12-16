@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -34,52 +34,52 @@ let read_options ocontext sys_argv =
 	(* Skip first argument one (argv 0 is the path 
 	of the exec on pretty much all systems) *)
 	let argv = ( Array.sub sys_argv 1 argc )
-	and action = ref Core.Help
-	and input = ref Core.Pipe 
-	and output = ref Core.Pipe
+	and action = ref Base.Help
+	and input = ref Base.Pipe 
+	and output = ref Base.Pipe
 	and specified = ref []
 	and seen_stdin = ref false 
 	in
 	(* Our various options *)
 	let update_action a =
 		specified := a :: !specified;
-		if ( Core.action_to_int !action ) < ( Core.action_to_int a ) then 
+		if ( Base.action_to_int !action ) < ( Base.action_to_int a ) then 
 			action := a;
 	in 
 	let options = [
 		( 1, "h", "help", "print the help message", 
-			fun _ _ -> ( update_action(Core.Help) ) 
+			fun _ _ -> ( update_action(Base.Help) ) 
 		);
 		( 1, "p", "preprocess", "Preprocess and display source", 
-			fun _ _ -> ( update_action(Core.Preprocess) ) 
+			fun _ _ -> ( update_action(Base.Preprocess) ) 
 		);
 		( 1, "i", "input", "Take input from standard in (default: stdin)", 
-			fun _ _ -> ( input := Core.Pipe; seen_stdin := true ) 
+			fun _ _ -> ( input := Base.Pipe; seen_stdin := true ) 
 		);
 		( 2, "o", "output", "Set the output file (default: stdout)", 
-			fun _ o -> ( output := Core.File(o) ) 
+			fun _ o -> ( output := Base.File(o) ) 
 		);
 		( 1, "t", "tokens", "Print the stream of tokens",
-			fun _ _ -> ( update_action(Core.Tokens) ) 
+			fun _ _ -> ( update_action(Base.Tokens) ) 
 		);
 		( 1, "a", "ast", "Print the parsed Program",
-			fun _ _ -> ( update_action(Core.Ast) )  
+			fun _ _ -> ( update_action(Base.Ast) )  
 		);
 		( 1, "s", "semantic", "Print the Semantic Program",
-			fun _ _ -> ( update_action(Core.Semantic) ) 
+			fun _ _ -> ( update_action(Base.Semantic) ) 
 		);
 		( 1, "l", "llvm", "Print the generated LLVM code", 
-			fun _ _ -> ( update_action(Core.Llvm) )
+			fun _ _ -> ( update_action(Base.Llvm) )
 		);
 		( 1, "c", "compile", "Compile the desired input and output the final LLVM", 
-			fun _ _ -> ( update_action(Core.Compile) ) 
+			fun _ _ -> ( update_action(Base.Compile) ) 
 		);
 	]
 	and position_option arg_index positional_index arg =
 		if Sys.file_exists arg then
-			input := Core.File( arg )
+			input := Base.File( arg )
 		else
-			raise(Error.OptionFileNotFound(arg))
+			raise(Errors.OptionFileNotFound(arg))
 	in
 	let help tabulation =
 		let value_text = "<value>" in
@@ -151,11 +151,11 @@ let read_options ocontext sys_argv =
 					( opt_failure, should_block )
 				| ( 2, _, _, _, f ) :: tail -> (* Needs 2 arguments, look ahead by 1 *)
 					if ( index + 1 ) >= argc  then 
-						raise(Error.MissingOption(opt_string));
+						raise(Errors.MissingOption(opt_string));
 					let nextarg = ( options_argv.(1 + index) ) in 
 					let _ = match nextarg with
 						| Argument(idx, s) -> (f opt_string s)
-						| _ -> raise(Error.BadOption(opt_string))
+						| _ -> raise(Errors.BadOption(opt_string))
 					in
 					( opt_failure, true )				
 				| _ -> (* Unhandled case: return new failure string *)
@@ -165,7 +165,7 @@ let read_options ocontext sys_argv =
 			let msg = dashes ^ opt 
 				^ if ( List.length arglist ) > 1 then " ( in " ^ dashes ^ arg ^ " )" else "" 
 			in
-			raise(Error.BadOption(msg))
+			raise(Errors.BadOption(msg))
 		in
 		let ( should_skip_next, was_positional ) = match option_arg with
 			| Dash(arg) ->

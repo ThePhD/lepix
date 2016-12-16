@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -33,6 +33,7 @@ exception OptionFileNotFound of string
 (* Compiler class of Errors *)
 let compiler_error_exit_code = 2
 (* Lexer Errors *)
+exception PreUnknownCharacter of string * ( Lexing.position * Lexing.position )
 exception UnknownCharacter of string * ( Lexing.position * Lexing.position )
 exception BadNumericLiteral of string * ( Lexing.position * Lexing.position )
 
@@ -41,5 +42,8 @@ exception MissingEoF
 exception BadToken
 
 (* Semantic Errors *)
+exception Unsupported of string
 exception FunctionAlreadyExists of string
 exception VariableAlreadyExists of string
+exception IdentifierNotFound of string
+exception TypeMismatch of string

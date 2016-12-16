@@ -1,5 +1,5 @@
 (* LePiX - LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -25,12 +25,11 @@ type pre_context = {
      mutable source_code : string;
      mutable original_source_code : string;
 	mutable token_count : int;
-     mutable token : Preparser.token * Core.token_source;
+     mutable token : Preparser.token * Base.token_source;
 }
 
 let pre_lex sourcename lexbuf =
-	let tokennumber = ref 0 in
-	let rec acc lexbuf tokens =
+	let rec acc lexbuf tokens tokennumber =
 		let next_token = Prescanner.token lexbuf
 		and startp = Lexing.lexeme_start_p lexbuf
 		and endp = Lexing.lexeme_end_p lexbuf
@@ -42,20 +41,19 @@ let pre_lex sourcename lexbuf =
 		and endabspos = endp.Lexing.pos_cnum
 		in
 		let create_token token =
-			let t = ( token, { Core.token_source_name = sourcename; Core.token_number = !tokennumber; 
-				Core.token_line_number = line; Core.token_line_start = startp.Lexing.pos_bol; 
-				Core.token_column_range = (relpos, endrelpos); Core.token_character_range = (abspos, endabspos) } 
+			let t = ( token, { Base.token_source_name = sourcename; Base.token_number = tokennumber; 
+				Base.token_line_number = line; Base.token_line_start = startp.Lexing.pos_bol; 
+				Base.token_column_range = (relpos, endrelpos); Base.token_character_range = (abspos, endabspos) } 
 			) in
-			tokennumber := 1 + !tokennumber;
 			t
 		in
 		let rec matcher = function 
-			| [] -> raise (Error.MissingEoF)
+			| [] -> raise (Errors.MissingEoF)
 			| Preparser.EOF :: [] -> ( create_token Preparser.EOF ) :: tokens
-			| token :: [] -> ( create_token token ) :: ( acc lexbuf tokens )
+			| token :: [] -> ( create_token token ) :: ( acc lexbuf tokens ( 1 + tokennumber ) )
 			| token :: rest -> ( create_token token ) :: ( matcher rest )
 		in matcher next_token
-	in acc lexbuf []
+	in acc lexbuf [] 0
 
 let pre_parse context token_list =
 	(* Keep a reference to the original token list
@@ -65,7 +63,7 @@ let pre_parse context token_list =
 	let tokenizer _ = match !tokenlist with
 	(* Break each token down into pieces, info and all*)
 	| (token, info) :: rest -> 
-		context.source_name <- info.Core.token_source_name;
+		context.source_name <- info.Base.token_source_name;
 		context.token_count <- 1 + context.token_count;
 		context.token <- ( token, info );
 		(* Shift the list down by one by referencing 
@@ -75,7 +73,7 @@ let pre_parse context token_list =
 		token
 	(* The parser stops calling the tokenizer when 
 	it hits EOF: if it reaches the empty list, WE SCREWED UP *)
-	| [] -> raise (Error.MissingEoF)
+	| [] -> raise (Errors.MissingEoF)
 	in
 	(* Pass in an empty channel built off a cheap string
 	and then ignore the fuck out of it in our 'tokenizer' 
@@ -84,19 +82,19 @@ let pre_parse context token_list =
 	past
 
 let rec pre_process context source source_text =
-	let source_name = Core.target_to_string source in
+	let source_name = Base.target_to_string source in
 	context.source_name <- source_name;
 	context.source_code <- source_text;
 	let reldir = match source with
-		| Core.Pipe -> ( Sys.getcwd () )
-		| Core.File(f) -> Filename.dirname f
+		| Base.Pipe -> ( Sys.getcwd () )
+		| Base.File(f) -> Filename.dirname f
 	in
 	let generate v p = match p with
 		| Preast.Text(s) -> v ^ s
 		| Preast.ImportString(f) -> v ^ "\"" ^ Io.read_file_text (Filename.concat reldir f) ^ "\""
 		| Preast.ImportSource(f) -> let realf = (Filename.concat reldir f) in
 			let ftext = Io.read_file_text realf in
-			let processedtext = ( pre_process context ( Core.File(f) ) ftext ) in
+			let processedtext = ( pre_process context ( Base.File(f) ) ftext ) in
 			v ^ processedtext
 	in
 	let tokenstream = pre_lex source_name ( Lexing.from_string source_text ) in

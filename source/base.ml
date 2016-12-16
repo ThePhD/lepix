@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -18,7 +18,7 @@ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTIO
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
-(* Core types and routines. *)
+(* Base types and routines. *)
 
 type token_source = {
      token_source_name : string;
@@ -68,21 +68,26 @@ let line_of_source src token_info =
 	and linestart = token_info.token_line_start
 	in
 	let ( lineend, _ ) =
-		let f idx (endindex, should_skip) =
+		let f (endindex, should_skip) idx =
 			let c = src.[idx] in
-			if should_skip || c = '\n' then (endindex, true) else
-			(endindex + 1, false)
+			let skip_this = c = '\n' in
+			if should_skip || skip_this then 
+				(endindex, true) 
+			else
+				(endindex + 1, false)
 		in
 		Polyfill.foldi f ( linestart, false ) linestart ( ( String.length src ) - linestart )
 	in
-	let srcline = String.sub src linestart (lineend - linestart) in
+	let srcline = String.sub src linestart (max 0 (lineend - linestart - 1)) in
 	let srclinelen = String.length srcline in
 	let ( srcindent, _ ) = 
-		let f idx (s, should_skip) = 
+		let f (s, should_skip) idx = 
 			let c = srcline.[idx] in
-			let ws = not ( Polyfill.is_whitespace c ) in
-			if should_skip || ws then (s, false) else
-			(s ^ ( String.make 1 c ), true)
+			let nws = not ( Polyfill.is_whitespace c ) in
+			if should_skip || nws then 
+				(s, false) 
+			else
+				(s ^ ( String.make 1 c ), true)
 		in
 		Polyfill.foldi f ( "", false ) 0 srclinelen
 	in

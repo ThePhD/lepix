@@ -1,40 +1,22 @@
 import lib
 
-fun a () : int {
-	return 10;
-}
-
-fun b () : int {
-	return 20;
-}
-
 namespace fuck.this {
 
 	var global : int = 8;
 
-	fun bullshit (x: int) : int {
-		return x + 2;
-	}
-
-	fun deduced_bullshit (x: int) {
-		return x + 2;
-	}
 }
+
+#import "test2.lepix"
 
 fun main () : int {
 	var s : string = "STRING LITERAL!";
+
 	var x : int = 24;
 	var y : int24 = 0x2F;
 	var y2 : int24 = 0x2f;
 	var z : int4 = 0b10;
 	var z2 : int4 = 0n2n10;
 
-	parallel {
-		var x = 20;
-		atomic {
-			y = "Bark";
-		}
-	}
 	var local : int = fuck.this.global;
 	lib.print(local);
 }

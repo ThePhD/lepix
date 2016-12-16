@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -35,6 +35,7 @@ type builtin_type =
 	| Int of int
 	| Float of int
 	| String
+	| Memory
 
 type constness = bool
 type referenceness = bool
@@ -47,9 +48,35 @@ type type_name =
 	| BuiltinType of builtin_type * type_qualifier
 	| StructType of struct_type * type_qualifier
 	| Array of type_name * int * type_qualifier
+	| SizedArray of type_name * int * int list * type_qualifier
 	| Function of type_name * type_name list * type_qualifier
+	| Overloads of ( type_name * type_name list * type_qualifier ) list
+
+let void_t = BuiltinType(Void, no_qualifiers)
+let string_t = BuiltinType(String, no_qualifiers)
+let int32_t = BuiltinType(Int(32), no_qualifiers)
+let float32_t = BuiltinType(Float(32), no_qualifiers)
 
 type binding = id * type_name
+
+let add_const (id, t) = match t with
+	| BuiltinType(bt, tq) -> let ( _, refness ) = tq in 
+		(id, BuiltinType(bt, (true, refness)))
+	| StructType(st, tq) -> let (_, refness ) = tq in 
+		(id, StructType(st, (true, refness)))
+	| Array(tn, d, tq) -> let (_, refness) = tq in 
+		(id, Array(tn, d, (true, refness)))
+	| SizedArray(tn, d, il, tq) -> let (_, refness) = tq in 
+		(id, SizedArray(tn, d, il, (true, refness)))
+	| Function(tn, pl, tq) -> let (_, refness) = tq in 
+		(id, Function(tn, pl, (true, refness)))
+	| Overloads(fl) -> 
+		let acc (tn, pl, tq) = 
+			let (_, refness) = tq in 
+			(tn, pl, (true, refness))
+		in
+		let qfl = List.map acc fl in
+		(id, Overloads(qfl))
 
 type binary_op = Add | Sub | Mult | Div | Modulo
 	| AddAssign | SubAssign | MultAssign | DivAssign | ModuloAssign
@@ -59,23 +86,28 @@ type binary_op = Add | Sub | Mult | Div | Modulo
 type prefix_op = 
 	| Neg | Not | PreIncrement | PreDecrement
 
+type postfix_op = 
+	PostIncrement | PostDecrement
+
 type literal =
 	| BoolLit of bool
 	| IntLit of int
+	| Int64Lit of int64
 	| FloatLit of float
 	| StringLit of string
 
 type expression =
 	| Literal of literal
-	| Id of id
+	| ObjectInitializer of expression list
+	| ArrayInitializer of expression list
+	| QualifiedId of qualified_id
 	| Member of expression * qualified_id
 	| Call of expression * expression list
 	| Index of expression * expression list
-	| Initializer of expression list
 	| BinaryOp of expression * binary_op * expression
 	| PrefixUnaryOp of prefix_op * expression
 	| Assignment of expression * expression
-	| NoOp
+	| Noop
 
 type parallel_expression =
 	| Invocations of expression
@@ -83,7 +115,6 @@ type parallel_expression =
 
 type variable_definition = 
 	| VarBinding of binding * expression
-	| LetBinding of binding * expression
 
 type general_statement =
 	| ExpressionStatement of expression
@@ -116,12 +147,17 @@ type basic_definition =
 
 type struct_definition = struct_type * basic_definition list
 
+type import_definition =
+	| LibraryImport of qualified_id
+
 type definition = 
+	| Import of import_definition
 	| Basic of basic_definition
 	| Structure of struct_definition
 	| Namespace of qualified_id * definition list
 
-type program = definition list
+type program = 
+	| Program of definition list
 
 (* Useful destructuring and common operations *)
 let binding_type = function

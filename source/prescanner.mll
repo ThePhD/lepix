@@ -1,5 +1,5 @@
 (* LePiX - LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -41,11 +41,11 @@ and hash_token = parse
 | '"'        { let b = ( Buffer.create 128 ) in string_literal b lexbuf }
 | "import"   { Preparser.IMPORT :: hash_token lexbuf }
 | "string"   { Preparser.STRING :: hash_token lexbuf }
-| eof        { Preparser.EOF :: token lexbuf }
-| _ as c     { raise (Error.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+| eof        { [Preparser.EOF] }
+| _ as c     { raise (Errors.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 and string_literal string_buf = parse
 | newline as c { Lexing.new_line lexbuf; Buffer.add_char string_buf c; string_literal string_buf lexbuf }
-| '"'          { let sl = Preparser.STRINGLITERAL( Buffer.contents string_buf ) in sl :: ( hash_token lexbuf ) }
+| '"'          { let sl = Preparser.STRINGLITERAL( Buffer.contents string_buf ) in [sl] }
 | "\\\"" as s  { Buffer.add_string string_buf s; string_literal string_buf lexbuf }
 | _ as c       { Buffer.add_char string_buf c; string_literal string_buf lexbuf }

@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -20,7 +20,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. *)
 
 (* These subroutines are for the specific purpose of 
 working with the file system, since we are not using Batteries Included of Jane Street's
-Core.Std and the like in our implementation so far... *)
+Base.Std and the like in our implementation so far... *)
 
 let read_characters_in f v chan =
 	let rv = ref v in

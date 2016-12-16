@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -113,7 +113,7 @@ let generate (ast) =
 			L.const_int i32_t 0
 		| Ast.BinaryOp(e1, op, e2) ->
 			L.const_int i32_t 0
-		| Ast.PrefixUnaryOp(op, e1) ->
+		| Ast.PrefixOp(op, e1) ->
 			L.const_int i32_t 0
 		| Ast.Assignment(s, e) ->
 			L.const_int i32_t 0

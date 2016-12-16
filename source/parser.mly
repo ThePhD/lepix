@@ -1,6 +1,6 @@
 %{
 (* LePiX - LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -41,13 +41,14 @@ menhir, as we have developed against both for testing purposes. *)
 %token AMP CONST
 %token <int> INT 
 %token <int> FLOAT 
-%token BOOL VOID STRING
+%token BOOL VOID STRING MEMORY
 %token AUTO
 %token NAMESPACE
+%token IMPORT
 %token <string> ID
 %token <string> STRINGLITERAL
-%token <int> INTLITERAL
-%token <float> FLOATLITERAL
+%token <Num.num> INTLITERAL
+%token <Num.num> FLOATLITERAL
 %token EOF
 
 %right ASSIGN
@@ -60,7 +61,6 @@ menhir, as we have developed against both for testing purposes. *)
 %left PLUS MINUS
 %left TIMES DIVIDE MODULO
 %right NOT NEG
-%left DOT
 %left LSQUARE
 %left LPAREN
 %left MINUSMINUS
@@ -72,7 +72,7 @@ menhir, as we have developed against both for testing purposes. *)
 
 qualified_id_builder:
 | ID { [$1] }
-| qualified_id DOT ID { $3 :: $1 }
+| qualified_id_builder DOT ID { $3 :: $1 }
 
 qualified_id:
 | qualified_id_builder { List.rev $1 }
@@ -84,10 +84,19 @@ builtin_type:
 | INT { Ast.Int($1) }
 | FLOAT { Ast.Float($1) }
 | STRING { Ast.String }
+| MEMORY { Ast.Memory }
 
 array_spec:
 | LSQUARE RSQUARE { 1 }
 | LSQUARE array_spec RSQUARE { 1 + $2 }
+
+int_literal_list:
+| INTLITERAL { [ ( Num.int_of_num $1 ) ] }
+| INTLITERAL int_literal_list { ( Num.int_of_num $1 ) :: $2 }
+
+sized_array_spec:
+| LSQUARE int_literal_list RSQUARE { ( 1, $2 ) }
+| LSQUARE sized_array_spec RSQUARE { let ( d, el ) = $2 in (1 + d, el) }
 
 type_category: { (false, false) }
 | AMP { (false, true) }
@@ -99,6 +108,18 @@ sub_type_name:
 | type_category qualified_id             { Ast.StructType($2, $1) }
 | type_category builtin_type array_spec  { Ast.Array(Ast.BuiltinType($2, Ast.no_qualifiers), $3, $1) }
 | type_category qualified_id array_spec  { Ast.Array(Ast.StructType($2, Ast.no_qualifiers), $3, $1) }
+| type_category builtin_type sized_array_spec  { let (d, el) = $3 in 
+	if d <> ( List.length el ) then
+		raise(Parsing.Parse_error)
+	else
+		Ast.SizedArray(Ast.BuiltinType($2, Ast.no_qualifiers), d, el, $1) 
+}
+| type_category qualified_id sized_array_spec  { let (d, el) = $3 in 
+	if d <> ( List.length el ) then
+		raise(Parsing.Parse_error)
+	else
+		Ast.SizedArray(Ast.StructType($2, Ast.no_qualifiers), d, el, $1) 
+}
 
 sub_type_name_list_builder: { [] }
 | sub_type_name { [$1] }
@@ -115,21 +136,7 @@ expression_comma_list:                   { [] }
 | expression                             { [$1] }
 | expression COMMA expression_comma_list { $1 :: $3 }
 
-expression:
-| INTLITERAL { Ast.Literal(Ast.IntLit($1)) }
-| FLOATLITERAL { Ast.Literal(Ast.FloatLit($1)) }
-| STRINGLITERAL { Ast.Literal(Ast.StringLit($1)) }
-| TRUE { Ast.Literal(Ast.BoolLit(true)) }
-| FALSE { Ast.Literal(Ast.BoolLit(false)) }
-| LSQUARE expression_comma_list RSQUARE { Ast.Initializer($2) }
-| ID { Ast.Id($1) }
-| expression DOT qualified_id { Ast.Member($1, $3) }
-| expression LSQUARE expression_comma_list RSQUARE { Ast.Index($1, $3)  }
-| expression LPAREN expression_comma_list RPAREN { Ast.Call($1, $3)  }
-| MINUS expression %prec NEG { Ast.PrefixUnaryOp(Ast.Neg, $2) }
-| NOT expression { Ast.PrefixUnaryOp(Ast.Not, $2) }
-| PLUSPLUS expression { Ast.PrefixUnaryOp(Ast.PreIncrement, $2) }
-| MINUSMINUS expression { Ast.PrefixUnaryOp(Ast.PreDecrement, $2) }
+op_expression:
 | expression TIMES expression { Ast.BinaryOp($1, Ast.Mult, $3) }
 | expression DIVIDE expression { Ast.BinaryOp($1, Ast.Div, $3)  }
 | expression PLUS expression { Ast.BinaryOp($1, Ast.Add, $3) }
@@ -149,7 +156,44 @@ expression:
 | expression AND expression { Ast.BinaryOp($1, Ast.And, $3) }
 | expression OR expression { Ast.BinaryOp($1, Ast.Or, $3) }
 | expression ASSIGN expression { Ast.Assignment($1, $3) }
+| MINUS expression %prec NEG { Ast.PrefixUnaryOp(Ast.Neg, $2) }
+| NOT expression { Ast.PrefixUnaryOp(Ast.Not, $2) }
+| PLUSPLUS expression { Ast.PrefixUnaryOp(Ast.PreIncrement, $2) }
+| MINUSMINUS expression { Ast.PrefixUnaryOp(Ast.PreDecrement, $2) }
+
+value_expression:
+| INTLITERAL { let v = match $1 with
+	| Num.Int(i) -> Ast.IntLit(i)
+	| Num.Big_int(bi) -> 
+		begin try
+			Ast.IntLit( Big_int.int_of_big_int bi )
+		with
+			_ -> Ast.Int64Lit( Big_int.int64_of_big_int bi )
+		end
+	| n -> Ast.FloatLit( Num.float_of_num n )
+	in
+	Ast.Literal(v)
+}
+| FLOATLITERAL { Ast.Literal(Ast.FloatLit( Num.float_of_num $1 )) }
+| STRINGLITERAL { Ast.Literal(Ast.StringLit($1)) }
+| TRUE { Ast.Literal(Ast.BoolLit(true)) }
+| FALSE { Ast.Literal(Ast.BoolLit(false)) }
+| LSQUARE expression_comma_list RSQUARE { Ast.ArrayInitializer( $2 ) }
+| LBRACE expression_comma_list RBRACE { Ast.ObjectInitializer( $2 ) }
+
+postfix_expression:
+| expression LSQUARE expression_comma_list RSQUARE { Ast.Index($1, $3)  }
+| expression LPAREN expression_comma_list RPAREN { Ast.Call($1, $3)  }
+
+expression:
+| qualified_id { Ast.QualifiedId($1) }
+| value_expression { $1 }
+| value_expression DOT qualified_id { Ast.Member($1, $3) }
+| op_expression { $1 }
+| postfix_expression { $1 }
+| postfix_expression DOT qualified_id { Ast.Member($1, $3) }
 | LPAREN expression RPAREN { $2 }
+| LPAREN expression RPAREN DOT qualified_id { Ast.Member($2, $5) }
 
 type_spec:
 | COLON type_name { $2 }
@@ -170,9 +214,9 @@ var_binding:
 
 variable_definition:
 | VAR var_binding ASSIGN expression { Ast.VarBinding($2, $4) }
-| LET var_binding ASSIGN expression { Ast.LetBinding($2, $4) }
-| VAR var_binding { Ast.VarBinding($2, Ast.NoOp) }
-| LET var_binding { Ast.LetBinding($2, Ast.NoOp) }
+| LET var_binding ASSIGN expression { Ast.VarBinding(Ast.add_const($2), $4) }
+| VAR var_binding { Ast.VarBinding($2, Ast.Noop) }
+| LET var_binding { Ast.VarBinding(Ast.add_const($2), Ast.Noop) }
 
 statement_list_builder: { [] }
 | statement_list_builder statement { $2 :: $1 }
@@ -220,8 +264,9 @@ statement:
 | FOR LPAREN sub_general_statement_list SEMI expression SEMI expression_comma_list RPAREN LBRACE statement_list RBRACE { Ast.ForBlock($3, $5, $7, $10) }
 | FOR LPAREN expression TO expression BY expression RPAREN LBRACE statement_list RBRACE { Ast.ForByToBlock($3, $5, $7, $10) }
 | RETURN expression SEMI { Ast.Return($2) }
+| RETURN SEMI { Ast.Return(Ast.Noop) }
 | BREAK SEMI { Ast.Break(1) }
-| BREAK INTLITERAL SEMI { Ast.Break($2) }
+| BREAK INTLITERAL SEMI { Ast.Break( Num.int_of_num $2 ) }
 | CONTINUE SEMI { Ast.Continue }
 | PARALLEL LPAREN parallel_binding_list RPAREN LBRACE statement_list RBRACE  { Ast.ParallelBlock($3, $6) }
 | PARALLEL LBRACE statement_list RBRACE  { Ast.ParallelBlock([Ast.ThreadCount(Ast.Literal(Ast.IntLit(-1))); Ast.Invocations(Ast.Literal(Ast.IntLit(-1)))], $3) }
@@ -230,10 +275,14 @@ statement:
 function_definition:
 | FUN ID LPAREN binding_list RPAREN maybe_type_spec LBRACE statement_list RBRACE { ([$2], $4, $6, $8) }
 
+import_definition:
+| IMPORT qualified_id { $2 }
+
 definition_list : { [] }
+| definition_list import_definition { Ast.Import(Ast.LibraryImport($2)) :: $1 }
 | definition_list function_definition { Ast.Basic(Ast.FunctionDefinition($2)) :: $1 }
 | definition_list variable_definition SEMI { Ast.Basic(Ast.VariableDefinition($2)) :: $1 }
 | definition_list NAMESPACE qualified_id LBRACE definition_list RBRACE { Ast.Namespace($3, List.rev $5) :: $1 }
 
 program:
-| definition_list EOF { List.rev $1 }
+| definition_list EOF { Ast.Program(List.rev $1) }

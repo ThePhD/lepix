@@ -1,5 +1,5 @@
 (* LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -26,12 +26,11 @@ type context = {
      mutable source_code : string;
 	mutable original_source_code : string;
 	mutable token_count : int;
-     mutable token : Parser.token * Core.token_source;
+     mutable token : Parser.token * Base.token_source;
 }
 
 let lex sourcename lexbuf =
-	let tokennumber = ref 0 in
-	let rec acc lexbuf tokens =
+	let rec acc lexbuf tokennumber tokens =
 		let next_token = Scanner.token lexbuf
 		and startp = Lexing.lexeme_start_p lexbuf
 		and endp = Lexing.lexeme_end_p lexbuf
@@ -43,17 +42,17 @@ let lex sourcename lexbuf =
 		and endabspos = endp.Lexing.pos_cnum
 		in
 		let create_token token =
-			let t = ( token, { Core.token_source_name = sourcename; Core.token_number = !tokennumber; 
-				Core.token_line_number = line; Core.token_line_start = startp.Lexing.pos_bol; 
-				Core.token_column_range = (relpos, endrelpos); Core.token_character_range = (abspos, endabspos) } 
+			let t = ( token, { Base.token_source_name = sourcename; Base.token_number = tokennumber; 
+				Base.token_line_number = line; Base.token_line_start = startp.Lexing.pos_bol; 
+				Base.token_column_range = (relpos, endrelpos); Base.token_character_range = (abspos, endabspos) } 
 			) in
-			tokennumber := 1 + !tokennumber;
 			t
 		in
 		match next_token with
 		| Parser.EOF as token -> ( create_token token ) :: tokens
-		| token -> ( create_token token ) :: ( acc lexbuf tokens )
-	in acc lexbuf []
+		| token -> ( create_token token ) :: ( acc lexbuf ( 1 + tokennumber ) tokens )
+	in 
+	acc lexbuf 0 []
 
 let parse context token_list =
 	(* Keep a reference to the original token list
@@ -63,7 +62,7 @@ let parse context token_list =
 	let tokenizer _ = match !tokenlist with
 	(* Break each token down into pieces, info and all*)
 	| (token, info) :: rest -> 
-		context.source_name <- info.Core.token_source_name;
+		context.source_name <- info.Base.token_source_name;
 		context.token_count <- 1 + context.token_count;
 		context.token <- ( token, info );
 		(* Shift the list down by one by referencing 
@@ -73,7 +72,7 @@ let parse context token_list =
 		token
 	(* The parser stops calling the tokenizer when 
 	it hits EOF: if it reaches the empty list, WE SCREWED UP *)
-	| [] -> raise (Error.MissingEoF)
+	| [] -> raise (Errors.MissingEoF)
 	in
 	(* Pass in an empty channel built off a cheap string
 	and then ignore the fuck out of it in our 'tokenizer' 

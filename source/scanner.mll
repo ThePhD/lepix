@@ -1,5 +1,5 @@
 (* LePiX - LePiX Language Compiler Implementation
-Copyright (c) 2016- ThePhD, Gabrielle Taylor, Akshaan Kakar, Fatimazorha Koly, Jackie Lin
+Copyright (c) 2016- ThePhD
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this 
 software and associated documentation files (the "Software"), to deal in the Software 
@@ -30,6 +30,9 @@ let binary_digit = '0' | '1'
 let hex_digit = ['0'-'9'] | ['A'-'F'] | ['a'-'f']
 let octal_digit = ['0'-'7']
 let decimal_digit = ['0'-'9']
+let uppercase_letter = ['A'-'Z']
+let lowercase_letter = ['a'-'z']
+let n_digit = decimal_digit | uppercase_letter | lowercase_letter
 
 rule token = parse
 | whitespace { token lexbuf }
@@ -83,6 +86,7 @@ rule token = parse
 | "bool"   { BOOL }
 | "string" { STRING }
 | "void"   { VOID }
+| "memory" { MEMORY }
 | "true"   { TRUE }
 | "false"  { FALSE }
 | "var"    { VAR }
@@ -96,31 +100,38 @@ rule token = parse
 | "thread_count" { THREADCOUNT }
 | "atomic" { ATOMIC }
 | "namespace" { NAMESPACE }
+| "import" { IMPORT }
 | '"'      { string_literal ( Buffer.create 128 ) lexbuf }
-| decimal_digit+ as lxm { INTLITERAL(int_of_string lxm) }
-| "0c" { octal_int_literal lexbuf }
-| "0x" { hex_int_literal lexbuf }
-| "0b" { binary_int_literal lexbuf }
-| '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
-| ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 
+| decimal_digit+ as lxm { INTLITERAL(Num.num_of_string lxm) }
+| "0c" | "0C" { octal_int_literal lexbuf }
+| "0x" | "0X" { hex_int_literal lexbuf }
+| "0b" | "0B" { binary_int_literal lexbuf }
+| ( "0n" | "0N" ) ( decimal_digit+ as b ) ("n" | "N") { n_int_literal (int_of_string b) lexbuf }
+| '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(Num.num_of_string lxm) }
+| ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(Num.num_of_string lxm) } 
 | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
 | eof { EOF }
-| _ as c { raise (Error.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+| _ as c { raise (Errors.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and octal_int_literal = parse
-| octal_digit+ as s { INTLITERAL( int_of_string ( "0o" ^ s ) ) }
-| _ as c { raise (Error.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+| octal_digit+ as s { INTLITERAL( Polyfill.num_of_string_base 8 s ) }
+| _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and hex_int_literal = parse
-| hex_digit+ as s { INTLITERAL( int_of_string ( "0x" ^ s ) ) }
-| _ as c { raise (Error.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+| hex_digit+ as s { INTLITERAL( Polyfill.num_of_string_base 16 s ) }
+| _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and binary_int_literal = parse
-| binary_digit+ as s { INTLITERAL( int_of_string ( "0b" ^ s ) ) }
-| _ as c { raise (Error.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+| binary_digit+ as s { INTLITERAL( Polyfill.num_of_string_base 2 s ) }
+| _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
+
+
+and n_int_literal base = parse
+| n_digit+ as s    { INTLITERAL( Polyfill.num_of_string_base base s ) }
+| _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and string_literal string_buffer = parse
