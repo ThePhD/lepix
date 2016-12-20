@@ -23,189 +23,414 @@ LLVM IR:
 http://llvm.org/docs/tutorial/index.html
 http://llvm.moe/ocaml/ *)
 
-module R = Representation
+(* Linked code after the c bindings from the makefile
+compiled the ll for the c bindings *)
 
-let generate (ast) =
+module StringMap = Map.Make(String)
+
+type li_universe = {
+	lu_attrs : Semast.s_attributes;
+	lu_env : Semast.s_environment;
+	lu_module : Llvm.llmodule;
+	lu_context : Llvm.llcontext;
+	lu_builder : Llvm.llbuilder;
+	lu_variables : Llvm.llvalue StringMap.t;
+	lu_functions : Llvm.llvalue StringMap.t;
+	lu_named_values : Llvm.llvalue StringMap.t;
+	lu_named_params : Llvm.llvalue StringMap.t;
+	lu_handlers : ( li_universe -> ( Semast.s_expression list ) -> ( li_universe * Llvm.llvalue list ) ) StringMap.t;
+}
+
+let func_metadata_name = "lepix.md.func"
+
+let create_li_universe = function | Semast.SProgram(attrs, env, _) ->
 	let context = Llvm.global_context() in
+	let builder = Llvm.builder context in
 	let m = Llvm.create_module context "lepix" in
-	(*
-	let context_builder = Llvm.builder context in
-	let f32_t   = Llvm.float_type   context
-	and f64_t   = Llvm.double_type  context
-	and i8_t    = Llvm.i8_type      context
+	{
+		lu_attrs = attrs;
+		lu_env = env;
+		lu_module = m;
+		lu_context = context;
+		lu_builder = builder;
+		lu_variables = StringMap.empty;
+		lu_functions = StringMap.empty;
+		lu_named_values = StringMap.empty;
+		lu_named_params = StringMap.empty;
+		lu_handlers = StringMap.empty;
+	}
+
+let rec llvm_type_of_s_type_name lu st =
+	let f32_t   = Llvm.float_type   lu.lu_context
+	and f64_t   = Llvm.double_type  lu.lu_context
 	(* for 'char' type to printf -- even if they resolve to same type, we differentiate*)
-	and char_t  = Llvm.i8_type      context
-	and i16_t   = Llvm.i16_type     context
-	and i32_t   = Llvm.i32_type     context
-	and i64_t   = L.i64_type        context
+	and char_t  = Llvm.i8_type      lu.lu_context
+	and i16_t   = Llvm.i16_type     lu.lu_context
+	and i32_t   = Llvm.i32_type     lu.lu_context
+	and i64_t   = Llvm.i64_type        lu.lu_context
 	(* LLVM treats booleans as 1-bit integers, not distinct types with their own true / false *)
-	and bool_t  = Llvm.i1_type      context
-	and void_t  = Llvm.void_type    context
+	and bool_t  = Llvm.i1_type      lu.lu_context
+	and void_t  = Llvm.void_type    lu.lu_context
 	in
-	let p_i8_t    = Llvm.pointer_type    i8_t
-	and p_char_t  = Llvm.pointer_type    char_t
-	and p_void_t  = Llvm.i8_type         context
+	let p_char_t  = Llvm.pointer_type    char_t
 	in
+	match st with
+	(* TODO: handle reference-ness (e.g., make it behave like a pointer here) *)
+	| Semast.SBuiltinType( Ast.Bool, tq ) -> bool_t
+	| Semast.SBuiltinType( Ast.Int(n), tq ) -> begin match n with
+		| 64 -> i64_t
+		| 32 -> i32_t
+		| 16 -> i16_t
+		| _ -> Llvm.integer_type lu.lu_context n
+	end
+	| Semast.SBuiltinType( Ast.Float(n), tq ) -> begin match n with
+		| 64 -> f64_t
+		| 32 -> f32_t
+		| 16 -> (* LLVM actually has support for this, but shitty OCaml bindings *)
+			(* TODO: Proper Error *)
+			raise( Failure "Cannot have a Half Float because OCaml binding for LLVM is garbage" )
+		| _ -> (* TODO: Proper Error *)
+			raise( Failure "Unallowed Float Width" )
+	end
+	| Semast.SBuiltinType( Ast.String, tq ) -> p_char_t
+	| Semast.SBuiltinType( Ast.Void, tq ) -> void_t
+	| Semast.SArray(t, d, tq) -> Llvm.array_type (llvm_type_of_s_type_name lu t) d
+	| Semast.SSizedArray(t, d, szs, tq) -> Llvm.array_type (llvm_type_of_s_type_name lu t) d
+	| Semast.SFunction(rt, argst, tq) -> 
+		let lrt = llvm_type_of_s_type_name lu rt
+		and largst = Array.map ( llvm_type_of_s_type_name lu ) ( Array.of_list argst )
+		in
+		Llvm.function_type lrt largst
+	| _ -> (* TODO: Proper Error *)
+		raise(Errors.Unsupported("This type is not convertible to an LLVM type"))
 
-	let printf_t = Llvm.var_arg_function_type i32_t [| p_char_t |] in
-	let printf_func = Llvm.declare_function "printf" printf_t m in
-	let set_up_external_handler context lmod = 
-		(* Assume *Nix handling with `dl` library *)
-		let dlopen = Llvm.declare_function "dlopen" ( Llvm.function_type p_i8_t [| p_i8_t; i32_t |] ) lmod in
-		let dlsym = Llvm.declare_function "dlsym" ( Llvm.function_type p_i8_t [| p_i8_t; p_char_t |] ) lmod in
-		let dlclose = Llvm.declare_function "dlclose" ( Llvm.function_type i32_t [| p_i8_t |] ) lmod in
-		( dlopen, dlsym, dlclose )
-	in
+let find_argument_handler lu target =
+	let hn = Llvm.value_name target in
+	try Some( StringMap.find hn lu.lu_handlers )
+	with _ -> None
 
-	(* Function to convert Ast types to LLVM Types
-	Applies itself recursively, using the above 
-	created types on the context *)
-	let rec ast_to_llvm_type = function
-		| Ast.BuiltinType( Ast.Bool, tq ) -> bool_t
-		| Ast.BuiltinType( Ast.Int(n), tq ) -> begin match n with
-			| 64 -> i64_t
-			| 32 -> i32_t
-			| 16 -> i16_t
-			| _ -> Llvm.integer_type context n
-		end
-		| Ast.BuiltinType( Ast.Float(n), tq ) -> begin match n with
-			| 64 -> f64_t
-			| 32 -> f32_t
-			| 16 -> (* LLVM actually has support for this, but shitty OCaml bindings *)
-				raise( Failure "Cannot have a Half Float because OCaml is Garbage" )
-			| _ -> raise( Failure "Unallowed Float Width" )
-		end
-		| Ast.BuiltinType( Ast.String, tq ) -> p_char_t
-		| Ast.BuiltinType( Ast.Void, tq ) -> void_t
-		| Ast.StructType(_, _) -> Llvm.struct_type context [| f64_t |]
-		| Ast.Array(t, d, tq) -> Llvm.array_type (ast_to_llvm_type t) d
-		| Ast.Function(rt, argst, tq) -> 
-			let lrt = ast_to_llvm_type rt
-			and largst = Array.map ast_to_llvm_type ( Array.of_list argst )
-			in
-			Llvm.function_type lrt largst
-	in
+let llvm_lookup_function lu name t = 
+	let mname = Semast.mangle_name [name] t in
+	match Llvm.lookup_function mname lu.lu_module with
+		| Some(v) -> v
+		| None -> raise( Errors.FunctionLookupFailure( name, mname ) )
 
-	let rec gen_expression = function 
-		| Ast.Id(s) -> let composite_id = s in
-			(* TODO: fix this and the entire if condition by implementing search for the scope's functions *)
-			if composite_id = "lib.print" then 
-				printf_func
-			else
-				printf_func
-		| Ast.Literal(Ast.BoolLit(value)) -> L.const_int bool_t (if value then 1 else 0) (* bool_t is still an integer, must convert *)
-		| Ast.Literal(Ast.IntLit(value)) -> L.const_int i32_t value
-		| Ast.Literal(Ast.StringLit(value)) -> 
-			let str = L.build_global_string value "data.1" context_builder in
+let llvm_lookup_variable lu name t = 
+	match Llvm.lookup_global name lu.lu_module with
+		| Some(v) -> v
+		| None -> raise( Errors.VariableLookupFailure( name, name ) )
+
+let dump_s_qualified_id lu qid t =
+	let lookup n =
+		try 
+			let v = StringMap.find n lu.lu_named_values in
+			Some(v)
+		with | Not_found ->
+			try 
+				let v = StringMap.find n lu.lu_named_params in
+				Some(v)
+		with | Not_found -> try 
+				let v = StringMap.find n lu.lu_variables in
+				Some(v)
+		with | Not_found -> None
+	in
+	let lookup_func n =
+		try 
+			let v = StringMap.find n lu.lu_named_values in
+			Some(v)
+		with | Not_found ->
+			try 
+				let v = StringMap.find n lu.lu_named_params in
+				Some(v)
+		with | Not_found -> try 
+				let v = StringMap.find n lu.lu_functions in
+				Some(v)
+		with | Not_found -> None
+	in
+	let idval = match t with 
+		| Semast.SFunction(rt, tnl, tq) as ft -> let n = Semast.mangle_name qid ft in 
+			begin match lookup_func n with 
+				| Some(v) -> v
+				| None -> let n = Semast.string_of_qualified_id qid in 
+			match lookup_func n with 
+				| Some(v) -> v
+				| None -> raise (Errors.UnknownFunction n)
+			end
+		| _ -> let n = Semast.string_of_qualified_id qid in
+			match lookup n with
+				| Some(v) -> v
+				| None -> raise (Errors.UnknownVariable n)
+	in
+	(lu, idval)
+
+let dump_s_literal lu lit = 
+	let f32_t   = Llvm.float_type   lu.lu_context
+	and i32_t   = Llvm.i32_type     lu.lu_context
+	and i64_t   = Llvm.i64_type     lu.lu_context
+	and bool_t  = Llvm.i1_type      lu.lu_context
+	in
+	let v = match lit with
+		| Semast.SBoolLit(value) -> Llvm.const_int bool_t (if value then 1 else 0) (* bool_t is still an integer, must convert *)
+		| Semast.SIntLit(value) -> Llvm.const_int i32_t value
+		| Semast.SInt64Lit(value) -> Llvm.const_of_int64 i64_t value true (* boolean is for signedness or not: it is signed *)
+		| Semast.SStringLit(value) -> 
+			let str = Llvm.build_global_string value "str_lit" lu.lu_builder in
 			str
-		| Ast.Literal(Ast.FloatLit(value)) -> L.const_float f32_t value
-		| Ast.Call(e, el) -> 
-			let target = gen_expression e in 
-			let int_format_str = L.build_global_stringptr "%d\n" "fmt" context_builder in
-			let args = ( Array.of_list ( int_format_str :: (List.map gen_expression el) ) ) in
-			let v = L.build_call target args "printf" context_builder in
-			v
-		
-		(* TODO: do code generation for these *)
-		| Ast.Index(e, el) ->
-			L.const_int i32_t 0
-		| Ast.Member(e, el) ->
-			L.const_int i32_t 0
-		| Ast.BinaryOp(e1, op, e2) ->
-			L.const_int i32_t 0
-		| Ast.PrefixOp(op, e1) ->
-			L.const_int i32_t 0
-		| Ast.Assignment(s, e) ->
-			L.const_int i32_t 0
-		| Ast.Initializer(el) ->
-			L.const_int i32_t 0
-		| Ast.NoOp ->
-			L.const_int i32_t 0
+		| Semast.SFloatLit(value) -> Llvm.const_float f32_t value
 	in
+	(lu, v)
 
-	let gen_statement = function
-		| Ast.General(Ast.ExpressionStatement(e)) -> gen_expression e
-		
-		| Ast.Return(e) -> gen_expression e
-
-		(* TODO: fill this out *)
-		| Ast.General(Ast.VariableDefinition(vdecl)) ->
-			L.const_int i32_t 0
-		
-		| Ast.IfBlock(e, true_sl, false_sl) ->
-			L.const_int i32_t 0 
-		| Ast.ForBlock(ilcond, increl, sl) ->
-			L.const_int i32_t 0 
-		| Ast.ForByToBlock(frome, toe, bye, sl) ->
-			L.const_int i32_t 0 
-		| Ast.WhileBlock(ilcond, sl) ->
-			L.const_int i32_t 0 
-		| Ast.Break(n) ->
-			L.const_int i32_t 0 
-		| Ast.Continue ->
-			L.const_int i32_t 0 
-		| Ast.ParallelBlock(el, sl) ->
-			L.const_int i32_t 0
-		| Ast.AtomicBlock(sl) ->
-			L.const_int i32_t 0 
+let rec dump_s_expression lu e = 
+	let acc_expr (lu, vl) e =
+		let (lu, v) = dump_s_expression lu e in
+		( lu, v :: vl )
 	in
+	match e with
+	| Semast.SLiteral(lit) -> dump_s_literal lu lit
+	| Semast.SQualifiedId(qid, t) -> 
+		let (lu, v) = dump_s_qualified_id lu qid t in
+		(lu, v)
+	| Semast.SCall(e, el, t) -> 
+		let (lu, target) = dump_s_expression lu e in
+		let oparghandler = find_argument_handler lu target in
+		let ( lu, args ) = match oparghandler with
+			| None -> 
+				let (lu, args) = List.fold_left acc_expr (lu, []) el in
+				(lu, List.rev args)
+			| Some(h) -> 
+				let (lu, args) = ( h lu el ) in
+				( lu, args )
+		in
+		let arr_args = Array.of_list args in
+		let v = Llvm.build_call target arr_args "tmp.call" lu.lu_builder in
+		(lu, v)
+	| _ -> raise(Errors.Unsupported("This expression is not supported for code generation"))
 
-	let rec gen_statement_list = function
-		(* 0 value (default integer return, specifically to get main() working right now...*)
-		| [] -> L.const_int i32_t 0
-		| s :: [] -> gen_statement s
-		| s :: rest -> ignore(gen_statement s); gen_statement_list rest
+let dump_arguments lu el =
+	let acc_expr (lu, vl) e =
+		let (lu, v) = dump_s_expression lu e in
+		let v = Llvm.build_load v "tmp.arg" lu.lu_builder in
+		( lu, v :: vl )
 	in
+	let (lu, args) = List.fold_left acc_expr (lu, []) el in
+	(lu, args)
 
-	(* TODO: this will come in handy later when we need to declare lots of functions
+let dump_s_locals lu locals =
+	let acc lu (n, tn) =
+		let lty = llvm_type_of_s_type_name lu tn in
+		let v = Llvm.build_alloca lty n lu.lu_builder in
+		{ lu with lu_named_values = StringMap.add (n) v lu.lu_named_values }
+	in
+	let Semast.SLocals(bl) = locals in
+	let lu = List.fold_left acc lu bl in
+	lu
+
+let dump_assignment lu lhse rhse lhstn  =
+	let (lu, rhs) = dump_s_expression lu rhse in
+	let rhs = Llvm.build_load rhs "tmp" lu.lu_builder in
+	let (lu, lhs) = dump_s_expression lu lhse in
+	let v = Llvm.build_store rhs lhs lu.lu_builder  in
+	( lu, v )
+
+let dump_s_variable_definition lu = function
+	| Semast.SVarBinding((n, tn), e) -> let lhse = Semast.SQualifiedId([n], tn) in
+		dump_assignment lu lhse e tn
+
+let rec dump_s_general_statement lu gs =
+	let acc lu bgs = 
+		dump_s_general_statement lu bgs
+	in
+	match gs with
+	| Semast.SGeneralBlock( locals, gsl ) -> 
+		let lu = dump_s_locals lu locals in
+		let lu = List.fold_left acc lu gsl in
+		lu
+	| Semast.SExpressionStatement(e) -> 
+		let (lu, _) = dump_s_expression lu e in
+		lu
+	| Semast.SVariableStatement(vdef) -> 
+		let (lu, _) = dump_s_variable_definition lu vdef in
+		lu
+
+let rec dump_s_statement lu s = 
+	let acc lu s = 
+		dump_s_statement lu s
+	in
+	match s with
+	| Semast.SBlock( locals, sl ) ->
+		let lu = dump_s_locals lu locals in
+		let lu = List.fold_left acc lu sl in
+		lu
+	| Semast.SGeneral(gs) -> dump_s_general_statement lu gs
+	| Semast.SReturn(e) -> let lu = match e with
+			| Semast.SNoop -> 
+				let _ = Llvm.build_ret_void lu.lu_builder in
+				lu
+			| e -> let (lu, v) = dump_s_expression lu e in
+				let _ = Llvm.build_ret v lu.lu_builder in
+				lu
+		in
+		lu
+	| _ -> raise(Errors.Unsupported("This statement type is unsupported"))
+
+let dump_s_variable_definition_global lu = function
+	| Semast.SVarBinding((n, tn), e) -> 
+		let (lu, rhs) = dump_s_expression lu e in
+		let v = Llvm.define_global n rhs lu.lu_module in
+		let lu = { lu with 
+			lu_variables = StringMap.add n v lu.lu_variables 
+		} in
+		(*		
+		let lty = llvm_type_of_s_type_name lu v in
+		let v = Llvm.declare_global lty k lu.lu_module in
+		{ lu with lu_variables = StringMap.add k v lu.lu_variables }
+		let v = llvm_lookup_variable lu n tn in
+		print_endline n;
+		let _ = Llvm.set_initializer v rhs in
+		let lu = { lu with lu_variables = StringMap.add n v lu.lu_variables } in
+		*)
+		( lu, v )
+
+(* TODO: this will come in handy later when we need to declare lots of functions
 	but not define them (e.g., for stuff we link in from the C Library or other modules... *)
-	(* let gen_function_declaration f = 
-		(* Generate the function with its signature *)
-		let args_t = Array.of_list (List.map (fun (_, t) -> ast_to_llvm_type t) f.Ast.func_parameters) in
-		let sig_t = L.function_type (ast_to_llvm_type f.Ast.func_return_type) args_t in
-		L.define_function f.Ast.func_name sig_t m;
-	in *)
-
-	let gen_function_definition f = 
-		let ( n, paramsl, rt, locals, sl ) = f in
-		(* Generate the function with its signature *)
-		let args_t = Array.of_list (List.map (fun (_, t) -> ast_to_llvm_type t) paramsl) in
-		let sig_t = L.function_type (ast_to_llvm_type rt) args_t in
-		let ll_func = L.define_function n sig_t m in
-		(* generate the body *)
-		let body_block = L.entry_block ll_func in
-		L.position_at_end body_block context_builder;
-		let ret_val = gen_statement_list sl in
-		let _ = L.build_ret ret_val context_builder in
-		ll_func
+let dump_s_function_declaration lu n args rt = 
+	(* Generate the function with its signature *)
+	let args_t = Array.of_list (List.map ( llvm_type_of_s_type_name lu ) args)
+	and rt_t = llvm_type_of_s_type_name lu rt 
 	in
+	let sig_t = Llvm.function_type rt_t args_t in
+	let _ = Llvm.define_function n sig_t lu.lu_module in
+	lu
 
-	let gen_variable_definition v =
-		(* TODO: placeholder, replace with actual variable definition and symbol insertion *)
-		L.const_int i32_t 0xCCCCCCC
+let dump_s_function_definition lu f =
+	let acc lu s = 
+		dump_s_statement lu s
 	in
+	(* Generate the function with its signature *)
+	let ft = Semast.type_name_of_s_function_definition f in
+	let n = Semast.string_of_qualified_id f.Semast.func_name in
+	let llfunc = llvm_lookup_function lu n ft in
+	(* generate the body *)
+	let entryblock = Llvm.append_block lu.lu_context "entry" llfunc in
+     Llvm.position_at_end entryblock lu.lu_builder;
+	let lu = List.fold_left acc lu f.Semast.func_body in
+	let lu = { lu with 
+		lu_functions = StringMap.add n llfunc lu.lu_functions;
+	} in
+	lu
 
-	let gen_namespace_definition name definitions =
-		(* TODO: placeholder, replace with actual variable definition and symbol insertion *)
-		L.const_int i32_t 0xCCCCCCC
+let dump_s_basic_definition lu = function
+	| Semast.SVariableDefinition(v) -> let (lu, _) = dump_s_variable_definition_global lu v in 
+		lu
+	| Semast.SFunctionDefinition(f) -> dump_s_function_definition lu f
+
+let dump_s_definition lu = function
+	| Semast.SBasic(b) -> dump_s_basic_definition lu b
+
+let dump_array_prelude lu =
+	(* Unfortunately, unsupported... *)
+	lu
+
+let dump_parallelism_prelude lu = 
+	(* Unfortunately, unsupported... *)
+	lu
+
+let dump_global_string lu n v =
+	let rhs = Llvm.const_stringz lu.lu_context v in
+	let v = Llvm.define_global n rhs lu.lu_module in
+	(lu, v)
+
+let dump_builtin_lib lu =
+	let char_t  = Llvm.i8_type      lu.lu_context
+	and i32_t   = Llvm.i32_type     lu.lu_context
+	(* LLVM treats booleans as 1-bit integers, not distinct types with their own true / false *)
 	in
-
-	let gen_struct_definition s =
-		(* TODO: placeholder, replace with actual variable definition and symbol insertion *)
-		L.const_int i32_t 0xCCCCCCC
+	let p_char_t  = Llvm.pointer_type    char_t
+	and llzero = Llvm.const_int i32_t 0
 	in
-
-	let gen_decl = function
-		| Ast.Basic(Ast.FunctionDefintion(fd)) -> gen_function_definition fd
-		| Ast.Basic(Ast.VariableDefinition(vd)) -> gen_variable_definition vd
-		| Ast.Structure(s) -> gen_struct_definition s
-		| Ast.Namespace(ns_name, ns_definitions) -> (gen_namespace_definition ns_name ns_definitions)
+	let f_acc lu (n, lv) =
+		{ lu with lu_functions = StringMap.add n lv lu.lu_functions }
 	in
+	let print_lib lu = 
+		let (_, int_format_str) = dump_global_string lu "__ifmt" "%d"
+		and (_, str_format_str) = dump_global_string lu "__sfmt" "%s"
+		and (_, float_format_str) = dump_global_string lu "__ffmt" "%f"
+		in
+		let printf_t = Llvm.var_arg_function_type i32_t [| p_char_t |] in
+		let printf_func = Llvm.declare_function "printf" printf_t lu.lu_module in
+		let printf_handler_name = "printf" in
+		let printf_handler lu el =
+			let ( lu, exprl ) = dump_arguments lu el in
+			if (List.length el) < 1 then ( lu, exprl ) else
+			let hdt = Semast.type_name_of_s_expression ( List.hd el ) in
+			let insertion = match hdt with
+				| Semast.SBuiltinType(Ast.String, _) -> str_format_str
+				| Semast.SBuiltinType(Ast.Float(n), _) -> float_format_str
+				| Semast.SBuiltinType(Ast.Int(n), _) -> int_format_str
+				| _ -> raise(Errors.BadPrintfArgument)
+			in
+			let fptr = Llvm.build_gep insertion [| llzero; llzero |] "fmttmp" lu.lu_builder in
+			( lu, fptr :: exprl )
+		in
+		let libprintfuncs = [
+			(( Semast.mangle_name ["lib"; "print"] ( Semast.SFunction(Semast.void_t, [Semast.string_t], Semast.no_qualifiers)) ), printf_func);
+			(( Semast.mangle_name ["lib"; "print"] ( Semast.SFunction(Semast.void_t, [Semast.float32_t], Semast.no_qualifiers)) ), printf_func);
+			(( Semast.mangle_name ["lib"; "print"] ( Semast.SFunction(Semast.void_t, [Semast.int32_t], Semast.no_qualifiers)) ), printf_func);
 
-	let gen_program p =
-		ignore( List.map gen_decl p )
+			(( Semast.mangle_name ["lib"; "print_n"] ( Semast.SFunction(Semast.void_t, [Semast.string_t], Semast.no_qualifiers)) ), printf_func);
+			(( Semast.mangle_name ["lib"; "print_n"] ( Semast.SFunction(Semast.void_t, [Semast.float32_t], Semast.no_qualifiers)) ), printf_func);
+			(( Semast.mangle_name ["lib"; "print_n"] ( Semast.SFunction(Semast.void_t, [Semast.int32_t], Semast.no_qualifiers)) ), printf_func);
+		] in
+		let lu = List.fold_left f_acc lu libprintfuncs in
+		let lu = { lu with 
+			lu_handlers = ( StringMap.add printf_handler_name ( printf_handler ) lu.lu_handlers )
+		} in
+		lu
 	in
+	let math_lib lu =
+		lu
+	in
+	let lu = print_lib lu in
+	let lu = math_lib lu in
+	lu
+	
+let dump_builtin_module lu = function
+	| Semast.Lib -> dump_builtin_lib lu
 
-	gen_program ast;
-	*)
-	m
+let dump_module_import lu = function
+	| Semast.SBuiltin(lib) -> dump_builtin_module lu lib
+	| Semast.SCode(_) -> lu
+	| Semast.SDynamic(_) -> lu
+
+let dump_declarations lu =
+	let acc_def k v lu = 
+		match v with
+			| Semast.SOverloads(_) -> lu
+			| Semast.SFunction(rt,args,tq) as ft -> let lty = llvm_type_of_s_type_name lu v in
+				let mk = Semast.mangle_name [k] ft in
+				let v = Llvm.declare_function mk lty lu.lu_module in
+				{ lu with lu_functions = StringMap.add mk v lu.lu_functions }
+			| _ -> lu
+	in
+	let toplevel = lu.lu_env.Semast.env_definitions in
+	let lu = StringMap.fold acc_def toplevel lu in
+	lu
+
+let dump_prelude lu sprog = 
+	let lu = dump_array_prelude lu in
+	let lu = dump_parallelism_prelude lu in
+	let lu = List.fold_left dump_module_import lu lu.lu_env.Semast.env_imports in
+	let lu = dump_declarations lu in
+	lu
+	
+let generate sprog =
+	let acc_def lu d =
+		let lu = dump_s_definition lu d in
+		lu
+	in
+	let lu = create_li_universe sprog in
+	let lu = dump_prelude lu sprog in
+	let lu = match sprog with 
+		| Semast.SProgram(_, _, defs) -> ( List.fold_left acc_def lu defs )
+	in
+	lu.lu_module

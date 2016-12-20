@@ -1,22 +1,30 @@
 import lib
 
-namespace fuck.this {
+namespace n.s {
 
 	var global : int = 8;
 
 }
 
-#import "test2.lepix"
+namespace n {
+	namespace s {
+		var stuff : float = 3.5;
+	}
+}
+
+/*
+fun s () : int {
+	return 2;
+}
+
+fun s ( x : int ) : int {
+	return x + 2;
+}
+*/
 
 fun main () : int {
-	var s : string = "STRING LITERAL!";
-
-	var x : int = 24;
-	var y : int24 = 0x2F;
-	var y2 : int24 = 0x2f;
-	var z : int4 = 0b10;
-	var z2 : int4 = 0n2n10;
-
-	var local : int = fuck.this.global;
+	var local : int = n.s.global;
 	lib.print(local);
+	lib.print(n.s.global);
+	lib.print(n.s.stuff);
 }

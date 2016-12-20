@@ -25,9 +25,6 @@ type id = string
 
 type qualified_id = id list
 
-type struct_type = 
-	qualified_id (* Name *)
-
 type builtin_type =
 	| Auto
 	| Void
@@ -42,15 +39,13 @@ type referenceness = bool
 
 type type_qualifier = constness * referenceness
 
-let no_qualifiers = (false, false)
-
 type type_name =
 	| BuiltinType of builtin_type * type_qualifier
-	| StructType of struct_type * type_qualifier
 	| Array of type_name * int * type_qualifier
 	| SizedArray of type_name * int * int list * type_qualifier
 	| Function of type_name * type_name list * type_qualifier
-	| Overloads of ( type_name * type_name list * type_qualifier ) list
+
+let no_qualifiers = (false, false)
 
 let void_t = BuiltinType(Void, no_qualifiers)
 let string_t = BuiltinType(String, no_qualifiers)
@@ -62,21 +57,12 @@ type binding = id * type_name
 let add_const (id, t) = match t with
 	| BuiltinType(bt, tq) -> let ( _, refness ) = tq in 
 		(id, BuiltinType(bt, (true, refness)))
-	| StructType(st, tq) -> let (_, refness ) = tq in 
-		(id, StructType(st, (true, refness)))
 	| Array(tn, d, tq) -> let (_, refness) = tq in 
 		(id, Array(tn, d, (true, refness)))
 	| SizedArray(tn, d, il, tq) -> let (_, refness) = tq in 
 		(id, SizedArray(tn, d, il, (true, refness)))
 	| Function(tn, pl, tq) -> let (_, refness) = tq in 
 		(id, Function(tn, pl, (true, refness)))
-	| Overloads(fl) -> 
-		let acc (tn, pl, tq) = 
-			let (_, refness) = tq in 
-			(tn, pl, (true, refness))
-		in
-		let qfl = List.map acc fl in
-		(id, Overloads(qfl))
 
 type binary_op = Add | Sub | Mult | Div | Modulo
 	| AddAssign | SubAssign | MultAssign | DivAssign | ModuloAssign
@@ -145,15 +131,12 @@ type basic_definition =
 	| VariableDefinition of variable_definition
 	| FunctionDefinition of function_definition
 
-type struct_definition = struct_type * basic_definition list
-
 type import_definition =
 	| LibraryImport of qualified_id
 
 type definition = 
 	| Import of import_definition
 	| Basic of basic_definition
-	| Structure of struct_definition
 	| Namespace of qualified_id * definition list
 
 type program = 

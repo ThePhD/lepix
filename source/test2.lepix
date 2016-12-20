@@ -1,7 +1,11 @@
+
 fun s () : void {
 	
 }
 
-fun d () : void {
+namespace x {
 
+	fun d () : void {
+
+	}
 }

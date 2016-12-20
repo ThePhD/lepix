@@ -41,9 +41,20 @@ exception BadNumericLiteral of string * ( Lexing.position * Lexing.position )
 exception MissingEoF
 exception BadToken
 
-(* Semantic Errors *)
+(* Semantic and Codegen Errors *)
 exception Unsupported of string
 exception FunctionAlreadyExists of string
 exception VariableAlreadyExists of string
 exception IdentifierNotFound of string
 exception TypeMismatch of string
+
+exception UnknownVariable of string
+exception UnknownFunction of string
+exception BadPrintfArgument
+exception BadFunctionCall of string
+exception FunctionLookupFailure of string * string
+exception VariableLookupFailure of string * string
+exception InvalidMainSignature of string
+exception InvalidFunctionSignature of string * string
+exception InvalidBinaryOperation of string
+exception InvalidUnaryOperation of string

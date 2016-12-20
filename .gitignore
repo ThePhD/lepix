@@ -35,3 +35,4 @@ source/preprocessor/pp.cmo
 source/obj/
 source/lepixc
 tests/output/
+source/test.lli

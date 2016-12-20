@@ -48,7 +48,7 @@ menhir, as we have developed against both for testing purposes. *)
 %token <string> ID
 %token <string> STRINGLITERAL
 %token <Num.num> INTLITERAL
-%token <Num.num> FLOATLITERAL
+%token <float> FLOATLITERAL
 %token EOF
 
 %right ASSIGN
@@ -105,20 +105,12 @@ type_category: { (false, false) }
 
 sub_type_name:
 | type_category builtin_type             { Ast.BuiltinType($2, $1) }
-| type_category qualified_id             { Ast.StructType($2, $1) }
 | type_category builtin_type array_spec  { Ast.Array(Ast.BuiltinType($2, Ast.no_qualifiers), $3, $1) }
-| type_category qualified_id array_spec  { Ast.Array(Ast.StructType($2, Ast.no_qualifiers), $3, $1) }
 | type_category builtin_type sized_array_spec  { let (d, el) = $3 in 
 	if d <> ( List.length el ) then
 		raise(Parsing.Parse_error)
 	else
 		Ast.SizedArray(Ast.BuiltinType($2, Ast.no_qualifiers), d, el, $1) 
-}
-| type_category qualified_id sized_array_spec  { let (d, el) = $3 in 
-	if d <> ( List.length el ) then
-		raise(Parsing.Parse_error)
-	else
-		Ast.SizedArray(Ast.StructType($2, Ast.no_qualifiers), d, el, $1) 
 }
 
 sub_type_name_list_builder: { [] }
@@ -174,7 +166,7 @@ value_expression:
 	in
 	Ast.Literal(v)
 }
-| FLOATLITERAL { Ast.Literal(Ast.FloatLit( Num.float_of_num $1 )) }
+| FLOATLITERAL { Ast.Literal(Ast.FloatLit( $1 )) }
 | STRINGLITERAL { Ast.Literal(Ast.StringLit($1)) }
 | TRUE { Ast.Literal(Ast.BoolLit(true)) }
 | FALSE { Ast.Literal(Ast.BoolLit(false)) }

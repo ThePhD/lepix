@@ -24,6 +24,33 @@ and type promotions / conversions organized for operators. *)
 
 module StringMap = Map.Make(String)
 
+type s_prefix_op = Ast.prefix_op
+type s_binary_op = Ast.binary_op
+type s_qualified_id = Ast.qualified_id
+type s_id = Ast.id
+type s_type_qualifier = Ast.type_qualifier
+type s_builtin_type = Ast.builtin_type
+
+type s_type_name =
+	| SBuiltinType of s_builtin_type * s_type_qualifier
+	| SArray of s_type_name * int * s_type_qualifier
+	| SSizedArray of s_type_name * int * int list * s_type_qualifier
+	| SFunction of s_type_name * s_type_name list * s_type_qualifier
+	| SOverloads of s_type_name list
+	| SAlias of s_qualified_id * s_qualified_id
+
+let no_qualifiers = Ast.no_qualifiers
+
+let void_t = SBuiltinType(Ast.Void, Ast.no_qualifiers)
+let auto_t = SBuiltinType(Ast.Auto, Ast.no_qualifiers)
+let string_t = SBuiltinType(Ast.String, Ast.no_qualifiers)
+let bool_t = SBuiltinType(Ast.Bool, Ast.no_qualifiers)
+let int32_t = SBuiltinType(Ast.Int(32), Ast.no_qualifiers)
+let int64_t = SBuiltinType(Ast.Int(64), Ast.no_qualifiers)
+let float32_t = SBuiltinType(Ast.Float(32), Ast.no_qualifiers)
+
+type s_binding = s_id * s_type_name
+
 type s_literal = 
 	| SBoolLit of bool
 	| SIntLit of int
@@ -32,25 +59,23 @@ type s_literal =
 	| SStringLit of string
 
 type s_expression = 
-	| SObjectInitializer of s_expression list * Ast.type_name
-	| SArrayInitializer of s_expression list * Ast.type_name
+	| SObjectInitializer of s_expression list * s_type_name
+	| SArrayInitializer of s_expression list * s_type_name
 	| SLiteral of s_literal
-	| SQualifiedId of Ast.qualified_id * Ast.type_name
-	| SMember of s_expression * Ast.qualified_id * Ast.type_name
-	| SCall of s_expression * s_expression list * Ast.type_name
-	| SIndex of s_expression * s_expression list * Ast.type_name
-	| SBinaryOp of s_expression * Ast.binary_op * s_expression * Ast.type_name
-	| SPrefixUnaryOp of Ast.prefix_op * s_expression * Ast.type_name
-	| SAssignment of s_expression * s_expression * Ast.type_name
+	| SQualifiedId of s_qualified_id * s_type_name
+	| SMember of s_expression * s_qualified_id * s_type_name
+	| SCall of s_expression * s_expression list * s_type_name
+	| SIndex of s_expression * s_expression list * s_type_name
+	| SBinaryOp of s_expression * s_binary_op * s_expression * s_type_name
+	| SPrefixUnaryOp of s_prefix_op * s_expression * s_type_name
+	| SAssignment of s_expression * s_expression * s_type_name
 	| SNoop
-
-type s_binding = (Ast.id * Ast.type_name)
 
 type s_locals =
 	| SLocals of s_binding list
 
 type s_parameters =
-	| SParameters of Ast.binding list
+	| SParameters of s_binding list
 
 type s_variable_definition =
 	| SVarBinding of s_binding * s_expression
@@ -77,12 +102,6 @@ type s_statement =
 	| SBreak of int
 	| SContinue
 
-	| SParallelBlock of s_parallel_expression list (* Invocation parameters passed to kickoff function *)
-		* s_capture (* Capture list: references to outside variables *)
-		* s_statement (* Locals and their statements *)
-
-	| SAtomicBlock of s_statement (* code in the atomic block *)
-
 	| SIfBlock of s_control_initializer (* Init statements for an if block *)
 		* s_statement (* If code *)
 
@@ -97,25 +116,23 @@ type s_statement =
 		* s_expression list (* Post-loop expressions (increment/decrement) *) 
 		* s_statement (* Code inside *)
 
+	| SParallelBlock of s_parallel_expression list (* Invocation parameters passed to kickoff function *)
+		* s_capture (* Capture list: references to outside variables *)
+		* s_statement (* Locals and their statements *)
+
+	| SAtomicBlock of s_statement (* code in the atomic block *)
+
+
 type s_function_definition = {
-	func_name : Ast.qualified_id;
+	func_name : s_qualified_id;
 	func_parameters : s_parameters;
-     func_return_type : Ast.type_name;
+     func_return_type : s_type_name;
 	func_body : s_statement list;
 }
 
-type s_basic_definition = 	
+type s_basic_definition = 
 	| SVariableDefinition of s_variable_definition
 	| SFunctionDefinition of s_function_definition
-
-type s_struct_definition = {
-	struct_name : Ast.struct_type;
-	struct_variables : Ast.variable_definition list;
-	struct_constructors : s_function_definition list;
-	struct_destructors : s_function_definition list;
-	struct_functions : s_function_definition list;
-	struct_definitions : s_basic_definition list;
-}
 
 type s_builtin_library =
 	| Lib
@@ -135,21 +152,91 @@ type s_module =
 
 type s_definition = 
 	| SBasic of s_basic_definition
-	| SStructure of s_struct_definition
-	| SNamespace of Ast.qualified_id * s_definition list
 
 type s_attributes = {
      attr_parallelism : bool;
-	attr_arrays : bool;
+	attr_arrays : int;
+	attr_strings : bool;
 }
 
 type s_environment = {
-	env_structs : ( s_struct_definition ) StringMap.t;
-     env_symbols : Ast.type_name StringMap.t;
-	env_types : Ast.qualified_id StringMap.t;
+	env_usings : string list;
+	env_symbols : s_type_name StringMap.t;
+	env_definitions : s_type_name StringMap.t;
 	env_imports : s_module list;
 	env_loops : s_loop list;
 }
 
 type s_program = 
 	| SProgram of s_attributes * s_environment * s_definition list
+
+
+(* Helping functions *)
+let unqualify = function
+	| SBuiltinType(bt, _) -> SBuiltinType(bt, no_qualifiers)
+	| SArray(tn, d, _) -> SArray(tn, d, no_qualifiers)
+	| SSizedArray(tn, d, il, _) -> SSizedArray(tn, d, il, no_qualifiers)
+	| SFunction(tn, pl, _) -> SFunction(tn, pl, no_qualifiers)
+	| t -> t
+
+let string_of_qualified_id qid =
+	( String.concat "." qid )
+
+let parameter_bindings = function
+	| SParameters( bl ) -> bl
+
+let type_name_of_s_literal = function
+	| SBoolLit(_) -> bool_t
+	| SIntLit(_) -> int32_t
+	| SInt64Lit(_) -> int64_t
+	| SFloatLit(_) -> float32_t
+	| SStringLit(_) -> string_t
+
+let rec type_name_of_s_expression = function
+	| SObjectInitializer(_, t) -> t
+	| SArrayInitializer(_, t) -> t
+	| SLiteral(lit) -> type_name_of_s_literal lit
+	| SQualifiedId(_, t) -> t
+	| SMember(_, _, t) -> t
+	| SCall(_, _, t) -> t
+	| SIndex(_, _, t) -> t
+	| SBinaryOp(_, _, _, t) -> t
+	| SPrefixUnaryOp(_, _, t) -> t
+	| SAssignment(_, _, t) -> t
+	| SNoop -> void_t
+
+
+let mangled_name_of_type_qualifier = function
+	| (_, referencess) -> if referencess then "p!" else "!"
+
+let type_name_of_s_function_definition fdef =
+	let bl = parameter_bindings fdef.func_parameters in
+	let argst = List.map ( fun (_, t) -> t ) bl in
+	let rt = fdef.func_return_type in
+	SFunction( rt, argst, no_qualifiers )
+
+let mangled_name_of_builtin_type = function
+	| Ast.Void -> "v"
+	| Ast.Auto -> "a"
+	| Ast.Bool -> "b"
+	| Ast.Int(n) -> "i" ^ string_of_int n
+	| Ast.Float(n) -> "f" ^ string_of_int n
+	| Ast.String -> "s"
+	| Ast.Memory -> "m"
+
+let rec mangled_name_of_s_type_name = function
+	| SBuiltinType( bt, tq ) -> mangled_name_of_type_qualifier tq ^ mangled_name_of_builtin_type bt
+	| SArray( tn, dims, tq ) -> mangled_name_of_type_qualifier tq ^ "a" ^ string_of_int dims ^ ";" ^ mangled_name_of_s_type_name tn
+	| SSizedArray( tn, dims, sizes, tq ) -> mangled_name_of_type_qualifier tq ^ "a" ^ string_of_int dims ^ ";" ^ mangled_name_of_s_type_name tn
+	| SFunction( rt, pl, tq ) -> mangled_name_of_type_qualifier tq ^ "r;" ^ ( String.concat ";" ( List.map mangled_name_of_s_type_name pl ) ) ^ ";" ^ mangled_name_of_s_type_name rt
+	| _ -> "UNSUPPORTED"
+
+let mangle_name_args qid tnl =
+	string_of_qualified_id qid ^ 
+	if ( List.length tnl ) > 0 then
+		"_" ^ ( String.concat "_" ( List.map mangled_name_of_s_type_name tnl ) )
+	else
+		""
+let mangle_name qid = function
+	| SFunction(rt, pl, tq) -> mangle_name_args qid pl
+	| _ -> string_of_qualified_id qid

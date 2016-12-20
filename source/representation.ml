@@ -98,7 +98,7 @@ let parser_token_to_string = function
 	| Parser.IMPORT -> "IMPORT"
 	| Parser.STRINGLITERAL(s) -> "STRINGLITERAL(" ^ s ^ ")"
 	| Parser.INTLITERAL(i) -> "INTLITERAL(" ^ Num.string_of_num i ^ ")"
-	| Parser.FLOATLITERAL(f) -> "FLOATLITERAL(" ^ Num.string_of_num f ^ ")"
+	| Parser.FLOATLITERAL(f) -> "FLOATLITERAL(" ^ string_of_float f ^ ")"
 	| Parser.ID(s) -> "ID(" ^ s ^ ")"
 	| Parser.EOF -> "EOF"
 
@@ -210,14 +210,10 @@ let rec string_of_type_name tn =
 		if s = "" then "" else s ^ " "
 	in match tn with
 	| Ast.BuiltinType(t, tq) -> tqual tq ^ string_of_builtin_type t
-	| Ast.StructType(sl, tq) -> tqual tq ^ String.concat "." sl
 	| Ast.Array(t, d, tq) -> tqual tq ^ string_of_type_name t ^ ( String.make d '[' ) ^ ( String.make d ']' )
 	| Ast.SizedArray(t, d, il, tq) -> tqual tq ^ string_of_type_name t ^ ( String.make d '[' ) ^ ( String.concat ", " ( List.map string_of_int il ) ) ^ ( String.make d ']' )
 	| Ast.Function(r, args, tq) -> tqual tq ^ "(" ^  ( String.concat ", " ( List.map ( fun v -> string_of_type_name v ) args ) ) ^ ")" ^ string_of_type_name r 
-	| Ast.Overloads(fl) -> "overloaded( " 
-		^ ( String.concat ", " ( List.map ( fun (a, b, c) -> ( string_of_type_name ( Ast.Function(a, b, c) ) ) ) fl ) ) 
-		^ ")"
-
+	
 let string_of_binding = function
 	| (n, t) -> n ^ " : " ^ string_of_type_name t
 
@@ -271,16 +267,12 @@ let rec string_of_basic_definition = function
 	| Ast.FunctionDefinition(fdef) -> string_of_function_definition fdef
 	| Ast.VariableDefinition(vdef) -> string_of_variable_definition vdef ^ ";\n"
 
-let string_of_struct_definition = function
-	| (_,_) -> "{ UNSUPPORTED }\n"
-
 let string_of_import_definition = function
 	| Ast.LibraryImport(qid) -> "import " ^ string_of_qualified_id qid ^ "\n"
 
 let rec string_of_definition = function
 	| Ast.Import(idef) -> string_of_import_definition idef
 	| Ast.Basic(bdef) -> string_of_basic_definition bdef
-	| Ast.Structure(sdef) -> string_of_struct_definition sdef
 	| Ast.Namespace(qid, defs) -> "namespace " ^ string_of_qualified_id qid ^ " {\n" 
 		^ (String.concat "" (List.map string_of_definition defs) ) ^ "}\n"
 
@@ -291,8 +283,25 @@ let string_of_program = function
 (* Semantic Program types: 
 dumping and pretty printing *)
 
+let rec string_of_s_type_name tn =
+	let tqual tq = 
+		let s = string_of_type_qualifier tq in
+		if s = "" then "" else s ^ " "
+	in match tn with
+	| Semast.SBuiltinType(t, tq) -> tqual tq ^ string_of_builtin_type t
+	| Semast.SArray(t, d, tq) -> tqual tq ^ string_of_s_type_name t ^ ( String.make d '[' ) ^ ( String.make d ']' )
+	| Semast.SSizedArray(t, d, il, tq) -> tqual tq ^ string_of_s_type_name t ^ ( String.make d '[' ) ^ ( String.concat ", " ( List.map string_of_int il ) ) ^ ( String.make d ']' )
+	| Semast.SFunction(r, args, tq) -> tqual tq ^ "(" ^  ( String.concat ", " ( List.map ( fun v -> string_of_s_type_name v ) args ) ) ^ ")" ^ string_of_s_type_name r 
+	| Semast.SOverloads(fl) -> "overloaded( " 
+		^ ( String.concat ", " ( List.map string_of_s_type_name fl ) ) 
+		^ ")"
+	| Semast.SAlias(target, source) -> "using " ^ string_of_qualified_id target ^ " -> " ^ string_of_qualified_id source
+
+let string_of_s_binding = function
+	| (n, t) -> n ^ " : " ^ string_of_s_type_name t
+
 let string_of_s_locals = function
-	| Semast.SLocals(bl) -> String.concat ";\n" ( List.map string_of_binding bl )
+	| Semast.SLocals(bl) -> if ( List.length bl < 1 ) then "" else ( String.concat ";\n" ( List.map string_of_s_binding bl ) ) ^ ";"
 
 let string_of_s_literal = function
 	| Semast.SBoolLit(b) -> string_of_bool b
@@ -303,34 +312,34 @@ let string_of_s_literal = function
 
 let rec string_of_s_expression = function 
 	| Semast.SObjectInitializer(el, tn) -> 
-		string_of_type_name tn ^ "{ " 
+		string_of_s_type_name tn ^ "{ " 
 		^ String.concat ", " ( List.map string_of_s_expression el )
 		^ " }"
 	| Semast.SArrayInitializer(el, tn) ->
-		string_of_type_name tn ^ "[ " 
+		string_of_s_type_name tn ^ "[ " 
 		^ String.concat ", " ( List.map string_of_s_expression el )
 		^ " ]"
 	| Semast.SLiteral(l) -> string_of_s_literal l
-	| Semast.SQualifiedId(qid, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_qualified_id qid
-	| Semast.SMember(e, qid, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "." ^ string_of_qualified_id qid
-	| Semast.SCall(e, el, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "( " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " )"
-	| Semast.SIndex(e, el, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "[ " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " ]"
-	| Semast.SBinaryOp(l, op, r, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_s_expression l ^ " " ^ string_of_binary_op op ^ " " ^ string_of_s_expression r
-	| Semast.SPrefixUnaryOp(op, r, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_unary_op op ^ string_of_s_expression r
-	| Semast.SAssignment(l, r, tn) -> "[[ " ^ string_of_type_name tn ^ " ]] " ^ string_of_s_expression l ^ " = " ^ string_of_s_expression r
+	| Semast.SQualifiedId(qid, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_qualified_id qid
+	| Semast.SMember(e, qid, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "." ^ string_of_qualified_id qid
+	| Semast.SCall(e, el, tn) -> string_of_s_expression e ^ "( " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " )"
+	| Semast.SIndex(e, el, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "[ " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " ]"
+	| Semast.SBinaryOp(l, op, r, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression l ^ " " ^ string_of_binary_op op ^ " " ^ string_of_s_expression r
+	| Semast.SPrefixUnaryOp(op, r, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_unary_op op ^ string_of_s_expression r
+	| Semast.SAssignment(l, r, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression l ^ " = " ^ string_of_s_expression r
 	| Semast.SNoop -> "(noop)" 
 
 let string_of_s_capture = function
 	| Semast.SParallelCapture(bl) -> let capturecount = List.length bl in
 		if capturecount == 0 then "[[no captures]]\n" else
-		"[[captures]] { " ^ ( String.concat ", " ( List.map string_of_binding bl ) )
+		"[[captures]] { " ^ ( String.concat ", " ( List.map string_of_s_binding bl ) )
 		^ " }\n"
 
 let string_of_s_variable_definition = function
-	| Semast.SVarBinding(b, e) -> "var " ^ string_of_binding b ^ " = " ^ string_of_s_expression e
+	| Semast.SVarBinding(b, e) -> "var " ^ string_of_s_binding b ^ " = " ^ string_of_s_expression e
 
 let rec string_of_s_general_statement = function
-	| Semast.SGeneralBlock(locals, gsl) -> "{ " ^ string_of_s_locals locals ^ ( String.concat ";\n" (List.map string_of_s_general_statement gsl) ) ^ " }"
+	| Semast.SGeneralBlock(locals, gsl) -> "{\n" ^ string_of_s_locals locals ^ "\n" ^ ( String.concat ";\n" (List.map string_of_s_general_statement gsl) ) ^ "\n}"
 	| Semast.SExpressionStatement(sexpr) -> string_of_s_expression sexpr
 	| Semast.SVariableStatement(v) -> string_of_s_variable_definition v
 
@@ -363,11 +372,11 @@ let rec string_of_s_statement s =
 				""
 		| _ -> ""
 	in match s with
-	| Semast.SBlock(locals, sl) -> "{ " ^ string_of_s_locals locals ^ ( String.concat "\n" (List.map string_of_s_statement sl) ) ^ " }"
-	| Semast.SGeneral(g) ->  ( string_of_s_general_statement g ) ^ ";"
-	| Semast.SReturn(sexpr) -> string_of_s_expression sexpr
-	| Semast.SBreak(n) -> if n < 2 then "break;" else "break " ^ string_of_int n ^ ";" 
-	| Semast.SContinue -> "continue;"
+	| Semast.SBlock(locals, sl) -> "{\n" ^ string_of_s_locals locals ^ "\n" ^ ( String.concat "\n" (List.map string_of_s_statement sl) ) ^ "\n}\n"
+	| Semast.SGeneral(g) ->  ( string_of_s_general_statement g ) ^ ";\n"
+	| Semast.SReturn(sexpr) -> "return " ^ string_of_s_expression sexpr ^ ";\n"
+	| Semast.SBreak(n) -> if n < 2 then "break;" else "break " ^ string_of_int n ^ ";\n" 
+	| Semast.SContinue -> "continue;\n"
 	| Semast.SAtomicBlock(s) -> "atomic {" 
 		^ string_of_s_statement s
 		^ "}\n"
@@ -414,12 +423,12 @@ let string_of_s_block = function
 		^ "\n}\n"
 
 let string_of_s_parameters = function
-	| Semast.SParameters(parameters) -> String.concat ", " (List.map string_of_binding parameters)
+	| Semast.SParameters(parameters) -> String.concat ", " (List.map string_of_s_binding parameters)
 
 let string_of_s_function_definition f =
 	"fun " ^ string_of_qualified_id f.Semast.func_name
 	^ "(" ^ string_of_s_parameters f.Semast.func_parameters ^ ") : " 
-	^ string_of_type_name f.Semast.func_return_type  ^ " {\n" 
+	^ string_of_s_type_name f.Semast.func_return_type  ^ " {\n" 
 	^ string_of_s_statement_list f.Semast.func_body
 	^ "}\n"
 
@@ -437,28 +446,23 @@ let string_of_s_module = function
 
 let rec string_of_s_definition = function
 	| Semast.SBasic(b) -> string_of_s_basic_definition b ^ "\n"
-	| Semast.SStructure(_) -> "{ Unsupported }\n"
-	| Semast.SNamespace(qid, sdl) -> "namespace " ^ string_of_qualified_id qid ^ " {\n" ^ ( String.concat "" ( List.map string_of_s_definition sdl ) ) ^ "}\n"
-
+	
 let string_of_s_program = function
 	| Semast.SProgram( attr, env, sdl ) -> 
 	let symbolacc k tn l =
-		let entry = ( string_of_type_name tn ) ^ " | " ^ k in
+		let entry = ( string_of_s_type_name tn ) ^ " | " ^ k in
 		entry :: l
 	and importacc m = 
 		string_of_s_module m
-	and typeacc k qid l =
-		let entry = ( k ^ " -> " ^ string_of_qualified_id qid ) in 
-		entry :: l
 	in
 	let implist = List.map importacc env.Semast.env_imports
 	and symbollist = StringMap.fold symbolacc env.Semast.env_symbols [] 
-	and typelist = StringMap.fold typeacc env.Semast.env_types []
-	(*and structlist = StringMap.fold structacc env.Semast.env_structs*)
 	in
 	let i = "imports:\n\t" ^ ( String.concat "\n\t" implist )
 	and s = "symbols:\n\t" ^ ( String.concat "\n\t" symbollist )
-	and t = "types:\n\t" ^ ( String.concat "\n\t" typelist )
+	and a = "strings: " ^ string_of_bool attr.Semast.attr_strings
+		^ "\narrays: " ^ string_of_int attr.Semast.attr_arrays
+		^ "\nparallelism: " ^ string_of_bool attr.Semast.attr_parallelism 
 	in
 	let p = String.concat "" (List.map string_of_s_definition sdl) in
-		Base.brace_tabulate ( i ^ "\n\n" ^ t ^ "\n\n" ^ s ^ "\n\n"  ^ p ) 0
+		Base.brace_tabulate ( a ^ "\n\n" ^ i ^ "\n\n" ^ s ^ "\n\n"  ^ p ) 0

@@ -35,6 +35,7 @@ let read_options ocontext sys_argv =
 	of the exec on pretty much all systems) *)
 	let argv = ( Array.sub sys_argv 1 argc )
 	and action = ref Base.Help
+	and verbose = ref false
 	and input = ref Base.Pipe 
 	and output = ref Base.Pipe
 	and specified = ref []
@@ -73,6 +74,9 @@ let read_options ocontext sys_argv =
 		);
 		( 1, "c", "compile", "Compile the desired input and output the final LLVM", 
 			fun _ _ -> ( update_action(Base.Compile) ) 
+		);
+		( 1, "v", "verbose", "Be as explicit as possible with all steps", 
+			fun _ _ -> ( verbose := true ) 
 		);
 	]
 	and position_option arg_index positional_index arg =
@@ -121,7 +125,7 @@ let read_options ocontext sys_argv =
 	ocontext.options_help <- help;
 	(* Exit early if possible *)
 	if argc < 1 then
-		(!input, !output, !action, !specified)
+		(!input, !output, !action, !specified, !verbose)
 	else
 	
 	let to_option idx arg = 
@@ -215,4 +219,4 @@ let read_options ocontext sys_argv =
 	(* Iterate over the arguments *)
 	let _ = Array.fold_left f (0, 0, false) options_argv in
 	(* Return tuple of input, output, action *)
-	( !input, !output, !action, !specified )
+	( !input, !output, !action, !specified, !verbose )

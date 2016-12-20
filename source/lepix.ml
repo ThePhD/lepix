@@ -25,6 +25,7 @@ let _ =
 	let input = ref Base.Pipe in
 	let output = ref Base.Pipe in
 	let action = ref Base.Llvm in
+	let verbose = ref false in
 	let specified = ref [] in
 	let context = { 
 		Driver.source_name = "";
@@ -55,11 +56,12 @@ let _ =
 	(* Call options Parser for Driver *)
 	let _ =
 	try
-		let ( i, o, a, s ) = ( Options.read_options ocontext Sys.argv ) in
+		let ( i, o, a, s, v ) = ( Options.read_options ocontext Sys.argv ) in
 			input := i;
 			output := o;
 			action := a;
-			specified := s
+			specified := s;
+			verbose := v
 	with
 		| err -> let _ = match err with
 			| Errors.BadOption(s) ->
@@ -162,6 +164,7 @@ let _ =
 				let semanticprogram = Driver.analyze program in 
 				( dump_semantic print_endline semanticprogram );
 				let m = Codegen.generate semanticprogram in
+				if !verbose then ( dump_module print_endline m );
 				( dump_module output_to_target m )
 			| Base.Compile -> 
 				let lexbuf = Lexing.from_string source_text in
