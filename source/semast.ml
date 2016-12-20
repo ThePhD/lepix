@@ -170,8 +170,19 @@ type s_environment = {
 type s_program = 
 	| SProgram of s_attributes * s_environment * s_definition list
 
-
 (* Helping functions *)
+let rec coerce_type_name_of_s_expression injected = function
+	| SObjectInitializer(a, _) -> SObjectInitializer(a, injected)
+	| SArrayInitializer(a, _) -> SArrayInitializer(a, injected)
+	| SQualifiedId(a, _) -> SQualifiedId(a, injected)
+	| SMember(a, b, _) -> SMember(a, b, injected)
+	| SCall(a, b, _) -> SCall(a, b, injected)
+	| SIndex(a, b, _) -> SIndex(a, b, injected)
+	| SBinaryOp(a, b, c, _) -> SBinaryOp(a, b, c, injected)
+	| SPrefixUnaryOp(a, b, _) -> SPrefixUnaryOp(a, b, injected)
+	| SAssignment(a, b, _) -> SAssignment(a, b, injected)
+	| e -> e
+
 let unqualify = function
 	| SBuiltinType(bt, _) -> SBuiltinType(bt, no_qualifiers)
 	| SArray(tn, d, _) -> SArray(tn, d, no_qualifiers)
@@ -205,6 +216,9 @@ let rec type_name_of_s_expression = function
 	| SAssignment(_, _, t) -> t
 	| SNoop -> void_t
 
+let rec return_type_name = function
+	| SFunction(rt,_, _) -> rt
+	| t -> t 
 
 let mangled_name_of_type_qualifier = function
 	| (_, referencess) -> if referencess then "p!" else "!"

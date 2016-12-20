@@ -41,8 +41,6 @@ type li_universe = {
 	lu_handlers : ( li_universe -> ( Semast.s_expression list ) -> ( li_universe * Llvm.llvalue list ) ) StringMap.t;
 }
 
-let func_metadata_name = "lepix.md.func"
-
 let create_li_universe = function | Semast.SProgram(attrs, env, _) ->
 	let context = Llvm.global_context() in
 	let builder = Llvm.builder context in
@@ -147,6 +145,16 @@ let dump_s_qualified_id lu qid t =
 				Some(v)
 		with | Not_found -> None
 	in
+	let overload_lookup qid ft = 
+		let n = Semast.mangle_name qid ft in 
+		begin match lookup_func n with 
+			| Some(v) as s -> s
+			| None -> let n = Semast.string_of_qualified_id qid in 
+		match lookup_func n with 
+			| Some(v) as s -> s
+			| None -> None
+		end
+	in
 	let idval = match t with 
 		| Semast.SFunction(rt, tnl, tq) as ft -> let n = Semast.mangle_name qid ft in 
 			begin match lookup_func n with 
@@ -155,6 +163,15 @@ let dump_s_qualified_id lu qid t =
 			match lookup_func n with 
 				| Some(v) -> v
 				| None -> raise (Errors.UnknownFunction n)
+			end
+		| Semast.SOverloads(fl)-> 
+			let acc op ft = match op with
+				 | Some(v) as s -> s
+				 | None -> overload_lookup qid ft
+			in
+			begin match List.fold_left acc None fl with
+				| Some(v) -> v
+				| None -> raise(Errors.UnknownFunction ( Semast.string_of_qualified_id qid ) )
 			end
 		| _ -> let n = Semast.string_of_qualified_id qid in
 			match lookup n with
@@ -180,11 +197,24 @@ let dump_s_literal lu lit =
 	in
 	(lu, v)
 
-let rec dump_s_expression lu e = 
+let dump_arguments_gen f lu el =
 	let acc_expr (lu, vl) e =
-		let (lu, v) = dump_s_expression lu e in
+		let (lu, v) = f lu e in
+		print_endline (Llvm.string_of_llvalue v);
+		let v = match ( Llvm.classify_value v) with
+			| Llvm.ValueKind.BlockAddress
+			| Llvm.ValueKind.GlobalAlias
+			| Llvm.ValueKind.Function
+			| Llvm.ValueKind.Instruction(_)
+			| Llvm.ValueKind.GlobalVariable -> Llvm.build_load v "tmp.arg" lu.lu_builder
+			| _ -> v
+		in
 		( lu, v :: vl )
 	in
+	let (lu, args) = List.fold_left acc_expr (lu, []) el in
+	(lu, args)
+
+let rec dump_s_expression lu e = 
 	match e with
 	| Semast.SLiteral(lit) -> dump_s_literal lu lit
 	| Semast.SQualifiedId(qid, t) -> 
@@ -195,25 +225,19 @@ let rec dump_s_expression lu e =
 		let oparghandler = find_argument_handler lu target in
 		let ( lu, args ) = match oparghandler with
 			| None -> 
-				let (lu, args) = List.fold_left acc_expr (lu, []) el in
+				let ( lu, args ) = ( dump_arguments_gen ( dump_s_expression ) lu el ) in
 				(lu, List.rev args)
 			| Some(h) -> 
 				let (lu, args) = ( h lu el ) in
 				( lu, args )
 		in
-		let arr_args = Array.of_list args in
-		let v = Llvm.build_call target arr_args "tmp.call" lu.lu_builder in
+		let arr_args = Array.of_list args in 
+		let v = match t with
+			| Semast.SBuiltinType(Ast.Void, _) -> Llvm.build_call target arr_args "" lu.lu_builder
+			| _ -> Llvm.build_call target arr_args "tmp.call" lu.lu_builder
+		in
 		(lu, v)
 	| _ -> raise(Errors.Unsupported("This expression is not supported for code generation"))
-
-let dump_arguments lu el =
-	let acc_expr (lu, vl) e =
-		let (lu, v) = dump_s_expression lu e in
-		let v = Llvm.build_load v "tmp.arg" lu.lu_builder in
-		( lu, v :: vl )
-	in
-	let (lu, args) = List.fold_left acc_expr (lu, []) el in
-	(lu, args)
 
 let dump_s_locals lu locals =
 	let acc lu (n, tn) =
@@ -222,6 +246,22 @@ let dump_s_locals lu locals =
 		{ lu with lu_named_values = StringMap.add (n) v lu.lu_named_values }
 	in
 	let Semast.SLocals(bl) = locals in
+	let lu = List.fold_left acc lu bl in
+	lu
+
+let dump_s_parameters lu llfunc parameters =
+	let paramarr = Llvm.params llfunc in
+	let paraml = Array.to_list paramarr in
+	let Semast.SParameters(bl) = parameters in
+	let nameparam i p = 
+		let (n, _) = ( List.nth bl i ) in 
+		( Llvm.set_value_name n p )
+	in 
+	let _ = Array.iteri nameparam paramarr in
+	let acc lu (n, tn) =
+		let v = List.find ( fun p -> ( ( Llvm.value_name p ) = n ) ) paraml in
+		{ lu with lu_named_params = StringMap.add n v lu.lu_named_params }
+	in
 	let lu = List.fold_left acc lu bl in
 	lu
 
@@ -285,7 +325,6 @@ let dump_s_variable_definition_global lu = function
 		let v = Llvm.declare_global lty k lu.lu_module in
 		{ lu with lu_variables = StringMap.add k v lu.lu_variables }
 		let v = llvm_lookup_variable lu n tn in
-		print_endline n;
 		let _ = Llvm.set_initializer v rhs in
 		let lu = { lu with lu_variables = StringMap.add n v lu.lu_variables } in
 		*)
@@ -313,9 +352,11 @@ let dump_s_function_definition lu f =
 	(* generate the body *)
 	let entryblock = Llvm.append_block lu.lu_context "entry" llfunc in
      Llvm.position_at_end entryblock lu.lu_builder;
+	let lu = dump_s_parameters lu llfunc f.Semast.func_parameters in
 	let lu = List.fold_left acc lu f.Semast.func_body in
 	let lu = { lu with 
 		lu_functions = StringMap.add n llfunc lu.lu_functions;
+		lu_named_params = StringMap.empty;
 	} in
 	lu
 
@@ -352,15 +393,15 @@ let dump_builtin_lib lu =
 		{ lu with lu_functions = StringMap.add n lv lu.lu_functions }
 	in
 	let print_lib lu = 
-		let (_, int_format_str) = dump_global_string lu "__ifmt" "%d"
-		and (_, str_format_str) = dump_global_string lu "__sfmt" "%s"
-		and (_, float_format_str) = dump_global_string lu "__ffmt" "%f"
-		in
 		let printf_t = Llvm.var_arg_function_type i32_t [| p_char_t |] in
 		let printf_func = Llvm.declare_function "printf" printf_t lu.lu_module in
-		let printf_handler_name = "printf" in
-		let printf_handler lu el =
-			let ( lu, exprl ) = dump_arguments lu el in
+		let (_, int_format_str) = dump_global_string lu "__ifmt" "%d\n"
+		and (_, str_format_str) = dump_global_string lu "__sfmt" "%s\n"
+		and (_, float_format_str) = dump_global_string lu "__ffmt" "%f\n"
+		in
+		let handler_name = "printf" in
+		let handler lu el =
+			let ( lu, exprl ) = ( dump_arguments_gen ( dump_s_expression ) lu el ) in
 			if (List.length el) < 1 then ( lu, exprl ) else
 			let hdt = Semast.type_name_of_s_expression ( List.hd el ) in
 			let insertion = match hdt with
@@ -376,14 +417,10 @@ let dump_builtin_lib lu =
 			(( Semast.mangle_name ["lib"; "print"] ( Semast.SFunction(Semast.void_t, [Semast.string_t], Semast.no_qualifiers)) ), printf_func);
 			(( Semast.mangle_name ["lib"; "print"] ( Semast.SFunction(Semast.void_t, [Semast.float32_t], Semast.no_qualifiers)) ), printf_func);
 			(( Semast.mangle_name ["lib"; "print"] ( Semast.SFunction(Semast.void_t, [Semast.int32_t], Semast.no_qualifiers)) ), printf_func);
-
-			(( Semast.mangle_name ["lib"; "print_n"] ( Semast.SFunction(Semast.void_t, [Semast.string_t], Semast.no_qualifiers)) ), printf_func);
-			(( Semast.mangle_name ["lib"; "print_n"] ( Semast.SFunction(Semast.void_t, [Semast.float32_t], Semast.no_qualifiers)) ), printf_func);
-			(( Semast.mangle_name ["lib"; "print_n"] ( Semast.SFunction(Semast.void_t, [Semast.int32_t], Semast.no_qualifiers)) ), printf_func);
 		] in
 		let lu = List.fold_left f_acc lu libprintfuncs in
 		let lu = { lu with 
-			lu_handlers = ( StringMap.add printf_handler_name ( printf_handler ) lu.lu_handlers )
+			lu_handlers = ( StringMap.add handler_name ( handler ) lu.lu_handlers )
 		} in
 		lu
 	in
@@ -403,14 +440,17 @@ let dump_module_import lu = function
 	| Semast.SDynamic(_) -> lu
 
 let dump_declarations lu =
-	let acc_def k v lu = 
-		match v with
-			| Semast.SOverloads(_) -> lu
-			| Semast.SFunction(rt,args,tq) as ft -> let lty = llvm_type_of_s_type_name lu v in
-				let mk = Semast.mangle_name [k] ft in
-				let v = Llvm.declare_function mk lty lu.lu_module in
-				{ lu with lu_functions = StringMap.add mk v lu.lu_functions }
-			| _ -> lu
+	let rec declare k lu v = match v with
+		| Semast.SOverloads(fl) -> 
+			( List.fold_left (declare k) lu fl )
+		| Semast.SFunction(rt,args,tq) as ft -> let lty = llvm_type_of_s_type_name lu v in
+			let mk = Semast.mangle_name [k] ft in
+			let v = Llvm.declare_function mk lty lu.lu_module in
+			{ lu with lu_functions = StringMap.add mk v lu.lu_functions }
+		| _ -> lu			
+	in
+	let acc_def k v lu =
+		declare k lu v
 	in
 	let toplevel = lu.lu_env.Semast.env_definitions in
 	let lu = StringMap.fold acc_def toplevel lu in

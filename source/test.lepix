@@ -24,7 +24,7 @@ fun s ( x : int ) : int {
 
 fun main () : int {
 	var local : int = n.s.global;
-	lib.print(local);
-	lib.print(n.s.global);
-	lib.print(n.s.stuff);
+	lib.print_n(local);
+	lib.print_n(n.s.global);
+	lib.print_n(n.s.stuff);
 }

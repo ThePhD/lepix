@@ -373,10 +373,10 @@ let rec string_of_s_statement s =
 		| _ -> ""
 	in match s with
 	| Semast.SBlock(locals, sl) -> "{\n" ^ string_of_s_locals locals ^ "\n" ^ ( String.concat "\n" (List.map string_of_s_statement sl) ) ^ "\n}\n"
-	| Semast.SGeneral(g) ->  ( string_of_s_general_statement g ) ^ ";\n"
-	| Semast.SReturn(sexpr) -> "return " ^ string_of_s_expression sexpr ^ ";\n"
-	| Semast.SBreak(n) -> if n < 2 then "break;" else "break " ^ string_of_int n ^ ";\n" 
-	| Semast.SContinue -> "continue;\n"
+	| Semast.SGeneral(g) ->  ( string_of_s_general_statement g ) ^ ";"
+	| Semast.SReturn(sexpr) -> "return " ^ string_of_s_expression sexpr ^ ";"
+	| Semast.SBreak(n) -> if n < 2 then "break;" else "break " ^ string_of_int n ^ ";" 
+	| Semast.SContinue -> "continue;"
 	| Semast.SAtomicBlock(s) -> "atomic {" 
 		^ string_of_s_statement s
 		^ "}\n"
@@ -415,7 +415,7 @@ let rec string_of_s_statement s =
 		^ initializer_end inits
 
 let string_of_s_statement_list sl =
-	String.concat "\n" ( List.map string_of_s_statement sl )
+	( String.concat "\n" ( List.map string_of_s_statement sl ) ) ^ "\n"
 
 let string_of_s_block = function
 	| (locals, sl) -> "{\n" ^ string_of_s_locals locals
@@ -457,12 +457,14 @@ let string_of_s_program = function
 	in
 	let implist = List.map importacc env.Semast.env_imports
 	and symbollist = StringMap.fold symbolacc env.Semast.env_symbols [] 
+	and defsymbollist = StringMap.fold symbolacc env.Semast.env_definitions [] 
 	in
 	let i = "imports:\n\t" ^ ( String.concat "\n\t" implist )
 	and s = "symbols:\n\t" ^ ( String.concat "\n\t" symbollist )
+	and d = "code symbols:\n\t" ^ ( String.concat "\n\t" defsymbollist )
 	and a = "strings: " ^ string_of_bool attr.Semast.attr_strings
 		^ "\narrays: " ^ string_of_int attr.Semast.attr_arrays
 		^ "\nparallelism: " ^ string_of_bool attr.Semast.attr_parallelism 
 	in
 	let p = String.concat "" (List.map string_of_s_definition sdl) in
-		Base.brace_tabulate ( a ^ "\n\n" ^ i ^ "\n\n" ^ s ^ "\n\n"  ^ p ) 0
+		Base.brace_tabulate ( a ^ "\n\n" ^ i ^ "\n\n" ^ s ^ "\n\n" ^ d ^ "\n\n" ^ p ) 0
