@@ -1,0 +1,6 @@
+namespace x {
+
+	fun d () : int {
+		return 45;
+	}
+}

@@ -1,0 +1,11 @@
+fun main () : int {
+	let a : float = 31.5;
+	var const b : float = 0.5;
+	var c : int = 0;
+	c = lib.trunc(a + b);
+	// compiler error: 'var const' variable is immutable
+	b = 2.5;
+	// compiler error: 'let' variable is immutable
+	a = 1.1;
+	return c;
+}

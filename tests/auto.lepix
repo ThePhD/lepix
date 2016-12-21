@@ -1,0 +1,7 @@
+fun two () {
+	return 2;
+}
+
+fun main () {
+	return two();
+}

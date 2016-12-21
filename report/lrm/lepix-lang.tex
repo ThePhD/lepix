@@ -1,0 +1,53 @@
+\documentclass[11pt,letterpaper]{report} % Report class, in 11 points
+\input{"preamble.tex"}
+
+\title{\textbf{\lepix{} Language Specification} \\ \textit{Ceci n'est pas un Photoshop}}
+\author{
+	Fatima Koly (fak2116)\\
+	Manager\\
+	\texttt{fak2116@barnard.edu}
+	\and
+	Gabrielle Taylor (gat2118)\\
+	Language Guru\\
+	\texttt{gat2118@columbia.edu}
+	\and
+	Jackie Lin (jl4162)\\
+	Tester\\
+	\texttt{jl4162@columbia.edu}
+	\and
+	Akshaan Kakar (ak3808)\\ 
+	Codegen\\
+	\texttt{ak3808@columbia.edu}
+	\and
+	ThePhD (jm3689)\\
+	System Architect\\
+	\texttt{jm3689@columbia.edu}
+	\\\\
+	\url{https://github.com/ThePhD/lepix}
+}
+\date{October 26, 2016}
+
+% Note that book class by default is formatted to be printed back-to-back.
+\begin{document}
+	\maketitle
+	\tableofcontents
+	% The following sectioning commands are available:
+	%  part \\
+	%  chapter \\
+	%  section \\ 
+	%  subsection \\ 
+	%  subsubsection \\ 
+	%  paragraph \\ 
+	%  subparagraph
+	
+	% Input the individual parts we have
+	% The Introduction Part
+	\input{"intro.tex"}
+	% The Reference Manual Part
+	\input{"ref.tex"}
+	% The Formal Grammar / Translation / Appendix Part
+	\input{"formal.tex"}
+
+% End the document class to close out
+% what we're writing
+\end{document} 

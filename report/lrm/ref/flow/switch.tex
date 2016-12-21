@@ -1,0 +1,35 @@
+\section{switch}
+% The switch block
+% switch (var x = some_other_variable; x) {
+%	case consant-value:
+%		...
+%	end;
+% }
+% we switch on the value of the final var, 'x'
+% scope for the variable "x" lasts until the closing bracket "}"
+
+\begin{enumerate}
+\begin{lstlisting}[numbers=none]
+switch (variable) {
+	case (constant expression): 
+		statements
+	end;
+	case (constant expression): 
+		statements
+	end;
+	case (constant expression): 
+		statements
+	end;
+	default: statements
+}
+\end{lstlisting}
+	\item \lstinline|switch| statements can be used as an alternative to a nested \lstinline|if| statements.
+	\item The variable is compared against the constant expression for each case, and if it is equal to this expression then the statements in that case are executed.
+	\item If the variable does not match any of the cases then the default case is executed.
+	\item The statements in each case must be followed by an \lstinline|end| statement.
+\end{enumerate}
+
+
+
+
+As with if statements, if a variable is declared within the switch like \lstinline|switch (var x = other_variable; x) {...}|, the scope for variable \texttt{x} is within that particular switch block.

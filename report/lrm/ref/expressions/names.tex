@@ -1,0 +1,11 @@
+\section{Variable Names and Identifiers}
+% names of variables, allowed identifiers
+
+\subsection{Identifiers}\label{ssec: Identifiers}
+\begin{enumerate}
+	\item All names for all identifiers in a \lepix{} program must be composed of a single start alpha codepoint followed by either zero or more of a digit or an alpha codepoint. Any identifier that does not follow this scheme and does not form a valid keyword, literal or definition is considered ill-formed.
+	
+	\item All identifiers that containing two underscores \lstinline|__| in any part of the name are reserved for usage by the compiler implementation details and may not be used by programs. If an identifier has two underscores the program is considered ill-formed.
+	
+	\item All identifiers prefixed by `\lstinline|lib.|' (i.e., belong in the \lstinline|lib| namespace) are reserved by the standard to the standard library and nothing may be defined in that namespace by the program, aside from implementations of the standard library.
+\end{enumerate}

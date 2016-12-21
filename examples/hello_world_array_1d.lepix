@@ -1,3 +1,5 @@
+import lib
+
 fun main () : int {
 	var x : int[] = [ 11, 22, 44, 88 ];
 	lib.print(x[3]);

@@ -1,3 +1,5 @@
+import lib
+
 fun sum (arr : int[]) : int {
 	var x : int = 0;
 	for (var i : int = 0; i < arr.size(); i = i + 1) {

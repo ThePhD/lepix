@@ -1,0 +1,24 @@
+\section{Initialization}
+% how to initialize a variable to a certain type
+% typically:
+% var x : int32 = 500;
+
+\subsection{Variable Initialization}
+\begin{itemize}[before=\itshape, label={}]
+	\item variable-declaration:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@let | var ( mutable | const )@$_{optional}$\lstinline@ <identifier> : <type> = ( expression );@
+	\end{itemize}
+\end{itemize}
+\begin{enumerate}
+	\item Initialization is the assignment of an expression on the right side to a variable declaration.
+	\item If the expression cannot directly initialize or be coerced to initialize the type on the left, then the program is ill-formed.
+\end{enumerate}
+
+\subsection{Assignment}
+\begin{itemize}[before=\itshape, label={}]
+	\item assignment-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline|expression = expression|
+	\end{itemize}
+\end{itemize}

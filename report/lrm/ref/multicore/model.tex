@@ -1,0 +1,10 @@
+\section{Parallel Execution Model}
+% The way parallel execution is modeled in the language
+% that is, recognizing that a program may have multiple parts of itself being run at the same time and that it is beneficial to have a primitive that encapsulates that
+% parallel execution is simply the running of separate functions at the same time, separated by primitives called 'threads'
+
+\begin{enumerate}
+	\item Parallel Execution is when two computations defined by the language are run at the exact same time by the abstract virtual machine, capable of accessing the same memory space.
+	\item The primary parallel primitive is a parallel-marked block.
+	\item Use of parallel primitives does not guarantee parallel execution: computation specified to run in parallel may run sequentially.\footnote{This could be due to hardware limitations, operating system limitations, and other factors of the machine.}
+\end{enumerate}

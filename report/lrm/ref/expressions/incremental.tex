@@ -1,0 +1,27 @@
+\section{Incremental Expressions}
+% Self-explanatory
+% Don't forget things like defining (x++) == (x = x+1)
+
+\subsection{Incremental operations}
+\begin{itemize}[before=\itshape, label={}]
+	\item post-increment-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@( expression )++@
+	\end{itemize}
+	\item pre-increment-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@++( expression )@
+	\end{itemize}
+	\item post-decrement-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@( expression )--@
+	\end{itemize}
+	\item pre-decrement-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@--( expression )@
+	\end{itemize}
+\end{itemize}
+\begin{enumerate}
+	\item Symbolic expression that should semantically evaluate to \lstinline|( expression ) = ( expression ) + 1|.
+	\item \lstinline|( expression )| is only evaluated once.
+\end{enumerate}

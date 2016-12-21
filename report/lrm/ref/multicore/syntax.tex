@@ -1,0 +1,6 @@
+\section{Syntax}
+\begin{enumerate}
+	\item The syntax for parallel code is code simply marked with the keyword \lstinline|parallel|.
+	\item In the situation where there are variables that must be shared by all the threads, a comma separated list of variable identifiers can be specified in parentheses using the keyword shared as in \lstinline@parallel <block>@.
+	\item Inside of the parallel block, the variables \lstinline|thread_index| and \lstinline|thread_count| are available and set by the \lepix{} runtime. They are the index of the current thread running the code and the total number of threads running the system.
+\end{enumerate}

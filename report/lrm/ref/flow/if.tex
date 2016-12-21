@@ -1,0 +1,35 @@
+\section{if}
+% The if block
+% if (var x = 20; x < 30) {}
+% the above is valid: as long as the final expression in a semi-colon delimited list evaluates to a boolean the if block is valid
+% scope for the variable "x" lasts until the closing bracket "}"
+% there will be "else if"
+% and "else"
+\begin{enumerate}
+\begin{lstlisting}[numbers=none]
+if (expression; expression; ...) 
+	statements
+else 
+	alternative-statements
+\end{lstlisting}
+	\item \lstinline|if| statements are used to make decisions in control flow.
+	\item Variations on this syntax are permitted, e.g. The \lstinline|else| block of the \lstinline|if| statement is optional.
+	\item If the expression is evaluated and returns \lstinline|true|, then the first portion of the if statement is executed. Otherwise, if there is an else the portion after it is executed, and if there is none then the function continues at the next statement.
+	\item Parenthesis are optional after the if block if there is a single statement. If there are multiple statements, parenthesis are needed.
+	\item Variables can be initialized inside the expression portion of the if statement as long as the final expression in a semi-colon delimited list evaluates to a Boolean value.
+\begin{lstlisting}[numbers=none]
+if (var x = 20; var y = 50; x < y) {
+	statements
+}
+\end{lstlisting}
+	\item The scope for variables \lstinline|x| and \lstinline|y| is within that particular if statement.
+	\item If statements can also be nested so that multiple conditions can be tested:
+\begin{lstlisting}[numbers=none]
+if (x < 0) 
+	y = -1
+else if (x > 0)
+	y = 1
+else
+	y = 0
+\end{lstlisting}
+\end{enumerate}

@@ -1,0 +1,11 @@
+\section{Namespaces}
+% namespaces are a group of program elements (see: elements section) all defined and accessed through a single name
+% namespaces do not introduce new scope: they merely provide named organization
+% this is the only exception to the curly brace {} rule, where each pair introduces a new scope
+
+\begin{enumerate}
+	\item Namespaces are essentially blocks that allow identifiers to be prefix with an arbitrary nesting of names. They are declared with the \lstinline|namespace| keyword, followed by several identifiers delimited by a dot `.' symbol.
+	\item Accessing variables and functions inside of a namespace must have the name of the namespace prefixed before the name of the desired identifier.
+	\item The namespaces \lstinline|lib| and \lstinline|compiler| is reserved for use by standard library implementations and the compiler.
+	\item Namespaces are the only bracket-delimited lexical scope that do not dictate the lifetime of the variables associated with them. These variables are part of the \textbf{global scope}.
+\end{enumerate}

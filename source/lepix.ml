@@ -211,15 +211,67 @@ let _ =
 				in
 				prerr_endline msg
 
+			(* Semantic Analyzer and Codegen Errors *)
+			(* Semantic Errors *)
+			(* TODO: positional information should be tracked through the AST as well... *)
+			| Errors.BadFunctionCall(s) ->
+				let msg = "Bad Function Call error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.TypeMismatch(s) ->
+				let msg = "Mismatched types error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.IdentifierNotFound(s) ->
+				let msg = "Identifier Not Found error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.InvalidFunctionSignature(s, n) ->
+				let msg = "Invalid signature: " ^ s ^ " in " ^ n
+				in
+				prerr_endline msg
+			| Errors.InvalidMainSignature(s) ->
+				let msg = "Invalid signature: " ^ s
+				in
+				prerr_endline msg
+			| Errors.InvalidBinaryOperation(s)
+			| Errors.InvalidUnaryOperation(s) ->
+				let msg = "Invalid operation: " ^ s
+				in
+				prerr_endline msg
+			
+			(* Direct Codegen Errors *)
+			| Errors.UnknownVariable(s) ->
+				let msg = "Codegen (LLVM IR) error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.UnknownFunction(s) ->
+				let msg = "Codegen (LLVM IR) error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.VariableLookupFailure(name, _) ->
+				let msg = "Codegen (LLVM IR) error: could not properly find variable with the name " ^ name
+				in
+				prerr_endline msg
+			| Errors.FunctionLookupFailure(name, mangledname) ->
+				let msg = "Codegen (LLVM IR) error: looking for the function with the name " ^ name ^ " (mangled name: " ^ mangledname ^ ")"
+				in
+				prerr_endline msg
+			| Errors.BadPrintfArgument ->
+				let msg = "Codegen (LLVM IR) error: lib.print and related functions only take either a string, an integer, or a floating point argument"
+				in
+				prerr_endline msg
+
 			(* Common Errors *)
 			(* Missing File/Bad File Name, Bad System Calls *)
 			| Sys_error(s) ->
 				let msg = "Sys_error: \n\t" ^ s
 				in
 				prerr_endline msg
+
 			(* Unsupported features *)
 			| Errors.Unsupported(s) ->
-				let msg = "Unsupported: \n\t" ^ s
+				let msg = "Unsupported (ran out of implementation time): \n\t" ^ s
 				in
 				prerr_endline msg
 

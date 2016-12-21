@@ -1,0 +1,9 @@
+import lib
+
+#import "imported.lepix"
+
+fun main () : int {
+	var f : int = x.d();
+	lib.print_n(f);
+	return 0;
+}

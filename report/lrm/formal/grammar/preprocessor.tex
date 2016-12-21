@@ -1,0 +1,15 @@
+\section{Preprocessor}
+\begin{grammar}
+	<preprocessor_directive> ::= \#define <identifier> <expression>
+	\alt \#ifdef <identifier>
+	\alt \#ifndef <identifier>
+	\alt \#endif
+	\alt \#import <identifier>
+	\alt \#import ‘‘<file_name>’’
+	\alt \#import string <file_name>
+\end{grammar}
+\begin{enumerate}
+	\item Before the source for a LePix program is compiled, the program is consumed by a preprocessor, which expands macro definitions and links libraries and other user-defines to the current file, as specified by appropriate preprocessor directives.
+	\item \lstinline|define| macros create an alias for a value or expression.
+	\item \lstinline|ifdef| and \lstinline|ifndef| macros are used to check if a particular alias has already been assigned. Import directives are used to link files/libraries with the current program.
+\end{enumerate}

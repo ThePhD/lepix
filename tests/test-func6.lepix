@@ -1,9 +1,0 @@
-fun foo():void {}
-
-fun bar(a:int, b:bool, c:int):int { return a + c; }
-
-fun main(): int
-{
-  lib.print(bar(17, false, 25));
-  return 0;
-}

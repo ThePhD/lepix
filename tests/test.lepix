@@ -1,0 +1,31 @@
+import lib
+
+namespace n.s {
+
+	var global : int = 8;
+
+}
+
+namespace n {
+	namespace s {
+		var stuff : float = "bark!";
+	}
+}
+
+fun s () : int {
+	return 2;
+}
+
+fun s (x : int) : int {
+	return x + 2;
+}
+
+fun main () : int {
+	var local : int = n.s.global;
+	var svalue : int = s();
+	lib.print_n(local);
+	lib.print_n(svalue);
+	lib.print_n(s(2));
+	lib.print_n(n.s.global);
+	lib.print_n(n.s.stuff);
+}

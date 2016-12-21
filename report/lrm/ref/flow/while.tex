@@ -1,0 +1,25 @@
+\section{while}
+\label{sec:while}
+% The while block
+% while (var x = 20; x < 30) {}
+% the above is valid: as long as the final expression in a semi-colon delimited list evaluates to a boolean the while block is valid
+% scope for the variable "x" lasts until the closing bracket "}"
+
+\begin{enumerate}
+\begin{lstlisting}[numbers=none]
+while (expression; expression; ... ; condition)  {
+	statements 
+}
+\end{lstlisting}
+	\item \lstinline|while| loops are used to repeat a block of code until some condition is met.
+	\item Every time a loop condition evaluates to true, the \lstinline|while| loop's block and statements are executed.
+	\item When the condition evaluates to false, the \lstinline|while| loop's execution is stopped.
+	\item Expressions before condition are evaluated only once. For example: \lstinline|while (var x = 20; x < 30) {...}| is a valid the \lstinline|while| loop, and only the final \lstinline|x < 30| is evaluated on each loop execution.
+	\item Loops are dangerous because they can potentially run forever. Make sure your conditions are done properly, or use Flow Control keywords and primitives discussed in \ref{sec:breaks}:
+\begin{lstlisting}[numbers=none]
+while (var x = 1; x <= 10) {
+	arr[x] = 1;
+	x = x + 1;
+}
+\end{lstlisting}
+\end{enumerate}

@@ -1,9 +1,0 @@
-fun foo(a:int):int
-{
-  return a;
-}
-
-fun main(): int
-{
-  return 0;
-}

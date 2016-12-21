@@ -27,6 +27,9 @@ module StringMap = Map.Make(String)
 let extract_binding = function
 	| Ast.VarBinding(b, _) -> b
 
+let extract_s_binding = function
+	| Semast.SVarBinding(b, _) -> b
+
 let extract_s_binding_name = function
 	| (n, _) -> n
 
@@ -47,19 +50,38 @@ let create_s_environment () = {
 	Semast.env_loops = [];
 }
 
-let enter_block envl locals = 
+let enter_block envl locals parameters = 
 	let acc_symbols m l =
 		let ( n, tn ) = (extract_s_binding_name l, extract_s_binding_type l) in
 		StringMap.add n tn m
 	in
-	let symbols = List.fold_left acc_symbols StringMap.empty locals in
+	let symbols = List.fold_left acc_symbols StringMap.empty parameters in
+	let symbols = List.fold_left acc_symbols symbols locals in
 	let env = {
 		Semast.env_usings = [];
 		Semast.env_symbols = symbols;
 		Semast.env_definitions = StringMap.empty;
 		Semast.env_imports = [];
 		Semast.env_loops = [];
-     } in
+	} in
+	env :: envl
+
+let enter_parameter_block envl parameters = 
+	let acc_symbols m l =
+		let ( n, tn ) = (extract_s_binding_name l, extract_s_binding_type l) in
+		StringMap.add n tn m
+	in
+	let m k v1 v2 = match (v1, v2) with
+		| Some(x), Some(_) -> Some(x) 
+		| Some(x) as s, None -> s 
+		| None, ( Some(y) as s ) -> s
+		| _ -> None
+ 	in
+	let symbols = List.fold_left acc_symbols StringMap.empty parameters in
+	let env = List.hd envl in
+	let env = { env with
+		Semast.env_symbols = ( StringMap.merge m symbols env.Semast.env_symbols );
+	} in
 	env :: envl
 
 let lookup_id name mapl =
@@ -131,14 +153,19 @@ let check_unary_op uop sr = match sr with
 	| _ -> raise(Errors.InvalidUnaryOperation("cannot perform a unary operation on this type"))
 
 let overload_resolution args = function
-	| Semast.SFunction(__, tnl, _) ->
-		List.exists ( fun a -> List.mem a tnl ) args
+	| Semast.SFunction(__, tnl, _) -> let argslen = ( List.length args ) in
+		let overloadlen = ( List.length tnl )  in
+		argslen = overloadlen && 
+		if ( argslen > 0 ) then ( List.exists ( fun a -> List.mem a tnl ) args )
+		else true
 	| _ -> raise(Errors.TypeMismatch("cannot resolve an overload that includes a non-function in its type listing"))
 
 let check_function_overloads args overloadlist =
 	begin try 
 		List.find ( overload_resolution args ) overloadlist
-	with _ -> raise(Errors.BadFunctionCall("could not resolve the specific overload for this function call"))
+	with _ ->
+		let argslist = "( " ^ ( String.concat "," ( List.map Representation.string_of_s_type_name args ) ) ^ " )" in
+		raise(Errors.BadFunctionCall("could not resolve the specific overload for this set of " ^ ( Representation.string_of_s_type_name ( Semast.SOverloads(overloadlist) ) ) ^ " using " ^ argslist ))
 	end
 
 let rec type_name_of_ast_expression attrs envl astexpr = 
@@ -157,8 +184,7 @@ let rec type_name_of_ast_expression attrs envl astexpr =
 				| Semast.SOverloads(fl) ->
 					let sargs = List.map ( type_name_of_ast_expression attrs envl ) args in
 					let r = check_function_overloads sargs fl in
-					print_endline ( Representation.string_of_s_type_name r );
-					r
+					Semast.return_type_name r
 				| _ -> raise(Errors.TypeMismatch("expected a function type, but received something else."))
 			end
 		| Ast.Noop -> Semast.void_t
@@ -198,10 +224,10 @@ let generate_global_env = function
 			| Ast.Basic(Ast.FunctionDefinition((qid, args, rt, _))) -> 
 				let argst = List.map Ast.binding_type args in
 				let qualname = prefix ^ Semast.string_of_qualified_id qid in
-				if StringMap.mem qualname symbols then raise (Errors.FunctionAlreadyExists(qualname)) else
 				let qt = Ast.Function(rt, argst, Ast.no_qualifiers) in
-				let nsymbols = ( StringMap.add qualname ( type_name_of_ast_type_name qt ) symbols )
-				and ndefs = ( StringMap.add qualname ( type_name_of_ast_type_name qt ) defs )
+				let sqt = ( type_name_of_ast_type_name qt ) in
+				let nsymbols = accumulate_string_type_bindings symbols (qualname, sqt)
+				and ndefs = accumulate_string_type_bindings defs (qualname, sqt)
 				in
 				( prefix, nsymbols, ndefs, imports )
 			| Ast.Basic(Ast.VariableDefinition(v)) -> 
@@ -232,31 +258,32 @@ let generate_global_env = function
 let check_qualified_identifier attrs envl sl t =
 	(attrs, envl, Semast.SQualifiedId(sl, t))
 
-let check_function_call attrs envl target args t =
-	let t = match t with 
+let check_function_call attrs envl target args =
+	let t = match Semast.type_name_of_s_expression target with 
 		| Semast.SFunction(tn, tnl, tq) as f -> f
 		| Semast.SOverloads(fl) ->
 			let args_t = ( List.map Semast.type_name_of_s_expression args ) in 
 			check_function_overloads args_t fl
 		| _ -> raise(Errors.BadFunctionCall("cannot invoke an expression which does not result in a function type of some sort"))
 	in
-	(attrs, envl, Semast.SCall(( Semast.coerce_type_name_of_s_expression t target ), args, ( Semast.return_type_name t ) ))
+	(attrs, envl, Semast.SCall(( Semast.coerce_type_name_of_s_expression t target ), args, Semast.return_type_name t ))
 
 let generate_s_binding prefix attrs envl = function
 	| (name, tn) -> (attrs, envl, (Semast.string_of_qualified_id ( prefix @ [name] ), type_name_of_ast_type_name tn))
 
-let gather_ast_locals attrs envl sl =
+let gather_ast_locals attrs envl sl pl =
 	let acc locals = function
 		| Ast.General(Ast.VariableStatement(v)) -> 
 			let (_, _, sb) = generate_s_binding [] attrs envl ( extract_binding v ) in
 			sb :: locals
 		| _ -> locals
 	in
-	let l = List.fold_left acc [] sl in
+	let l = List.rev( List.fold_left acc [] sl ) in
 	if ( List.length l ) > 0 then begin
-		let envl = ( enter_block envl l ) in
+		let envl = ( enter_block envl l pl ) in
 		(true, attrs, envl, l)
 	end else
+		let envl = ( enter_parameter_block envl pl ) in
 		(false, attrs, envl, l)
 
 let generate_s_literal attrs envl = function
@@ -282,8 +309,7 @@ let rec generate_s_expression attrs envl astexpr =
 			let ( attrs, envl, target ) = ( generate_s_expression attrs envl e ) in
 			let ( attrs, envl, args ) = ( List.fold_left acc_s_expression (attrs, envl, []) el ) in
 			let args = List.rev args in
-			let t = type_name_of_ast_expression attrs envl astexpr in
-			check_function_call attrs envl target args t
+			check_function_call attrs envl target args
 		| Ast.BinaryOp(lhs, bop, rhs) -> 
 			let ( attrs, envl, slhs ) = ( generate_s_expression attrs envl lhs ) in
 			let ( attrs, envl, srhs ) = ( generate_s_expression attrs envl rhs ) in
@@ -352,6 +378,8 @@ let check_returns name ssl rt =
 	let returnlength = List.length returns in
 	if name = "main" then
 		let mainpred = function
+			| Semast.SBuiltinType(Ast.Auto, _) -> 
+				()
 			| Semast.SBuiltinType(Ast.Int(32), (_, r)) -> 
 				if r then raise(Errors.InvalidMainSignature("Cannot return a reference from main"));
 				()
@@ -412,7 +440,7 @@ let generate_s_function_definition prefix attrs envl astfdef =
 	let fqn = Semast.string_of_qualified_id fqid in
 	let (attrs, envl, parameters) = List.fold_left acc_ast_parameters (attrs, envl, []) astparameters in
 	let rt = type_name_of_ast_type_name astrt in
-	let (has_locals, attrs, envl, bl) = gather_ast_locals attrs envl body in
+	let (has_locals, attrs, envl, bl) = gather_ast_locals attrs envl body parameters in
 	let (attrs, envl, ssl) = List.fold_left acc_ast_statements (attrs, envl, []) body in
 	let ssl = List.rev ssl in
 	let (ssl, rt) = check_returns fqn ssl rt in
@@ -449,38 +477,47 @@ let define_libraries attrs env =
 	let fs = Semast.SFunction(Semast.void_t, [Semast.string_t], Semast.no_qualifiers) in
 	let fo = Semast.SOverloads([fi;ff;fs]) in
 	let lib_printn_defint = {
-	     Semast.func_name = ["lib"; "print_n"];
+		Semast.func_name = ["lib"; "print_n"];
 		Semast.func_parameters = Semast.SParameters([("i", Semast.int32_t)]);
 		Semast.func_return_type = Semast.void_t;
 		Semast.func_body = [
 			Semast.SGeneral(Semast.SExpressionStatement(
 				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SQualifiedId(["i"], Semast.int32_t)], Semast.void_t)
 			));
+			Semast.SGeneral(Semast.SExpressionStatement(
+				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SLiteral(Semast.SStringLit("\n"))], Semast.void_t)
+			));
 			Semast.SReturn(Semast.SNoop);
 		];
-     }
+	}
 	and lib_printn_deffloat = {
-	     Semast.func_name = ["lib"; "print_n"];
+		Semast.func_name = ["lib"; "print_n"];
 		Semast.func_parameters = Semast.SParameters([("i", Semast.float32_t)]);
 		Semast.func_return_type = Semast.void_t;
 		Semast.func_body = [
 			Semast.SGeneral(Semast.SExpressionStatement(
 				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SQualifiedId(["i"], Semast.float32_t)], Semast.void_t)
 			));
+			Semast.SGeneral(Semast.SExpressionStatement(
+				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SLiteral(Semast.SStringLit("\n"))], Semast.void_t)
+			));
 			Semast.SReturn(Semast.SNoop);
 		];
-     }
+	}
 	and lib_printn_defstr = {
-	     Semast.func_name = ["lib"; "print_n"];
+		Semast.func_name = ["lib"; "print_n"];
 		Semast.func_parameters = Semast.SParameters([("i", Semast.string_t)]);
 		Semast.func_return_type = Semast.void_t;
 		Semast.func_body = [
 			Semast.SGeneral(Semast.SExpressionStatement(
 				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SQualifiedId(["i"], Semast.string_t)], Semast.void_t)
 			));
+			Semast.SGeneral(Semast.SExpressionStatement(
+				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SLiteral(Semast.SStringLit("\n"))], Semast.void_t)
+			));
 			Semast.SReturn(Semast.SNoop);
-          ];
-     }
+		];
+	}
 	in
 	let libdefs = [
 		Semast.SBasic(Semast.SFunctionDefinition(lib_printn_defstr));
@@ -528,6 +565,34 @@ let generate_semantic attrs globalenv = function
 	let globalenv = List.hd ( List.rev envl ) in
 	Semast.SProgram( attrs, globalenv, List.rev sdefs )
 
+let modify_symbols = function
+| Semast.SProgram(attrs, env, sdls) ->
+	let rec acc ( symbols, defs ) def =  
+		match def with 
+			| Semast.SBasic(Semast.SFunctionDefinition(f)) -> 
+				let qualname = Semast.string_of_qualified_id f.Semast.func_name in
+				let sqt = ( Semast.type_name_of_s_function_definition f ) in
+				let nsymbols = accumulate_string_type_bindings symbols (qualname, sqt)
+				and ndefs = accumulate_string_type_bindings defs (qualname, sqt)
+				in
+				( nsymbols, ndefs )
+			| Semast.SBasic(Semast.SVariableDefinition(v)) -> 
+				( symbols, defs )
+	in
+	let (symbols, defs) = List.fold_left acc (StringMap.empty, StringMap.empty) sdls in
+	let m k l r = match (l, r) with
+		| Some(l), Some(_) -> Some(l)
+		| None, ( Some(r) as s ) -> s
+		| ( Some(l) as s ), None -> s
+		| _ -> None
+	in
+	let env = { env with
+		Semast.env_symbols = StringMap.merge m symbols env.Semast.env_symbols; 
+		Semast.env_definitions = defs; 
+	}
+	in
+	Semast.SProgram( attrs, env, sdls )
+
 let check astprogram = 
 	(* Pass 1: Gather globals inside of all the namespaces
 	so they can be referenced even before they're defined (just so long as 
@@ -537,5 +602,9 @@ let check astprogram =
 	(* Pass 2: Generate the actual Semantic Tree based on what
 	is inside the AST program... *)
 	let sprog = generate_semantic attrs env astprogram in
+	(* Pass 3: Update any symbols that were resolved during 
+	bottom-up type derivation... *)
+	let Semast.SProgram(attrs, env, _) = modify_symbols sprog in
+	(* Pass 4: Finalize everything with new information *)
+	let sprog = generate_semantic attrs env astprogram in
 	sprog
-	

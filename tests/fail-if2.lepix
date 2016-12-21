@@ -1,6 +1,0 @@
-fun main(): int
-{
-  if (true) {
-    foo; /* Error: undeclared variable */
-  }
-}

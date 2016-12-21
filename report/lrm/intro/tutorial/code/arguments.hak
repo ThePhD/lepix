@@ -1,0 +1,21 @@
+fun fibonacci_to (n : int, &storage : int[]) : int {
+	int index = 0;
+	var result : int = 0;
+	var n_2 : int = 0;
+	var n_1 : int = 1;
+	while (n > 0) {
+		result = n_1 + n_2;
+		storage[index] = result;
+		n_2 = n_1;
+		n_1 = result;
+		--n;
+		++index;
+	}
+	return result;
+}
+
+fun main () : int {
+	var storage : int [3] = [];
+	var x : int = fibonacci_to(3, storage);
+	return x;
+}

@@ -292,9 +292,9 @@ let rec string_of_s_type_name tn =
 	| Semast.SArray(t, d, tq) -> tqual tq ^ string_of_s_type_name t ^ ( String.make d '[' ) ^ ( String.make d ']' )
 	| Semast.SSizedArray(t, d, il, tq) -> tqual tq ^ string_of_s_type_name t ^ ( String.make d '[' ) ^ ( String.concat ", " ( List.map string_of_int il ) ) ^ ( String.make d ']' )
 	| Semast.SFunction(r, args, tq) -> tqual tq ^ "(" ^  ( String.concat ", " ( List.map ( fun v -> string_of_s_type_name v ) args ) ) ^ ")" ^ string_of_s_type_name r 
-	| Semast.SOverloads(fl) -> "overloaded( " 
+	| Semast.SOverloads(fl) -> "overloads[" 
 		^ ( String.concat ", " ( List.map string_of_s_type_name fl ) ) 
-		^ ")"
+		^ "]"
 	| Semast.SAlias(target, source) -> "using " ^ string_of_qualified_id target ^ " -> " ^ string_of_qualified_id source
 
 let string_of_s_binding = function

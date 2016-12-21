@@ -1,8 +1,0 @@
-fun foo(a:int, b:bool, c:int): int { }
-
-fun bar(a:int, b:bool, a:int): void {} /* Error: duplicate formal a in bar */
-
-fun main(): int
-{
-  return 0;
-}

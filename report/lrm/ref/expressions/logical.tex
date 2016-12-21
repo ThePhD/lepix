@@ -1,0 +1,69 @@
+\section{Logical Expressions}\label{sec: Logical Expressions}
+% Operations like greater than, less than, equal to, not equal to, etc.
+
+\subsection{Binary Compound Boolean Operators}
+\begin{itemize}[before=\itshape, label={}]
+	\item and-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression and expression@
+		\item \lstinline@expression && expression@
+	\end{itemize}
+	\item or-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression or expression@
+		\item \lstinline@expression || expression@
+	\end{itemize}
+\end{itemize}
+\begin{enumerate}
+	\item Symbolic expressions to check for logical conjunction and disjunction.
+	\item For the \lstinline|and-expression|, short-circuiting logic is applied if the expression on the left evaluates to false. The right hand expression will not be evaluated.
+	\item For the \lstinline|or-expression|, short-circuiting logic is applied if the expression on the left evaluates to true. The right hand expression will not be evaluated.
+	\item All operations are left associative.
+\end{enumerate}
+
+\subsection{Binary Relational Operators}
+\begin{itemize}[before=\itshape, label={}]
+	\item equal-to-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression == expression@
+	\end{itemize}
+	\item not-equal-to-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression != expression@
+	\end{itemize}
+	\item less-than-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression < expression@
+	\end{itemize}
+	\item greater-than-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression > expression@
+	\end{itemize}
+	\item less-than-equal-to-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression <= expression@
+	\end{itemize}
+	\item greater-than-equal-to-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@expression >= expression@
+	\end{itemize}
+\end{itemize}
+\begin{enumerate}
+	\item Symbolic expression to perform relational operations meant to do comparisons.
+	\item All operations are left-associative.
+\end{enumerate}
+
+\subsection{Unary Logical Operators}
+\begin{itemize}[before=\itshape, label={}]
+	\item inversion-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@!expression@
+	\end{itemize}
+	\item complement-expression:
+	\begin{itemize}[before=\itshape, label={}]
+		\item \lstinline@~expression@
+	\end{itemize}
+\end{itemize}
+\begin{enumerate}
+	\item Symbolic expression to perform unary logic operations, such as logical complement and logical inversion.
+\end{enumerate}

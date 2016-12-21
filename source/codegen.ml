@@ -102,6 +102,13 @@ let rec llvm_type_of_s_type_name lu st =
 	| _ -> (* TODO: Proper Error *)
 		raise(Errors.Unsupported("This type is not convertible to an LLVM type"))
 
+let should_reference_pointer = function
+	| Semast.SBuiltinType(Ast.String, _) -> true
+	| Semast.SArray(_, _, _) -> true
+	| Semast.SSizedArray(_, _, _, _) -> true
+	| Semast.SFunction(_, _, _) -> true
+	| _ -> false
+
 let find_argument_handler lu target =
 	let hn = Llvm.value_name target in
 	try Some( StringMap.find hn lu.lu_handlers )
@@ -119,6 +126,7 @@ let llvm_lookup_variable lu name t =
 		| None -> raise( Errors.VariableLookupFailure( name, name ) )
 
 let dump_s_qualified_id lu qid t =
+	print_endline ( "===== " ^ ( Representation.string_of_qualified_id qid ) ^ " -- " ^ ( Representation.string_of_s_type_name t ) );
 	let lookup n =
 		try 
 			let v = StringMap.find n lu.lu_named_values in
@@ -147,6 +155,7 @@ let dump_s_qualified_id lu qid t =
 	in
 	let overload_lookup qid ft = 
 		let n = Semast.mangle_name qid ft in 
+		print_endline ( n ^ " -- " ^ ( Representation.string_of_s_type_name ft ) );
 		begin match lookup_func n with 
 			| Some(v) as s -> s
 			| None -> let n = Semast.string_of_qualified_id qid in 
@@ -156,13 +165,10 @@ let dump_s_qualified_id lu qid t =
 		end
 	in
 	let idval = match t with 
-		| Semast.SFunction(rt, tnl, tq) as ft -> let n = Semast.mangle_name qid ft in 
-			begin match lookup_func n with 
+		| Semast.SFunction(rt, tnl, tq) as ft ->
+			begin match overload_lookup qid ft with 
 				| Some(v) -> v
-				| None -> let n = Semast.string_of_qualified_id qid in 
-			match lookup_func n with 
-				| Some(v) -> v
-				| None -> raise (Errors.UnknownFunction n)
+				| None -> raise (Errors.UnknownFunction (Semast.string_of_qualified_id qid))
 			end
 		| Semast.SOverloads(fl)-> 
 			let acc op ft = match op with
@@ -191,24 +197,31 @@ let dump_s_literal lu lit =
 		| Semast.SIntLit(value) -> Llvm.const_int i32_t value
 		| Semast.SInt64Lit(value) -> Llvm.const_of_int64 i64_t value true (* boolean is for signedness or not: it is signed *)
 		| Semast.SStringLit(value) -> 
-			let str = Llvm.build_global_string value "str_lit" lu.lu_builder in
+			let str = Llvm.build_global_stringptr value "str_lit" lu.lu_builder in
 			str
 		| Semast.SFloatLit(value) -> Llvm.const_float f32_t value
 	in
 	(lu, v)
 
+let dump_expression_temporary_value lu ev v =
+	let v = match ( Llvm.classify_type ( Llvm.type_of v ) ) with
+		| Llvm.TypeKind.Pointer -> 
+			if ( should_reference_pointer ev ) then
+				v
+			else
+				Llvm.build_load v "tmp" lu.lu_builder
+		| _ -> v
+	in
+	v
+
+let dump_expression_temporary_gen f lu e =
+	let (lu, v) = ( f lu e ) in
+	let v = dump_expression_temporary_value lu ( Semast.type_name_of_s_expression e ) v in
+	(lu, v)
+
 let dump_arguments_gen f lu el =
 	let acc_expr (lu, vl) e =
-		let (lu, v) = f lu e in
-		print_endline (Llvm.string_of_llvalue v);
-		let v = match ( Llvm.classify_value v) with
-			| Llvm.ValueKind.BlockAddress
-			| Llvm.ValueKind.GlobalAlias
-			| Llvm.ValueKind.Function
-			| Llvm.ValueKind.Instruction(_)
-			| Llvm.ValueKind.GlobalVariable -> Llvm.build_load v "tmp.arg" lu.lu_builder
-			| _ -> v
-		in
+		let (lu, v) = dump_expression_temporary_gen f lu e in
 		( lu, v :: vl )
 	in
 	let (lu, args) = List.fold_left acc_expr (lu, []) el in
@@ -237,7 +250,21 @@ let rec dump_s_expression lu e =
 			| _ -> Llvm.build_call target arr_args "tmp.call" lu.lu_builder
 		in
 		(lu, v)
+	| Semast.SBinaryOp(l, bop, r, t) -> 
+		let (lu, lv) = dump_s_expression lu l in
+		let (lu, rv) = dump_s_expression lu r in
+		let opf = match bop with
+			| Ast.Add -> Llvm.build_add
+			| _ -> raise(Errors.Unsupported("This binary operation type is not supported for code generation"))
+		in
+		let v = opf lv rv "tmp.bop" lu.lu_builder in
+		(lu, v)
 	| _ -> raise(Errors.Unsupported("This expression is not supported for code generation"))
+
+let dump_s_expression_temporary lu e =
+	let (lu, v) = ( dump_s_expression lu e ) in
+	let v = dump_expression_temporary_value lu ( Semast.type_name_of_s_expression e ) v in
+	(lu, v)
 
 let dump_s_locals lu locals =
 	let acc lu (n, tn) =
@@ -265,16 +292,25 @@ let dump_s_parameters lu llfunc parameters =
 	let lu = List.fold_left acc lu bl in
 	lu
 
-let dump_assignment lu lhse rhse lhstn  =
-	let (lu, rhs) = dump_s_expression lu rhse in
-	let rhs = Llvm.build_load rhs "tmp" lu.lu_builder in
+let dump_store lu lhs lhst rhs rhst =
+	let _ = Llvm.build_store rhs lhs lu.lu_builder in
+	lhs
+
+let dump_assignment lu lhse rhse lhst  =
+	let rhst = Semast.type_name_of_s_expression rhse in
+	let (lu, rhs) = dump_s_expression_temporary lu rhse in
 	let (lu, lhs) = dump_s_expression lu lhse in
-	let v = Llvm.build_store rhs lhs lu.lu_builder  in
+	let v = dump_store lu lhs lhst rhs rhst in
 	( lu, v )
 
 let dump_s_variable_definition lu = function
-	| Semast.SVarBinding((n, tn), e) -> let lhse = Semast.SQualifiedId([n], tn) in
-		dump_assignment lu lhse e tn
+	| Semast.SVarBinding((n, tn), rhse) -> let lhse = Semast.SQualifiedId([n], tn) in
+		let lhst = tn in
+		let rhst = Semast.type_name_of_s_expression rhse in
+		let (lu, rhs) = dump_s_expression_temporary lu rhse in
+		let (lu, lhs) = dump_s_expression lu lhse in
+		let v = dump_store lu lhs lhst rhs rhst in
+		( lu, v )
 
 let rec dump_s_general_statement lu gs =
 	let acc lu bgs = 
@@ -301,8 +337,10 @@ let rec dump_s_statement lu s =
 		let lu = dump_s_locals lu locals in
 		let lu = List.fold_left acc lu sl in
 		lu
-	| Semast.SGeneral(gs) -> dump_s_general_statement lu gs
-	| Semast.SReturn(e) -> let lu = match e with
+	| Semast.SGeneral(gs) -> 
+		dump_s_general_statement lu gs
+	| Semast.SReturn(e) -> 
+		let lu = match e with
 			| Semast.SNoop -> 
 				let _ = Llvm.build_ret_void lu.lu_builder in
 				lu
@@ -346,6 +384,7 @@ let dump_s_function_definition lu f =
 		dump_s_statement lu s
 	in
 	(* Generate the function with its signature *)
+	(* Which means we just look it up in the llvm module *)
 	let ft = Semast.type_name_of_s_function_definition f in
 	let n = Semast.string_of_qualified_id f.Semast.func_name in
 	let llfunc = llvm_lookup_function lu n ft in
@@ -395,9 +434,9 @@ let dump_builtin_lib lu =
 	let print_lib lu = 
 		let printf_t = Llvm.var_arg_function_type i32_t [| p_char_t |] in
 		let printf_func = Llvm.declare_function "printf" printf_t lu.lu_module in
-		let (_, int_format_str) = dump_global_string lu "__ifmt" "%d\n"
-		and (_, str_format_str) = dump_global_string lu "__sfmt" "%s\n"
-		and (_, float_format_str) = dump_global_string lu "__ffmt" "%f\n"
+		let (_, int_format_str) = dump_global_string lu "__ifmt" "%d"
+		and (_, str_format_str) = dump_global_string lu "__sfmt" "%s"
+		and (_, float_format_str) = dump_global_string lu "__ffmt" "%f"
 		in
 		let handler_name = "printf" in
 		let handler lu el =
@@ -410,7 +449,7 @@ let dump_builtin_lib lu =
 				| Semast.SBuiltinType(Ast.Int(n), _) -> int_format_str
 				| _ -> raise(Errors.BadPrintfArgument)
 			in
-			let fptr = Llvm.build_gep insertion [| llzero; llzero |] "fmttmp" lu.lu_builder in
+			let fptr = Llvm.build_gep insertion [| llzero; llzero |] "tmp.fmt" lu.lu_builder in
 			( lu, fptr :: exprl )
 		in
 		let libprintfuncs = [
@@ -447,7 +486,7 @@ let dump_declarations lu =
 			let mk = Semast.mangle_name [k] ft in
 			let v = Llvm.declare_function mk lty lu.lu_module in
 			{ lu with lu_functions = StringMap.add mk v lu.lu_functions }
-		| _ -> lu			
+		| _ -> lu	
 	in
 	let acc_def k v lu =
 		declare k lu v

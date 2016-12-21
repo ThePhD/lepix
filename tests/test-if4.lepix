@@ -1,7 +1,0 @@
-fun main(): int
-{
-  if (false) {lib.print(42);} 
-  else {lib.print(8);}
-  lib.print(17);
-  return 0;
-}

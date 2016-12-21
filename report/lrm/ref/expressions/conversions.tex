@@ -1,0 +1,35 @@
+\section{Expression and Operand Conversions}
+% conversions apply to things like integers and floats
+% it may be useful to supply a warning if the types do not match exactly
+% for ease of implementation on the first pass, we may demand types match exactly
+
+\subsection{Boolean Conversions}
+\begin{enumerate}
+	\item Expressions that are expected to evaluate to booleans for the purposes of Flow Control as defined in \ref{sec: Flow Control} and for common relational and logical operations as in \ref{sec: Logical Expressions} will have their rules checked against the following:
+	\begin{enumerate}
+		\item If the evaluated value is already a boolean, use the value directly.
+		\item If the evaluated value is of an integral type, then any such type which compares equivalent to the integral literal \lstinline|0| will be \lstinline|false|: otherwise, it is \lstinline|true|.
+		\item If the evaluated value is of a floating point type, then any such type which compares equivalent to the floating point literal \lstinline|0.0| will be \lstinline|false|: otherwise, it is \lstinline|true|.
+		\item Otherwise, if there is no defined conversion, then the program is ill-formed.
+	\end{enumerate}
+\end{enumerate}
+
+\subsection{Mathematical Conversions}
+\begin{center}
+	\begin{tabular}{ | c | c | } 
+		\hline
+		\lstinline|int| to \lstinline|float| & \lstinline|float| variable has the same value as \lstinline|integer|.\\
+		\hline
+		\lstinline|float| to \lstinline|int| & \lstinline|integer| has largest integral value less than the \lstinline|float|.\\
+		\hline
+		\lstinline|bool| to \lstinline|int| & \lstinline|integer| has value 1 if true, otherwise it will be 0.\\
+		\hline
+		\lstinline|int| to \lstinline|bool| & \lstinline|bool| is true if \lstinline|int| is not equal to 0 and false otherwise.\\
+		\hline
+	\end{tabular}
+\end{center}
+\begin{enumerate}
+	\item Implicit type conversions are carried out only for compatible types. The implicit casting occurs during assignment or when a value is passed as a function argument.
+	\item The four types of conversions that are supported are summarized in the table below.
+	\item If there is no conversion operator defined for those two types exactly, then the program is ill-formed.
+\end{enumerate}

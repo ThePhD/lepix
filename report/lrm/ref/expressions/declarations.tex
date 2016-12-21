@@ -1,0 +1,20 @@
+\section{Variable Declarations}
+% let, var, and the difference between the two
+% let == var const, basically, and
+% var == let mutable, basically
+
+\subsection{\texorpdfstring{\lstinline|let|}{let} and \texorpdfstring{\lstinline|var|}{var} declarations}
+\begin{itemize}[before=\itshape, label={}]
+	\item variable-initialization:
+		\begin{itemize}[before=\itshape, label={}]
+			\item \lstinline@let | var ( mutable | const )@$_{optional}$\lstinline@ <identifier> : <type>;@
+		\end{itemize}
+\end{itemize}
+\begin{enumerate}
+	\item A variable can be declared using the \lstinline|let| and \lstinline|var| keywords, an identifier as defined in \ref{ssec: Identifiers} and optionally followed by a colon `\lstinline|:|' and type name. This is called a \lstinline|variable declaration|.
+	\item A variable declared with \lstinline|let| is determined to be immutable. Immutable variables cannot have their values re-assigned after declaration and initialization.
+	\item A variable declared with \lstinline|var| is immutable. Mutable variables can have their values re-assigned after declaration and initialization.
+	\item \lstinline|let mutable| is equivalent to \lstinline|var const|.
+	\item It is valid to initialize or assign to a mutable variable from an immutable variable.
+	\item A declaration can appear at any scope in the program.
+\end{enumerate}

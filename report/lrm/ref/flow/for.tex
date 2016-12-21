@@ -1,0 +1,28 @@
+\section{for}
+% The for block
+% for (var x = 20; x < 30; ++x) {}
+% TODO: is there a way to have a bunch of semi-colon delimeted initializers? Do we simply specify that the last 2 must be the comparison operation and the incrementation operation? What if we want a more complex 'end of loop, start next loop' operation?
+% scope for the variable "x" lasts until the closing bracket "}"
+\begin{enumerate}
+\begin{lstlisting}[numbers=none]
+for (variable = lower_bound to upper_bound by size) {
+	statements
+}
+\end{lstlisting}
+	\item For loops are another way to repeat a group of statements multiple times.
+	\item The \lstinline|by| keyword and argument \lstinline|size| are optional and used to specify how much the variable should change by each iteration of the loop: \lstinline|for (x = 1 to 10 by 2) {...}| will increment x by two each iteration rather than the default value of 1.
+	\item Variables can be declared in the loop declaration, as in \lstinline|for (var x = 1 to 10) {...}|.
+	\item For loops can also be used to decrement by swapping the positions of the lower_bound and upper_bound arguments, and using a negative value for the size (if using the \lstinline|by| keyword)
+	The while loop in Section \ref{sec:while} could be expressed as a for loop as follows.
+\begin{lstlisting}[numbers=none]
+for (var x = 1 to 10) {
+	arr[x] = 1;
+}
+\end{lstlisting}
+	\item C-style for loops are also supported:
+\begin{lstlisting}[numbers=none]
+for (var x = 1; x <= 10; x++) {
+	arr[x] = 1;
+}
+\end{lstlisting}
+\end{enumerate}

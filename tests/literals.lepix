@@ -2,14 +2,14 @@ import lib
 
 fun main () : int {
 	var x : int = 24;
-	var y : int24 = 0x2F;
-	var y2 : int24 = 0x2f;
-	var z : int4 = 0b10;
-	var z2 : int4 = 0n2n10;
+	var y : int32 = 0x2F;
+	var y2 : int32 = 0x2f;
+	var z : int32 = 0b10;
+	var z2 : int32 = 0n2n10;
 
-	lib.print(x);
-	lib.print(y);
-	lib.print(y2);
-	lib.print(z);
-	lib.print(z2);
+	lib.print_n(x);
+	lib.print_n(y);
+	lib.print_n(y2);
+	lib.print_n(z);
+	lib.print_n(z2);
 }

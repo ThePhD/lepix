@@ -63,5 +63,54 @@ class hello_world_test(unittest.TestCase):
 		self.assertEqual(typed_output, 24)
 		self.assertEqual(self.error, "")
 
+class literals_test(unittest.TestCase):
+	def setUp(self):
+		#print('In setUp()')
+		pass
+
+	def tearDown(self):
+		#print('In tearDown()')
+		pass
+
+	def test(self):
+		targetoutput = "24\n"
+		"54\n"
+		"86\n"
+		"2\n"
+		"2\n"
+		self.returncode, self.output, self.error = compile_and_run_case("literals.lepix")
+		self.assertEqual(self.returncode, 0)
+		self.assertEqual(self.output, targetoutput)
+		self.assertEqual(self.error, "")
+
+class auto_test(unittest.TestCase):
+	def setUp(self):
+		#print('In setUp()')
+		pass
+
+	def tearDown(self):
+		#print('In tearDown()')
+		pass
+
+	def test(self):
+		self.returncode, self.output, self.error = compile_and_run_case("auto.lepix")
+		self.assertEqual(self.returncode, 2)
+
+		
+
+class preprocess_test(unittest.TestCase):
+	def setUp(self):
+		#print('In setUp()')
+		pass
+
+	def tearDown(self):
+		#print('In tearDown()')
+		pass
+
+	def test(self):
+		self.returncode, self.output, self.error = compile_and_run_case("preprocess.lepix")
+		self.assertEqual(self.output, "45\n");
+		self.assertEqual(self.returncode, 0)
+		
 if __name__ == '__main__':
     unittest.main()

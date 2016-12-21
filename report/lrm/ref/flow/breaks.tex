@@ -1,0 +1,61 @@
+\section{break and continue}
+\label{sec:breaks}
+% The break keyword
+% for (...) {
+% 	break;
+% }
+% for (...) {
+% 	for (...) {
+% 		break 2;
+% 	}
+% }
+% break can jump out of multiple scopes, to avoid boolean flag nightmares or using
+% Immediately Invoked Function Expressions / Closures (IIFE/C)
+% scope for the variable "x" lasts until the closing bracket "}"
+Break and continue statements are used to exit a loop immediately, before the specified condition has been reached.
+
+\subsection{\texorpdfstring{\lstinline|break|}{break}}
+\begin{enumerate}
+	\item Break statements exit the block of a loop immediately.
+\begin{lstlisting}[numbers=none]
+while (...) {
+	statements_above
+	break; 
+	statements_below
+}
+\end{lstlisting}
+	\item In the example above, \lstinline|statements_above| would be executed only once. The \lstinline|statements_below| would never be executed.\footnote{Break statements are usually included inside of an if statement within the loop to immediately exit on a particular condition.}
+\end{enumerate}
+
+\subsection{\texorpdfstring{\lstinline|break N|}{break N}}
+\begin{enumerate}
+	\item Break statements can be used to exit nested loops by jumping out of multiple scopes by adding an integral constant after the \lstinline|break| keyword.
+	\item The example below will allow the user to break out of both for loops with only one break statement.\footnote{This could be considered a structured version of goto for loops and should be used with the programmer's utmost discretion.}
+\begin{lstlisting}[numbers=none]
+for (...) {
+	for (...) {
+		statements_above
+		if (condition)
+			break 2;
+		statements_below
+	}
+}
+\end{lstlisting}
+\end{enumerate} 
+
+
+\subsection{\texorpdfstring{\lstinline|continue|}{continue}}
+\begin{enumerate}
+	\item Continue statements jump to the end of the loop body and begin the next iteration.
+\begin{lstlisting}[numbers=none]
+for (...) {
+	statements_above
+	if (expressions...) {
+		continue;
+	}
+	statements_below
+}
+\end{lstlisting}
+	\item When a continue statement is executed, statements below the \lstinline|continue| keyword are not executed, and the loop post-action and condition are immediately re-evaluated.
+	\item In the example above, \lstinline|statements_above| would always be executed. The \lstinline|statements_below| would be executed on iterations where the if condition was false, since when the \lstinline|if| condition were true execution would jump back to the for loop's top.
+\end{enumerate}
