@@ -126,7 +126,6 @@ let llvm_lookup_variable lu name t =
 		| None -> raise( Errors.VariableLookupFailure( name, name ) )
 
 let dump_s_qualified_id lu qid t =
-	print_endline ( "===== " ^ ( Representation.string_of_qualified_id qid ) ^ " -- " ^ ( Representation.string_of_s_type_name t ) );
 	let lookup n =
 		try 
 			let v = StringMap.find n lu.lu_named_values in
@@ -155,7 +154,6 @@ let dump_s_qualified_id lu qid t =
 	in
 	let overload_lookup qid ft = 
 		let n = Semast.mangle_name qid ft in 
-		print_endline ( n ^ " -- " ^ ( Representation.string_of_s_type_name ft ) );
 		begin match lookup_func n with 
 			| Some(v) as s -> s
 			| None -> let n = Semast.string_of_qualified_id qid in 
