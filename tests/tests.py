@@ -37,7 +37,7 @@ def run_lli(*args):
 def compile_and_run(input, output = None):
 	if output is None:
 		output = output_file(os.path.basename(input)) + ".ll";
-	compiler_r, compiler_out, compiler_err = run_compiler("-l",  "-o", output, input)
+	compiler_r, compiler_out, compiler_err = run_compiler("-c",  "-o", output, input)
 	if compiler_r != 0:
 		return compiler_r, compiler_out, compiler_err
 	lli_r, lli_out, lli_err = run_lli(output)
@@ -57,10 +57,8 @@ class hello_world_test(unittest.TestCase):
 
 	def test(self):
 		self.returncode, self.output, self.error = compile_and_run_case("hello_world.lepix")
-		typed_output = int(self.output);
 		self.assertEqual(self.returncode, 0)
-		self.assertEqual(self.output, "24\n")
-		self.assertEqual(typed_output, 24)
+		self.assertEqual(self.output, "hello world\n")
 		self.assertEqual(self.error, "")
 
 class literals_test(unittest.TestCase):
@@ -73,13 +71,25 @@ class literals_test(unittest.TestCase):
 		pass
 
 	def test(self):
-		targetoutput = "24\n"
-		"54\n"
-		"86\n"
-		"2\n"
-		"2\n"
+		targetoutput = "24\n54\n86\n2\n2\n"
 		self.returncode, self.output, self.error = compile_and_run_case("literals.lepix")
 		self.assertEqual(self.returncode, 0)
+		self.assertEqual(self.output, targetoutput)
+		self.assertEqual(self.error, "")
+
+class overloads_test(unittest.TestCase):
+	def setUp(self):
+		#print('In setUp()')
+		pass
+
+	def tearDown(self):
+		#print('In tearDown()')
+		pass
+
+	def test(self):
+		targetoutput = "8\n2\n4\n8\n3.500000\n"
+		self.returncode, self.output, self.error = compile_and_run_case("overloads.lepix")
+		self.assertEqual(self.returncode, 2)
 		self.assertEqual(self.output, targetoutput)
 		self.assertEqual(self.error, "")
 

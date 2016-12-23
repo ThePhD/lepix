@@ -322,7 +322,7 @@ let rec string_of_s_expression = function
 	| Semast.SLiteral(l) -> string_of_s_literal l
 	| Semast.SQualifiedId(qid, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_qualified_id qid
 	| Semast.SMember(e, qid, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "." ^ string_of_qualified_id qid
-	| Semast.SCall(e, el, tn) -> string_of_s_expression e ^ "( " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " )"
+	| Semast.SCall(e, el, tn) -> "[[" ^ string_of_s_type_name tn ^ "]]" ^ string_of_s_expression e ^ "( " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " )"
 	| Semast.SIndex(e, el, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression e ^ "[ " ^ ( String.concat ", " ( List.map string_of_s_expression el ) ) ^ " ]"
 	| Semast.SBinaryOp(l, op, r, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_s_expression l ^ " " ^ string_of_binary_op op ^ " " ^ string_of_s_expression r
 	| Semast.SPrefixUnaryOp(op, r, tn) -> "[[ " ^ string_of_s_type_name tn ^ " ]] " ^ string_of_unary_op op ^ string_of_s_expression r

@@ -82,7 +82,7 @@ rule token = parse
 | "return" { RETURN }
 | "auto"   { AUTO }
 | "int" ((decimal_digit+)? as s) { let bits = if s = "" then 32 else ( int_of_string s ) in INT(bits) }
-| "float" ((decimal_digit+)? as s) { let bits = if s = "" then 32 else ( int_of_string s ) in FLOAT(bits) }
+| "float" ((decimal_digit+)? as s) { let bits = if s = "" then 64 else ( int_of_string s ) in FLOAT(bits) }
 | "bool"   { BOOL }
 | "string" { STRING }
 | "void"   { VOID }

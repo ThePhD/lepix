@@ -50,7 +50,7 @@ let no_qualifiers = (false, false)
 let void_t = BuiltinType(Void, no_qualifiers)
 let string_t = BuiltinType(String, no_qualifiers)
 let int32_t = BuiltinType(Int(32), no_qualifiers)
-let float32_t = BuiltinType(Float(32), no_qualifiers)
+let float64_t = BuiltinType(Float(64), no_qualifiers)
 
 type binding = id * type_name
 

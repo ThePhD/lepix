@@ -8,7 +8,7 @@ namespace n.s {
 
 namespace n {
 	namespace s {
-		var stuff : float = "bark!";
+		var stuff : float = 3.5;
 	}
 }
 
@@ -28,4 +28,5 @@ fun main () : int {
 	lib.print_n(s(2));
 	lib.print_n(n.s.global);
 	lib.print_n(n.s.stuff);
+	return svalue;
 }

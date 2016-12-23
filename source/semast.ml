@@ -47,7 +47,7 @@ let string_t = SBuiltinType(Ast.String, Ast.no_qualifiers)
 let bool_t = SBuiltinType(Ast.Bool, Ast.no_qualifiers)
 let int32_t = SBuiltinType(Ast.Int(32), Ast.no_qualifiers)
 let int64_t = SBuiltinType(Ast.Int(64), Ast.no_qualifiers)
-let float32_t = SBuiltinType(Ast.Float(32), Ast.no_qualifiers)
+let float64_t = SBuiltinType(Ast.Float(64), Ast.no_qualifiers)
 
 type s_binding = s_id * s_type_name
 
@@ -200,7 +200,7 @@ let type_name_of_s_literal = function
 	| SBoolLit(_) -> bool_t
 	| SIntLit(_) -> int32_t
 	| SInt64Lit(_) -> int64_t
-	| SFloatLit(_) -> float32_t
+	| SFloatLit(_) -> float64_t
 	| SStringLit(_) -> string_t
 
 let rec type_name_of_s_expression = function

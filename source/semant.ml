@@ -113,10 +113,10 @@ let import_builtin_module symbols = function
 		let c_bindings = [ 
 			("lib.print", Semast.SFunction( Semast.void_t, [Semast.int32_t], Semast.no_qualifiers ) );
 			("lib.print", Semast.SFunction( Semast.void_t, [Semast.string_t], Semast.no_qualifiers ) );
-			("lib.print", Semast.SFunction( Semast.void_t, [Semast.float32_t], Semast.no_qualifiers ) );
+			("lib.print", Semast.SFunction( Semast.void_t, [Semast.float64_t], Semast.no_qualifiers ) );
 			("lib.print_n", Semast.SFunction( Semast.void_t, [Semast.int32_t], Semast.no_qualifiers ) );
 			("lib.print_n", Semast.SFunction( Semast.void_t, [Semast.string_t], Semast.no_qualifiers ) );
-			("lib.print_n", Semast.SFunction( Semast.void_t, [Semast.float32_t], Semast.no_qualifiers ) );
+			("lib.print_n", Semast.SFunction( Semast.void_t, [Semast.float64_t], Semast.no_qualifiers ) );
 		]
 		in
 		let symbols = List.fold_left accumulate_string_type_bindings symbols c_bindings in
@@ -134,7 +134,7 @@ let type_name_of_ast_literal attrs envl astlit =
 		| Ast.BoolLit(_) -> Ast.BuiltinType( Ast.Bool, Ast.no_qualifiers )
 		| Ast.IntLit(_) -> Ast.BuiltinType( Ast.Int(32), Ast.no_qualifiers )
 		| Ast.Int64Lit(_) -> Ast.BuiltinType( Ast.Int(64), Ast.no_qualifiers )
-		| Ast.FloatLit(_) -> Ast.BuiltinType( Ast.Float(32), Ast.no_qualifiers )
+		| Ast.FloatLit(_) -> Ast.BuiltinType( Ast.Float(64), Ast.no_qualifiers )
 		| Ast.StringLit(_) -> Ast.BuiltinType( Ast.String, Ast.no_qualifiers )
 	in
 	type_name_of_ast_type_name t
@@ -162,7 +162,9 @@ let overload_resolution args = function
 
 let check_function_overloads args overloadlist =
 	begin try 
-		List.find ( overload_resolution args ) overloadlist
+		let ft = List.find ( overload_resolution args ) overloadlist
+		in
+		( ft, Semast.return_type_name ft )
 	with _ ->
 		let argslist = "( " ^ ( String.concat "," ( List.map Representation.string_of_s_type_name args ) ) ^ " )" in
 		raise(Errors.BadFunctionCall("could not resolve the specific overload for this set of " ^ ( Representation.string_of_s_type_name ( Semast.SOverloads(overloadlist) ) ) ^ " using " ^ argslist ))
@@ -183,8 +185,8 @@ let rec type_name_of_ast_expression attrs envl astexpr =
 					rt
 				| Semast.SOverloads(fl) ->
 					let sargs = List.map ( type_name_of_ast_expression attrs envl ) args in
-					let r = check_function_overloads sargs fl in
-					Semast.return_type_name r
+					let (ft, r) = check_function_overloads sargs fl in
+					r
 				| _ -> raise(Errors.TypeMismatch("expected a function type, but received something else."))
 			end
 		| Ast.Noop -> Semast.void_t
@@ -259,14 +261,14 @@ let check_qualified_identifier attrs envl sl t =
 	(attrs, envl, Semast.SQualifiedId(sl, t))
 
 let check_function_call attrs envl target args =
-	let t = match Semast.type_name_of_s_expression target with 
-		| Semast.SFunction(tn, tnl, tq) as f -> f
+	let (t, rt) = match Semast.type_name_of_s_expression target with 
+		| Semast.SFunction(tn, tnl, tq) as f -> f, tn
 		| Semast.SOverloads(fl) ->
 			let args_t = ( List.map Semast.type_name_of_s_expression args ) in 
 			check_function_overloads args_t fl
 		| _ -> raise(Errors.BadFunctionCall("cannot invoke an expression which does not result in a function type of some sort"))
 	in
-	(attrs, envl, Semast.SCall(( Semast.coerce_type_name_of_s_expression t target ), args, Semast.return_type_name t ))
+	(attrs, envl, Semast.SCall(( Semast.coerce_type_name_of_s_expression t target ), args, rt ))
 
 let generate_s_binding prefix attrs envl = function
 	| (name, tn) -> (attrs, envl, (Semast.string_of_qualified_id ( prefix @ [name] ), type_name_of_ast_type_name tn))
@@ -376,7 +378,8 @@ let check_returns name ssl rt =
 	in
 	let returns = List.fold_left acc [] ssl in
 	let returnlength = List.length returns in
-	if name = "main" then
+	if name = "main" then begin
+		let sret0 = Semast.SReturn(Semast.SLiteral(Semast.SIntLit(0))) in
 		let mainpred = function
 			| Semast.SBuiltinType(Ast.Auto, _) -> 
 				()
@@ -386,19 +389,19 @@ let check_returns name ssl rt =
 			| _ -> 
 				raise(Errors.InvalidMainSignature("You can only return an int (int32) from main"))
 		in
+		let ssl = if returnlength < 1 then begin ssl @ [sret0] end else ssl
+		in
 		let ssl = match rt with
 			| Semast.SBuiltinType(Ast.Int(32), (_, r)) -> 
 				if r then raise(Errors.InvalidMainSignature("Cannot return a reference to and integer"));
-				if returnlength < 1 then
-					ssl @ [Semast.SReturn(Semast.SLiteral(Semast.SIntLit(0)))]
-				else
-					let _ = List.iter mainpred returns in
-					ssl
+				let _ = List.iter mainpred returns in
+				ssl
 			| _ -> let _ = List.iter mainpred returns in
 				ssl
 		in
 		(ssl, Semast.int32_t)
-	else
+	end 
+	else begin
 		let generalpred rt r = match rt with 
 			| Semast.SBuiltinType(Ast.Auto, _) -> r
 			| _ -> let r = Semast.unqualify r in
@@ -425,6 +428,7 @@ let check_returns name ssl rt =
 					(ssl, rt)
 		in
 		(ssl, rt)
+	end
 
 let generate_s_function_definition prefix attrs envl astfdef =
 	let acc_ast_statements (attrs, envl, ssl) s =
@@ -473,7 +477,7 @@ let generate_s_basic_definition prefix attrs envl = function
 
 let define_libraries attrs env =
 	let fi = Semast.SFunction(Semast.void_t, [Semast.int32_t], Semast.no_qualifiers) in
-	let ff = Semast.SFunction(Semast.void_t, [Semast.float32_t], Semast.no_qualifiers) in
+	let ff = Semast.SFunction(Semast.void_t, [Semast.float64_t], Semast.no_qualifiers) in
 	let fs = Semast.SFunction(Semast.void_t, [Semast.string_t], Semast.no_qualifiers) in
 	let fo = Semast.SOverloads([fi;ff;fs]) in
 	let lib_printn_defint = {
@@ -492,11 +496,11 @@ let define_libraries attrs env =
 	}
 	and lib_printn_deffloat = {
 		Semast.func_name = ["lib"; "print_n"];
-		Semast.func_parameters = Semast.SParameters([("i", Semast.float32_t)]);
+		Semast.func_parameters = Semast.SParameters([("i", Semast.float64_t)]);
 		Semast.func_return_type = Semast.void_t;
 		Semast.func_body = [
 			Semast.SGeneral(Semast.SExpressionStatement(
-				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SQualifiedId(["i"], Semast.float32_t)], Semast.void_t)
+				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SQualifiedId(["i"], Semast.float64_t)], Semast.void_t)
 			));
 			Semast.SGeneral(Semast.SExpressionStatement(
 				Semast.SCall(Semast.SQualifiedId(["lib"; "print"], fo), [Semast.SLiteral(Semast.SStringLit("\n"))], Semast.void_t)
