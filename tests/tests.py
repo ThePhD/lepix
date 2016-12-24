@@ -71,7 +71,7 @@ class literals_test(unittest.TestCase):
 		pass
 
 	def test(self):
-		targetoutput = "24\n54\n86\n2\n2\n"
+		targetoutput = "24\n47\n47\n2\n2\n"
 		self.returncode, self.output, self.error = compile_and_run_case("literals.lepix")
 		self.assertEqual(self.returncode, 0)
 		self.assertEqual(self.output, targetoutput)

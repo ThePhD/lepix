@@ -61,6 +61,11 @@ let action_to_int = function
 
 let entry_point_name = "main"
 
+(* Core options *)
+
+let default_integral_bit_width = 32
+let default_floating_bit_width = 64
+
 (* Error message helpers *)
 
 let line_of_source src token_info =

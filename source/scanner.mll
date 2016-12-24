@@ -81,8 +81,8 @@ rule token = parse
 | "to"     { TO }
 | "return" { RETURN }
 | "auto"   { AUTO }
-| "int" ((decimal_digit+)? as s) { let bits = if s = "" then 32 else ( int_of_string s ) in INT(bits) }
-| "float" ((decimal_digit+)? as s) { let bits = if s = "" then 64 else ( int_of_string s ) in FLOAT(bits) }
+| "int" ((decimal_digit+)? as s) { let bits = if s = "" then Base.default_integral_bit_width else ( int_of_string s ) in INT(bits) }
+| "float" ((decimal_digit+)? as s) { let bits = if s = "" then Base.default_floating_bit_width else ( int_of_string s ) in FLOAT(bits) }
 | "bool"   { BOOL }
 | "string" { STRING }
 | "void"   { VOID }
@@ -107,25 +107,25 @@ rule token = parse
 | "0x" | "0X" { hex_int_literal lexbuf }
 | "0b" | "0B" { binary_int_literal lexbuf }
 | ( "0n" | "0N" ) ( decimal_digit+ as b ) ("n" | "N") { n_int_literal (int_of_string b) lexbuf }
-| '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as lxm { FLOATLITERAL(float_of_string lxm) }
-| ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as lxm { FLOATLITERAL(float_of_string lxm) } 
-| ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
+| '.' ['0'-'9']+ ('e' ('+'|'-')? ['0'-'9']+)? as s { FLOATLITERAL(Polyfill.num_of_string s ) }
+| ['0'-'9']+ ( '.' ['0'-'9']* ('e' ('+'|'-')? ['0'-'9']+)? | ('e' ('+'|'-')? ['0'-'9']+)?) as s { try FLOATLITERAL(Polyfill.num_of_string_base 10 s) with _ -> raise (Errors.BadNumericLiteral(s, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) } 
+| ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as s { ID(s) }
 | eof { EOF }
 | _ as c { raise (Errors.UnknownCharacter(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and octal_int_literal = parse
-| octal_digit+ as s { INTLITERAL( Polyfill.num_of_string_base 8 s ) }
+| octal_digit+ as s { try INTLITERAL( Polyfill.num_of_string_base 8 s ) with _ -> raise (Errors.BadNumericLiteral(s, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 | _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and hex_int_literal = parse
-| hex_digit+ as s { INTLITERAL( Polyfill.num_of_string_base 16 s ) }
+| hex_digit+ as s { try INTLITERAL( Polyfill.num_of_string_base 16 s ) with _ -> raise (Errors.BadNumericLiteral(s, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 | _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 
 and binary_int_literal = parse
-| binary_digit+ as s { INTLITERAL( Polyfill.num_of_string_base 2 s ) }
+| binary_digit+ as s { try INTLITERAL( Polyfill.num_of_string_base 2 s ) with _ -> raise (Errors.BadNumericLiteral(s, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 | _ as c { raise (Errors.BadNumericLiteral(String.make 1 c, ( Lexing.lexeme_start_p lexbuf, Lexing.lexeme_end_p lexbuf ) )) }
 
 

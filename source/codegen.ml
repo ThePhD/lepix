@@ -187,18 +187,15 @@ let dump_s_qualified_id lu qid t =
 
 let dump_s_literal lu lit = 
 	let f64_t   = Llvm.double_type   lu.lu_context
-	and i32_t   = Llvm.i32_type     lu.lu_context
-	and i64_t   = Llvm.i64_type     lu.lu_context
 	and bool_t  = Llvm.i1_type      lu.lu_context
 	in
 	let v = match lit with
 		| Semast.SBoolLit(value) -> Llvm.const_int bool_t (if value then 1 else 0) (* bool_t is still an integer, must convert *)
-		| Semast.SIntLit(value) -> Llvm.const_int i32_t value
-		| Semast.SInt64Lit(value) -> Llvm.const_of_int64 i64_t value true (* boolean is for signedness or not: it is signed *)
+		| Semast.SIntLit(value, b) -> Llvm.const_of_int64 (Llvm.integer_type lu.lu_context b) value true (* bool for signedness *)
 		| Semast.SStringLit(value) -> 
 			let str = Llvm.build_global_stringptr value "str_lit" lu.lu_builder in
 			str
-		| Semast.SFloatLit(value) -> Llvm.const_float f64_t value
+		| Semast.SFloatLit(value, b) -> Llvm.const_float f64_t value
 	in
 	(lu, v)
 

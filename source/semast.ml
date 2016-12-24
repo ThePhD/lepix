@@ -53,9 +53,8 @@ type s_binding = s_id * s_type_name
 
 type s_literal = 
 	| SBoolLit of bool
-	| SIntLit of int
-	| SInt64Lit of int64
-	| SFloatLit of float
+	| SIntLit of int64 * int
+	| SFloatLit of float * int
 	| SStringLit of string
 
 type s_expression = 
@@ -198,9 +197,8 @@ let parameter_bindings = function
 
 let type_name_of_s_literal = function
 	| SBoolLit(_) -> bool_t
-	| SIntLit(_) -> int32_t
-	| SInt64Lit(_) -> int64_t
-	| SFloatLit(_) -> float64_t
+	| SIntLit(_, b) -> SBuiltinType( Ast.Int(b), no_qualifiers )
+	| SFloatLit(_,b ) -> SBuiltinType( Ast.Float(b), no_qualifiers )
 	| SStringLit(_) -> string_t
 
 let rec type_name_of_s_expression = function

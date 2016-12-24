@@ -67,29 +67,54 @@ let int_of_string_base b s =
 
 (* Num *)
 
-let num_of_string_base b s =
-	let len = (String.length s)
+exception BadBase of string
+exception DigitGreaterThanBase of string
+
+let num_of_string_base_part b s =
+	if b > 36 || b < 1 then raise(BadBase "num_of_string_base: base cannot be greater than 36 or less than 1") else
+	let n0 = Num.num_of_int 0 in
+	let len = (String.length s) in
+	if len < 1 then n0 else
+	let (mid, starter) = try ( ( String.index s '.' ), 1 ) with _ -> (len - 1, 0)
 	and nb = Num.num_of_int b
-	and n0 = Num.num_of_int 0 
 	in
-	let acc n i = let c = s.[i] in
-		let v = if c >= '0' || c <= '9' then 
-				int_of_char c - int_of_char '0'
+	let acc (n, skipval) i = let c = s.[i] in
+		if c = '.' then (n, skipval - 1) else
+		let v = if c >= '0' && c <= '9' then 
+				( int_of_char c ) - ( int_of_char '0' )
 			else
-				if c >= 'A' || c <= 'Z' then
-					int_of_char c - int_of_char 'A' + 10
+				if c >= 'A' && c <= 'Z' then
+					( int_of_char c ) - ( int_of_char 'A' ) + 10
 				else 
-					if c >= 'a' || c <= 'z' then 
-						int_of_char c - int_of_char '0' + 10
+					if c >= 'a' && c <= 'z' then 
+						int_of_char c - ( int_of_char 'a' ) + 10
 					else 0
-		and place = len - 1 - i
+		and place = mid - i - skipval
 		in
+		if v > b then raise(DigitGreaterThanBase ("num_of_string_base: digit '" ^ (String.make 1 c) ^ "' (" ^ (string_of_int v) ^ ") is higher than what base '" ^ (string_of_int b) ^ "' can handle")) else
 		let nv = Num.num_of_int v
 		and nplace = Num.num_of_int place 
 		in
-		Num.add_num n ( Num.mult_num nv ( Num.power_num nb nplace ) ) 
+		(Num.add_num n ( Num.mult_num nv ( Num.power_num nb nplace ) ), skipval)
 	in
-	foldi acc n0 0 len
+	let (n, _) = foldi acc (n0, starter) 0 len in
+	n
+
+let num_of_string_base b s =
+	num_of_string_base_part b s
+
+let num_of_string s =
+	let slen = String.length s in
+	try
+		let eidx = String.index s 'e' in
+		if eidx < 1 then raise(Not_found);
+		let eidxp1 = ( eidx + 1 ) in
+		let nval = num_of_string_base_part 10 (String.sub s 0 eidx)
+		and eval = if eidxp1 < slen then num_of_string_base_part 10 (String.sub s eidxp1 (slen - eidxp1)) else ( Num.num_of_int 0 )
+		in
+		Num.mult_num nval ( Num.power_num (Num.num_of_int 10) eval )
+	with 
+		| Not_found -> num_of_string_base_part 10 s
 
 (* Char *)
 let is_whitespace = function

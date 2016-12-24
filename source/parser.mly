@@ -48,7 +48,7 @@ menhir, as we have developed against both for testing purposes. *)
 %token <string> ID
 %token <string> STRINGLITERAL
 %token <Num.num> INTLITERAL
-%token <float> FLOATLITERAL
+%token <Num.num> FLOATLITERAL
 %token EOF
 
 %right ASSIGN
@@ -155,18 +155,18 @@ op_expression:
 
 value_expression:
 | INTLITERAL { let v = match $1 with
-	| Num.Int(i) -> Ast.IntLit(i)
+	| Num.Int(i) -> Ast.IntLit( (Int64.of_int i ), Base.default_integral_bit_width)
 	| Num.Big_int(bi) -> 
 		begin try
-			Ast.IntLit( Big_int.int_of_big_int bi )
+			Ast.IntLit( Int64.of_int( Big_int.int_of_big_int bi ), 32 )
 		with
-			_ -> Ast.Int64Lit( Big_int.int64_of_big_int bi )
+			_ -> Ast.IntLit( Big_int.int64_of_big_int bi, 64 )
 		end
-	| n -> Ast.FloatLit( Num.float_of_num n )
+	| n -> Ast.FloatLit( Num.float_of_num n, Base.default_floating_bit_width )
 	in
 	Ast.Literal(v)
 }
-| FLOATLITERAL { Ast.Literal(Ast.FloatLit( $1 )) }
+| FLOATLITERAL { Ast.Literal(Ast.FloatLit( Num.float_of_num( $1 ), Base.default_floating_bit_width )) }
 | STRINGLITERAL { Ast.Literal(Ast.StringLit($1)) }
 | TRUE { Ast.Literal(Ast.BoolLit(true)) }
 | FALSE { Ast.Literal(Ast.BoolLit(false)) }
@@ -261,7 +261,7 @@ statement:
 | BREAK INTLITERAL SEMI { Ast.Break( Num.int_of_num $2 ) }
 | CONTINUE SEMI { Ast.Continue }
 | PARALLEL LPAREN parallel_binding_list RPAREN LBRACE statement_list RBRACE  { Ast.ParallelBlock($3, $6) }
-| PARALLEL LBRACE statement_list RBRACE  { Ast.ParallelBlock([Ast.ThreadCount(Ast.Literal(Ast.IntLit(-1))); Ast.Invocations(Ast.Literal(Ast.IntLit(-1)))], $3) }
+| PARALLEL LBRACE statement_list RBRACE  { Ast.ParallelBlock([Ast.ThreadCount(Ast.Literal(Ast.IntLit(Int64.of_int(-1), Base.default_integral_bit_width))); Ast.Invocations(Ast.Literal(Ast.IntLit(Int64.of_int(-1), Base.default_integral_bit_width)))], $3) }
 | ATOMIC LBRACE statement_list RBRACE { Ast.AtomicBlock($3) }
 
 function_definition:

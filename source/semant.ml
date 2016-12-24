@@ -132,9 +132,8 @@ let rec type_name_of_ast_type_name = function
 let type_name_of_ast_literal attrs envl astlit = 
 	let t = match astlit with
 		| Ast.BoolLit(_) -> Ast.BuiltinType( Ast.Bool, Ast.no_qualifiers )
-		| Ast.IntLit(_) -> Ast.BuiltinType( Ast.Int(32), Ast.no_qualifiers )
-		| Ast.Int64Lit(_) -> Ast.BuiltinType( Ast.Int(64), Ast.no_qualifiers )
-		| Ast.FloatLit(_) -> Ast.BuiltinType( Ast.Float(64), Ast.no_qualifiers )
+		| Ast.IntLit(_, b) -> Ast.BuiltinType( Ast.Int(b), Ast.no_qualifiers )
+		| Ast.FloatLit(_, b) -> Ast.BuiltinType( Ast.Float(b), Ast.no_qualifiers )
 		| Ast.StringLit(_) -> Ast.BuiltinType( Ast.String, Ast.no_qualifiers )
 	in
 	type_name_of_ast_type_name t
@@ -290,9 +289,8 @@ let gather_ast_locals attrs envl sl pl =
 
 let generate_s_literal attrs envl = function
 	| Ast.BoolLit(b) -> (attrs, envl, Semast.SBoolLit(b))
-	| Ast.IntLit(i) -> (attrs, envl, Semast.SIntLit(i))
-	| Ast.Int64Lit(i) -> (attrs, envl, Semast.SInt64Lit(i))
-	| Ast.FloatLit(f) -> (attrs, envl, Semast.SFloatLit(f))
+	| Ast.IntLit(i, b) -> (attrs, envl, Semast.SIntLit(i, b))
+	| Ast.FloatLit(f, b) -> (attrs, envl, Semast.SFloatLit(f, b))
 	| Ast.StringLit(s) -> (attrs, envl, Semast.SStringLit(s))
 
 let rec generate_s_expression attrs envl astexpr = 
@@ -379,7 +377,7 @@ let check_returns name ssl rt =
 	let returns = List.fold_left acc [] ssl in
 	let returnlength = List.length returns in
 	if name = "main" then begin
-		let sret0 = Semast.SReturn(Semast.SLiteral(Semast.SIntLit(0))) in
+		let sret0 = Semast.SReturn(Semast.SLiteral(Semast.SIntLit(Int64.zero, 32))) in
 		let mainpred = function
 			| Semast.SBuiltinType(Ast.Auto, _) -> 
 				()
@@ -387,7 +385,7 @@ let check_returns name ssl rt =
 				if r then raise(Errors.InvalidMainSignature("Cannot return a reference from main"));
 				()
 			| _ -> 
-				raise(Errors.InvalidMainSignature("You can only return an int (int32) from main"))
+				raise(Errors.InvalidMainSignature("You can only return an int from main"))
 		in
 		let ssl = if returnlength < 1 then begin ssl @ [sret0] end else ssl
 		in

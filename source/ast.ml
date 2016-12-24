@@ -49,7 +49,7 @@ let no_qualifiers = (false, false)
 
 let void_t = BuiltinType(Void, no_qualifiers)
 let string_t = BuiltinType(String, no_qualifiers)
-let int32_t = BuiltinType(Int(32), no_qualifiers)
+let int32_t = BuiltinType(Int(Base.default_integral_bit_width), no_qualifiers)
 let float64_t = BuiltinType(Float(64), no_qualifiers)
 
 type binding = id * type_name
@@ -77,9 +77,8 @@ type postfix_op =
 
 type literal =
 	| BoolLit of bool
-	| IntLit of int
-	| Int64Lit of int64
-	| FloatLit of float
+	| IntLit of int64 * int
+	| FloatLit of float * int
 	| StringLit of string
 
 type expression =

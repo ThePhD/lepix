@@ -98,7 +98,7 @@ let parser_token_to_string = function
 	| Parser.IMPORT -> "IMPORT"
 	| Parser.STRINGLITERAL(s) -> "STRINGLITERAL(" ^ s ^ ")"
 	| Parser.INTLITERAL(i) -> "INTLITERAL(" ^ Num.string_of_num i ^ ")"
-	| Parser.FLOATLITERAL(f) -> "FLOATLITERAL(" ^ string_of_float f ^ ")"
+	| Parser.FLOATLITERAL(f) -> "FLOATLITERAL(" ^ Num.string_of_num f ^ ")"
 	| Parser.ID(s) -> "ID(" ^ s ^ ")"
 	| Parser.EOF -> "EOF"
 
@@ -166,12 +166,11 @@ let string_of_unary_op = function
 	| Ast.PreIncrement -> "++"
 
 let rec string_of_expression = function
-	| Ast.Literal(Ast.IntLit(l)) -> string_of_int l
-	| Ast.Literal(Ast.Int64Lit(l)) -> Int64.to_string l
+	| Ast.Literal(Ast.IntLit(l, _)) -> Int64.to_string l
 	| Ast.Literal(Ast.BoolLit(true)) -> "true"
 	| Ast.Literal(Ast.BoolLit(false)) -> "false"
 	| Ast.Literal(Ast.StringLit(s)) -> "\"" ^ s ^ "\""
-	| Ast.Literal(Ast.FloatLit(f)) -> string_of_float f
+	| Ast.Literal(Ast.FloatLit(f, _)) -> string_of_float f
 	| Ast.QualifiedId(qid) -> string_of_qualified_id qid
 	| Ast.BinaryOp(e1, o, e2) ->
 		string_of_expression e1 ^ " " ^ string_of_binary_op o ^ " " ^ string_of_expression e2
@@ -305,9 +304,8 @@ let string_of_s_locals = function
 
 let string_of_s_literal = function
 	| Semast.SBoolLit(b) -> string_of_bool b
-	| Semast.SIntLit(i) -> string_of_int i
-	| Semast.SInt64Lit(i) -> Int64.to_string i
-	| Semast.SFloatLit(f) -> string_of_float f
+	| Semast.SIntLit(i, _) -> Int64.to_string i
+	| Semast.SFloatLit(f, _) -> string_of_float f
 	| Semast.SStringLit(s) -> "\"" ^ s ^ "\""
 
 let rec string_of_s_expression = function 
