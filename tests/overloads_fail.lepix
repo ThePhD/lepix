@@ -1,0 +1,15 @@
+fun s () : int {
+	return 2;
+}
+
+fun s () : int {
+	return 2;
+}
+
+fun s (x : int) : int {
+	return x + 2;
+}
+
+fun main () : int {
+	return 0;
+}

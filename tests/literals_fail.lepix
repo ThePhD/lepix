@@ -1,0 +1,6 @@
+import lib 
+
+fun main () : int {
+	var x : int32 = 0x2FG;
+	lib.print_n(x);
+}

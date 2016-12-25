@@ -214,9 +214,13 @@ let rec type_name_of_s_expression = function
 	| SAssignment(_, _, t) -> t
 	| SNoop -> void_t
 
-let rec return_type_name = function
+let return_type_name = function
 	| SFunction(rt,_, _) -> rt
 	| t -> t 
+
+let args_type_name = function
+	| SFunction(_, args, _) -> args
+	| t -> [] 
 
 let mangled_name_of_type_qualifier = function
 	| (_, referencess) -> if referencess then "p!" else "!"

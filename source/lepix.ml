@@ -213,9 +213,18 @@ let _ =
 
 			(* Semantic Analyzer and Codegen Errors *)
 			(* Semantic Errors *)
-			(* TODO: positional information should be tracked through the AST as well... *)
+			(* TODO: positional information should be tracked through the AST and SemAST, 
+			all the way to codegen, as well... *)
 			| Errors.BadFunctionCall(s) ->
 				let msg = "Bad Function Call error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.FunctionAlreadyExists(s) ->
+				let msg = "Function Already Exists error: " ^ s
+				in
+				prerr_endline msg
+			| Errors.VariableAlreadyExists(s) ->
+				let msg = "Variable Already Exists error: " ^ s
 				in
 				prerr_endline msg
 			| Errors.TypeMismatch(s) ->

@@ -97,15 +97,35 @@ let env_lookup_id name envl =
 	lookup_id name mapl
 
 let accumulate_string_type_bindings syms (n, qt) =
+	let rec list_cmp v1 v2 = match v1, v2 with
+		| hl::tll, hr::tlr -> hl = hr && list_cmp tll tlr
+		| [], [] -> true
+		| _, [] -> false
+		| [], _ -> false
+	in
 	try
+		let check_f l =
+			let qt_argst = Semast.args_type_name qt in
+			let pred t =
+				let argst = Semast.args_type_name t in 
+				( List.length argst ) = ( List.length qt_argst )
+				&& ( list_cmp argst qt_argst )
+			in
+			begin try 
+				let _ = List.find pred l in
+				raise(Errors.FunctionAlreadyExists("an id with name " ^ n ^ " and type " ^ ( Representation.string_of_s_type_name qt ) ^ " is already present"))
+			with 
+				Not_found -> Semast.SOverloads( qt :: l ) 
+			end
+		in
 		let v = StringMap.find n syms in 
 		let vt = match v with
-			| Semast.SOverloads(tl) -> Semast.SOverloads( qt :: tl )
-			| Semast.SFunction(_,_,_) as t -> Semast.SOverloads( qt :: [t] )
+			| Semast.SOverloads(tl) -> check_f tl
+			| Semast.SFunction(_,_,_) as t -> check_f [t]
 			| _ -> raise(Not_found)
 		in
 		StringMap.add n vt syms
-	with _ ->
+	with Not_found ->
 		StringMap.add n qt syms
 
 let import_builtin_module symbols = function
@@ -119,6 +139,7 @@ let import_builtin_module symbols = function
 			("lib.print_n", Semast.SFunction( Semast.void_t, [Semast.float64_t], Semast.no_qualifiers ) );
 		]
 		in
+		print_endline "Here!";
 		let symbols = List.fold_left accumulate_string_type_bindings symbols c_bindings in
 		(symbols)
 	end
@@ -227,6 +248,7 @@ let generate_global_env = function
 				let qualname = prefix ^ Semast.string_of_qualified_id qid in
 				let qt = Ast.Function(rt, argst, Ast.no_qualifiers) in
 				let sqt = ( type_name_of_ast_type_name qt ) in
+				print_endline "here";
 				let nsymbols = accumulate_string_type_bindings symbols (qualname, sqt)
 				and ndefs = accumulate_string_type_bindings defs (qualname, sqt)
 				in
@@ -531,7 +553,7 @@ let define_libraries attrs env =
 			let n = (Semast.string_of_qualified_id fdef.Semast.func_name )
 			and qt = ( Semast.type_name_of_s_function_definition fdef )
 			in
-			accumulate_string_type_bindings defs (n, qt)
+			if ( StringMap.mem n defs ) then defs else accumulate_string_type_bindings defs (n, qt)
 		| Semast.SBasic(Semast.SVariableDefinition(Semast.SVarBinding((n, tn), _))) ->
 			( StringMap.add n tn defs )
 	in
@@ -603,10 +625,13 @@ let check astprogram =
 	let ( attrs, env ) = generate_global_env astprogram in
 	(* Pass 2: Generate the actual Semantic Tree based on what
 	is inside the AST program... *)
+	print_endline "Pass 2";
 	let sprog = generate_semantic attrs env astprogram in
 	(* Pass 3: Update any symbols that were resolved during 
 	bottom-up type derivation... *)
+	print_endline "Pass 3";
 	let Semast.SProgram(attrs, env, _) = modify_symbols sprog in
 	(* Pass 4: Finalize everything with new information *)
+	print_endline "Pass 4";
 	let sprog = generate_semantic attrs env astprogram in
 	sprog

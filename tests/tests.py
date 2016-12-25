@@ -77,6 +77,20 @@ class literals_test(unittest.TestCase):
 		self.assertEqual(self.output, targetoutput)
 		self.assertEqual(self.error, "")
 
+class literals_fail_test(unittest.TestCase):
+	def setUp(self):
+		#print('In setUp()')
+		pass
+
+	def tearDown(self):
+		#print('In tearDown()')
+		pass
+
+	def test(self):
+		self.returncode, self.output, self.error = compile_and_run_case("literals_fail.lepix")
+		self.assertNotEqual(self.returncode, 0)
+		self.assertNotEqual(self.error, "")
+
 class overloads_test(unittest.TestCase):
 	def setUp(self):
 		#print('In setUp()')
@@ -92,6 +106,20 @@ class overloads_test(unittest.TestCase):
 		self.assertEqual(self.returncode, 2)
 		self.assertEqual(self.output, targetoutput)
 		self.assertEqual(self.error, "")
+
+class overloads_fail_test(unittest.TestCase):
+	def setUp(self):
+		#print('In setUp()')
+		pass
+
+	def tearDown(self):
+		#print('In tearDown()')
+		pass
+
+	def test(self):
+		self.returncode, self.output, self.error = compile_and_run_case("overloads_fail.lepix")
+		self.assertNotEqual(self.returncode, 0)
+		self.assertNotEqual(self.error, "")
 
 class auto_test(unittest.TestCase):
 	def setUp(self):

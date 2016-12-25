@@ -251,6 +251,9 @@ let rec dump_s_expression lu e =
 		let (lu, rv) = dump_s_expression lu r in
 		let opf = match bop with
 			| Ast.Add -> Llvm.build_add
+			| Ast.Sub -> Llvm.build_sub
+			| Ast.Mult -> Llvm.build_mul
+			| Ast.Div -> Llvm.build_sdiv
 			| _ -> raise(Errors.Unsupported("This binary operation type is not supported for code generation"))
 		in
 		let v = opf lv rv "tmp.bop" lu.lu_builder in
