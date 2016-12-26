@@ -1,0 +1,38 @@
+\chapter{Post-Mortem and Lessons Learned}
+
+This is going to be the most in-depth section because it is here where I can explain primarily why I think the group did not meet its target and why I felt like splitting off would be more worth it than staying with the team. While I individually put in a lot of effort and achieved some very good technical goals, the divide with my group near the end was still a problem and resulted in a lot of codegen for constructs successfully put into the parser and AST to not be implemented.
+
+\section{Talk to your Teammates, Early}
+When I experienced problems with my teammates not hitting deadlines, I at first was confused. I did not know why they were not delivering the portions of code they said they would deliver on the deadlines they imposed on themselves, and at certain points when they did deliver I had to constantly revise what they had done. Here are some examples of how I did not optimally handle bad situations:
+
+For one, the Parser and Lexer for this \lepix{} implementation look nothing like the one committed and declared to our advisor as "complete". It did not parse our language and there were obvious holes in its syntax: for loops variable initialization did not work, initializer lists for control flow did not work, parallel block initializers were not considered, the parallel for syntax we changed for a parallel block were not changed, namespaces were not recognized and qualified identifiers did not exist.
+
+Rather than tell my teammates what was wrong and what needed to be fix and divide the work, I instead implemented all of the things mentioned above, committed them, and then moved on. I felt that if my teammates would not run the code against the example \lepix{} code we had to see if it works properly, that they were not doing the bare minimum to even know if what they wrote was correct or good. I had to learn everything, put it all together under pressure, and then fix it in time for the next Milestone.
+
+\section{Manage Expectations, Know What You Want}
+One of the next major issues is that team members had differing expectations about the quality of work. In particular, I was expecting a very thorough, consistent applied effort from my team and not things done a few weeks after the Professor, TA, and others had urged us needed to be done long before we had begun to look at it.
+
+On the good side, the Language Reference Manual was done on-time with participation from everyone. It was the one part of the project where -- even if we were working up to the deadline -- everyone participated, took a section, made their work clear and actually did their work during the times they said they would.
+
+Unfortunately, this flopped for actual implementation. One of our group members held onto the Semantic AST for nearly five weeks of time, refusing to commit code when asked and spinning down the time of myself and other group mates eager to get started on Code Generation. The Lexer and Parser were not up to parsing our language. Many disconnects appeared in how the implementation was done, which was entirely strange because we had specifically said we would wait for the Language Reference Manual to be done to begin working so everyone would have a very clear goal and standard. 
+
+Talking to your teammates about what exactly is expected, even with a document like the Language Reference Manual, would be helpful in the future. You and your teammates should be able to look at previous projects, and see
+
+\begin{enumerate}
+	\item To achieve X feature it took Y lines of code.
+	\item Is that feasible if you give yourself Z amount of time to write Y lines with W people?
+	\item What quality of implementation do you want? Proof of concept? Fully vetted with compiler errors?
+\end{enumerate}
+
+As an example, I wanted full source code information and carat diagnostics throughout the program. I only managed to add that to the first half of the project, and in my lack of help and time for the second half did not implement it for Semantic AST and Codegen errors.
+
+Other groups would consider this silly and not bother with it at all. Your team should agree on just how much effort and polish your implementation deserves, and have a frank discussion about whether people will do that work.
+
+If people impose deadlines on themselves and do not mean them, talk to them immediately about it rather than just implementing it yourself in frustration. Only when they do not respond to your inquiries do you turn to outside sources and begin to re-evaluate what can and cannot be done with your time.
+
+\section{Start Confrontations}
+When people in my group slipped deadlines, I vented my frustrations elsewhere while implementing the code just in time for deadlines or pulling together LaTeX documents and editing them furiously. I confronted my team only once very early in September and CCed the professor and a TA with an e-mail, where I demanded they never put me in a situation similar to the one where I wrote the entire \lepix{} proposal by myself and then have them -- only an hour or so before the deadline -- tell me grammatical edits that I needed to fix.
+
+After that, I did not expect to have to send them anymore particularly strongly-worded e-mails. They had agreed not to do something like that again and indeed everyone participated in the Language Reference Manual. We had communication over GroupMe about why the AST and Semantic AST were not being done on time, but I had not made it clear that their lack of implementation was unacceptable: I only patched it over in the days before the deadline after I had grown tired of waiting and needed to have implementation work done to do my part.
+
+You must have confrontations. You must butt heads. Do this early, and do it often when a group member does not hand in their work. Growing frustrated in silence while implementing things you would have expected your teammates to do will only wear you out and ultimately lead you to a place where you will want to discard anything your team does, good or bad, and not take their suggestions in because you feel like they will just let you down.

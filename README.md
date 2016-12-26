@@ -16,4 +16,4 @@ https://github.com/ThePhD/lepix/blob/master/lepix-report.pdf
 
 # Final Presentation
 
-https://github.com/ThePhD/lepix/blob/master/presentation/lepix-presentation.pdf
+https://github.com/ThePhD/lepix/blob/master/lepix-presentation.pdf

@@ -1,71 +1,18 @@
-\usepackage[utf8x]{inputenc}
-\usepackage{ucs}
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{amssymb}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{changepage}
-\usepackage{multirow}
-\usepackage[unicode,hidelinks]{hyperref}
-\usepackage{syntax}
-\usepackage{listings}
-\usepackage{lstautogobble}
-\usepackage{color}
-\usepackage{syntax}
-\usepackage{microtype}
-\usepackage{upquote}
-\usepackage{enumitem}
-\usepackage{textcomp}
+\chapter{Introduction}
 
-\definecolor{springgrassgreen}{rgb}{0,0.6,0}
-\definecolor{plaingray}{rgb}{0.5,0.5,0.5}
-\definecolor{mauve}{rgb}{0.58,0,0.82}
-\definecolor{keywordcolor}{rgb}{0,0,0.78}
-\definecolor{programtextcolor}{rgb}{0.1,0.1,0.2}
+\lepix{} is a small, general-purpose programming language whose goal is to make working with parallel computation and multidimensional arrays simple. Featuring a preprocessor, namespacing, sliced multidimensional array syntax, parallel blocks based on an invocation count and ID, and bottom-up type derivation (automatic type deduction), the goal of the language is to produce an environment that is heavily statically checked and ensures a degree of correctness the user of the language can rely on.
 
-\lstset{ %
-	backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
-	basicstyle=\footnotesize,        % the size of the fonts that are used for the code
-	breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
-	breaklines=true,                 % sets automatic line breaking
-	captionpos=b,                    % sets the caption-position to bottom
-	commentstyle=\color{springgrassgreen},    % comment style
-	deletekeywords={...},            % if you want to delete keywords from the given language
-	escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
-	extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
-	%frame=single,	                  % adds a frame around the code
-	keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
-	keywordstyle=\color{blue},       % keyword style
-	language=C++,                 % the language of the code
-	otherkeywords={*,...},           % if you want to add more keywords to the set
-	numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-	numbersep=5pt,                   % how far the line-numbers are from the code
-	numberstyle=\tiny\color{plaingray}, % the style that is used for the line-numbers
-	rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
-	showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
-	showstringspaces=false,          % underline spaces within strings only
-	showtabs=false,                  % show tabs within strings adding particular underscores
-	stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
-	showlines=false,
-	belowskip=-1.0em,
-	stringstyle=\color{mauve},       % string literal style
-	tabsize=5,	                  % sets default tabsize to 2 spaces
-	title=\lstname,                  % show the filename of files included with \lstinputlisting; also try caption instead of title
-	morekeywords={lib, super, function, fun, uint, pixel, image, vec, mat, matrix, vector, unit, let, var, mutable, const, end}
-}
+However, this implementation of \lepix{} specifically departed from some of the original design goals due to time constraints and team issues. Therefore, while parallelism and arrays were on the table, neither made it into the implementation in the given time frame I had to put the rest of the language (entire semantic analyzer plus all of the codegen) (about 2 weeks, plus post-mortem time). The implementation here instead set out to demonstrate how 4 techniques can be achieved with the language:
 
-\renewcommand{\arraystretch}{1.1}
-\newcommand{\lepix}{LéPiX}
-\newcommand{\keyword}[1]{\textcolor{keywordcolor}{\texttt{#1}}}
-\newcommand{\programtext}[1]{\textcolor{programtextcolor}{\texttt{#1}}}
+\begin{enumerate}
+	\item Namespaces - namespacing as defined in the original language, but lacking using statements inside definition blocks
+	\item Overloading - having multiple functions assigned to the same name, separated internally by a name-mangling scheme based on arity and arguments.
+	\item Bottom-up Type Derivation - deduction of return types for functions based on the expression of returns (or none therein).
+	\item Call targets as expressions - DICE\footnote{http://www.cs.columbia.edu/~sedwards/classes/2015/4115-fall/reports/Dice.pdf} and other languages -- including our own, at first -- implemented function calls as an identifier plus necessary function all syntax. This implementation of \lepix{} treats it as an expression, which presents unique challenges for the previous 2 goals. 
+\end{enumerate}
 
-% Fix syntax package's weird bolding of things when adding quotation marks
-\renewcommand{\litleft}{`\begingroup\normalfont }
-\renewcommand{\litright}{\endgroup'}
-\renewcommand{\ulitleft}{\begingroup\normalfont }
-\renewcommand{\ulitright}{\endgroup}
+\section{Language Proposal}
 
-% make block paragraphs
-\parindent0pt
-\parskip10pt
+Below is our initial language proposal, in its entirety. It was very ambitious, and Professor Edwards told us to scale our goals back considerably. From it, we threw out GPU code generation in exchange for Parallelism and code generation for LLVM IR alone, and also wanted to focus on syntax for multidimensional arrays.
+
+\includepdf[pages=-]{\detokenize{lp/lepix.pdf}}

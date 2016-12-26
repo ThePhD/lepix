@@ -1,0 +1,6 @@
+import lib
+
+fun main () : int {
+	lib.print_n("hello world");
+	return 0;
+}

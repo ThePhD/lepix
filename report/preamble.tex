@@ -17,6 +17,9 @@
 \usepackage{upquote}
 \usepackage{enumitem}
 \usepackage{textcomp}
+\usepackage[final]{pdfpages}
+
+\setboolean{@twoside}{false}
 
 \definecolor{springgrassgreen}{rgb}{0,0.6,0}
 \definecolor{plaingray}{rgb}{0.5,0.5,0.5}
@@ -52,7 +55,7 @@
 	stringstyle=\color{mauve},       % string literal style
 	tabsize=5,	                  % sets default tabsize to 2 spaces
 	title=\lstname,                  % show the filename of files included with \lstinputlisting; also try caption instead of title
-	morekeywords={lib, super, function, fun, uint, pixel, image, vec, mat, matrix, vector, unit, let, var, mutable, const, end}
+	morekeywords={Llvm, lib, super, function, fun, uint, pixel, image, vec, mat, matrix, vector, unit, let, var, mutable, const, end}
 }
 
 \renewcommand{\arraystretch}{1.1}

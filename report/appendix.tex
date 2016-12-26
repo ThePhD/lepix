@@ -1,0 +1,70 @@
+\chapter{Appendix}
+
+\section{Source Code Listing}
+
+\begin{lstlisting}[language=make,caption=source/Makefile]
+.PHONY: default
+default: all;
+
+# Clean intermediate files
+clean :
+ocamlbuild -use-menhir -build-dir obj -clean
+rm -rf lepixc lepix
+rm -rf scanner.ml parser.ml parser.mli
+rm -rf prescanner.ml preparser.ml preparser.mli
+rm -rf *.cmx *.cmi *.cmo *.cmx *.o
+rm -rf parser.automaton preparser.automaton 
+rm -rf parser.output preparser.output parser.conflicts preparser.conflicts 
+
+# Build top level lepix executable
+lepix :
+ocamlbuild -use-ocamlfind -use-menhir -tag thread -pkgs core,llvm,llvm.analysis -build-dir obj lepix.native
+cp -f obj/lepix.native lepixc
+
+install :
+cp lepixc /usr/local/bin/lepixc
+
+uninstall :
+rm -f /usr/local/bin/lepixc
+
+.PHONY: all
+all : lepix
+\end{lstlisting}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/polyfill.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/base.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/options.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/message.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/lepix.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/errors.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/driver.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/predriver.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/preast.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/ast.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/semast.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/representation.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/prescanner.mll}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/preparser.mly}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/scanner.mll}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/parser.mly}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/driver.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/semant.ml}
+
+\lstinputlisting[basicstyle=\small,tabsize=2,numbersep=10pt,language={Haskell}]{../source/codegen.ml}

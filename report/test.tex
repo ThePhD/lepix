@@ -1,0 +1,56 @@
+\chapter{Testing and Continuous Integration}\label{ch:testing}
+
+\section{Test Code}
+
+Some of the more interesting test cases include one to include a preprocessing directive (a temporary replacement for a decent module system), bottom-up type derivation for return values from functions, and a demonstration of overloading. The test cases are very involved and often nest elements to reveal bugs or other inconsistencies in the code generator (for example, properly implementing \lstinline|Llvm.build_load| only in conditions where the type being asked for is a form of pointer). Most of these tests also had a failure case on the other side of it as well, especially in the case of overloading and bad literals. There are still bugs with expressions not quite being checked when assigned back to the original for proper convertibility, but I managed to cover a small but good area of code for working on this by myself.
+
+\pagebreak{}
+
+\lstinputlisting[caption=preprocess.lepix]{../tests/preprocess.lepix}
+\lstinputlisting[caption=auto.lepix]{../tests/auto.lepix}
+\lstinputlisting[caption=overloads.lepix]{../tests/overloads.lepix}
+
+\section{Test Automation}
+\subsection{Test Suite}
+Our test suite is a Python 3 Unit Test\footnote{\lstinline|unittest| is built into the python standard library, ensuring less installation steps to get going: \url{https://docs.python.org/3/library/unittest.html}.} suite, using the \lstinline|subprocess| module to write code that called the lepix compiler, \lstinline|lepixc|. In the case of return code 0 (success), it would then call LLVM's IR interpeter \lstinline|lli| with the \lstinline|-c| flag to run the program.
+
+\subsection{Online Automation}
+This was a decent bit of automation, but to further enhance our capability to know what was broken and what was fixed, I implemented Travis Continuous-Integration (travis-ci) \footnote{Our builds are here: \url{https://travis-ci.org/ThePhD/lepix/builds}.} support through a \lstinline|travis.yml| file in the top level our repository. Travis-ci is free for any publicly available, open-source github repository (the code is MIT Licensed).
+
+\subsection{Online Automation Tools}
+Docker came in handy when travis-ci had not updated their own pool of images for a very long time. We configured travis-ci to run all our commands in a small docker container using the latest ubuntu, ensuring that we had the proper OPAM, OCaml, and other development tools we needed. This was extremely helpful, and if anyone has problems in the future docker is a good way to get around old and un-updated environments. It took quite a few commits to get it working (see the testing/travis-ci branch and the plenty of frustrated commits trying to work with docker, bash and everything else to behave properly), but when it worked it was quite helpful for catching any bad changes and keeping a log of things that went wrong so it could be looked at later to fix problems.
+
+\pagebreak{}
+
+\begin{lstlisting}[language=bash, caption=.travis.yml]
+dist: trusty
+sudo: required
+
+language: cpp
+
+services:
+- docker
+
+before_install:
+- docker pull ubuntu:latest
+- docker run -v${PWD}:/ci_repo -d --name lepix_ci ubuntu:latest sleep infinity
+- docker exec lepix_ci bash -e -v -c "apt-get update"
+- docker exec lepix_ci bash -e -v -c "apt install -y git python3 build-essential m4 autotools-dev autoconf pkg-config ocaml menhir opam llvm llvm-dev llvm.3.8"
+- docker exec lepix_ci bash -e -v -c "opam init -y"
+- docker exec lepix_ci bash -e -v -c "opam install -y core depext llvm.3.8"
+
+script:
+- docker exec lepix_ci bash -e -v -c "source ci_repo/ci/travis.sh"
+
+after_script:
+- docker stop lepix_ci
+- docker rm lepix_ci
+
+notifications:
+email:
+on_success: change
+on_failure: change
+\end{lstlisting}
+
+\section{Division of Labor}
+I wrote a large number of examples and also wrote tests, implemented travis-ci integration, and wrote the python bootstrapper and test suite code.

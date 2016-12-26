@@ -1,0 +1,16 @@
+eval $(opam config env)
+opam config env
+cd ci_repo/source
+make lepix
+cd ..
+python3 tests/tests.py
+
+.....
+
+----------------------------------------------------------------------
+
+Ran 5 tests in 0.086s
+
+OK
+
+The command "docker exec lepix_ci bash -e -v -c "source ci_repo/ci/travis.sh"" exited with 0.

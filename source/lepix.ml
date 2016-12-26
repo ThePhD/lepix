@@ -24,7 +24,7 @@ check the resulting AST, generate LLVM IR, and dump the module *)
 let _ = 
 	let input = ref Base.Pipe in
 	let output = ref Base.Pipe in
-	let action = ref Base.Llvm in
+	let action = ref Base.Compile in
 	let verbose = ref false in
 	let specified = ref [] in
 	let context = { 
@@ -98,10 +98,6 @@ let _ =
 	try 
 		let allactions = !specified in
 		let source_name = ( Base.target_to_pipe_string !input true ) in
-		let pre_source_text = match !input with
-			| Base.Pipe -> Io.read_text stdin
-			| Base.File(f) -> ( Io.read_file_text f )
-		in
 		let output_to_target ( s ) = match !output with
 			| Base.Pipe -> ( print_endline s )
 			| Base.File(f) -> ( Io.write_file_text s f )
@@ -110,8 +106,7 @@ let _ =
 			fun v -> ( v = b ) 
 		in
 		let print_help () =
-			let msg = "Help:"
-			^ "\n" ^ ( ocontext.Options.options_help "\t" ) in
+			let msg = ( ocontext.Options.options_help "\t" ) in
 			print_endline msg
 		in
 		if !action = Base.Help then begin
@@ -120,6 +115,17 @@ let _ =
 		(* Since we do the actions in these functions multiple times,
 		We refactor them out here to make our lives easier while we tweak 
 		stuff *)
+		let get_source () =
+			let pre_source_text = match !input with
+				| Base.Pipe -> Io.read_text stdin
+				| Base.File(f) -> ( Io.read_file_text f )
+			in
+			let source_text = Predriver.pre_process pcontext !input pre_source_text in
+			context.Driver.source_name <- source_name;
+			context.Driver.original_source_code <- pre_source_text;
+			context.Driver.source_code <- source_text;
+			source_text	
+		in
 		let dump_tokens f tokenstream =
 			if ( List.exists (print_predicate Base.Tokens) allactions ) then f( Representation.parser_token_list_to_string tokenstream )
 		and dump_ast f program =
@@ -129,25 +135,25 @@ let _ =
 		and dump_module f m =
 			f( Llvm.string_of_llmodule m )
 		in
-		let source_text = Predriver.pre_process pcontext !input pre_source_text in
-		context.Driver.source_name <- source_name;
-		context.Driver.original_source_code <- pre_source_text;
-		context.Driver.source_code <- source_text;
 		let _ = match !action with
 			| Base.Help -> print_help ()	
 			| Base.Preprocess -> 
+				let source_text = get_source () in
 				output_to_target( source_text )
 			| Base.Tokens -> 
+				let source_text = get_source () in
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
 				( dump_tokens output_to_target tokenstream )
 			| Base.Ast -> 
+				let source_text = get_source () in
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
 				( dump_tokens print_endline tokenstream );
 				let program = Driver.parse context tokenstream in 
 				( dump_ast output_to_target program)
 			| Base.Semantic ->
+				let source_text = get_source () in
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
 				( dump_tokens print_endline tokenstream );
@@ -156,6 +162,7 @@ let _ =
 				let semanticprogram = Driver.analyze program in 
 				( dump_semantic output_to_target semanticprogram )
 			| Base.Llvm -> 
+				let source_text = get_source () in
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
 				( dump_tokens print_endline tokenstream );
@@ -167,6 +174,7 @@ let _ =
 				if !verbose then ( dump_module print_endline m );
 				( dump_module output_to_target m )
 			| Base.Compile -> 
+				let source_text = get_source () in
 				let lexbuf = Lexing.from_string source_text in
 				let tokenstream = Driver.lex source_name lexbuf in
 				( dump_tokens print_endline tokenstream );

@@ -1,0 +1,16 @@
+source/lepixc
+
+Help:
+	lepix [options] filename [filenames...]
+		filename | filenames can have one option -i or --input
+	options:
+		-h	--help           print the help message
+		-p	--preprocess     Preprocess and display source
+		-i	--input          Take input from standard in (default: stdin)
+		-o	--output <value> Set the output file (default: stdout)
+		-t	--tokens         Print the stream of tokens
+		-a	--ast            Print the parsed Program
+		-s	--semantic       Print the Semantic Program
+		-l	--llvm           Print the generated LLVM code
+		-c	--compile        Compile the desired input and output the final LLVM
+		-v	--verbose        Be as explicit as possible with all steps

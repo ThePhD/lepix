@@ -1,0 +1,1143 @@
+\chapter{Plan}
+
+Our plan was developed slowly and mostly solidified around the making of our Language Reference Manual and a bit afterwards. We met once a week, sometimes a second time if our Advisor had the time for it, and occasionally held extra meetings to help get things done.
+
+\section{Process}
+
+Most of our planning was done in-person via weekly meetings. We also used Github Issues to track things and also bikeshed some of our progress and implementation. We closed issues as they passed and had issues tied to Milestones in the project:
+
+\begin{figure}[h!]
+	\vspace*{-2cm}
+	\makebox[\linewidth]{
+		\includegraphics[width=1.3\linewidth]{\detokenize{history/issues.png}}
+	}
+	\caption{Closed issues throughout the project \url{https://github.com/ThePhD/lepix/issues?q=is\%3Aissue+is\%3Aclosed}.}
+	\label{fig:issues}
+\end{figure}
+
+\section{Timeline}
+
+Our timeline was given by the milestones we had for the project. We opened them early, meaning that one of the milestones (GPU Codegen) was scrapped when our team decided that we would not pursue such an avenue.
+
+\begin{figure}[h!]
+	\vspace*{-2cm}
+	\makebox[\linewidth]{
+		\includegraphics[width=1.3\linewidth]{\detokenize{history/milestones.png}}
+	}
+	\caption{Milestones for the project \url{https://github.com/ThePhD/lepix/milestones?state=closed}.}
+	\label{fig:milestones}
+\end{figure}
+
+\section{Tools}
+
+Everyone was free to develop in whatever IDE or editor they wished, just so long as they could invoke the makefile. As I was originally the System Architect, I put together a list of all the tools someone would need to invoke the build process in Figure \ref{fig:tools}. The command line dependencies here helped me figure out what was needed when we started to do testing \ref{ch:testing}.
+
+\begin{figure}[h!]
+	\vspace*{-2cm}
+	\makebox[\linewidth]{
+		\includegraphics[width=1.3\linewidth]{\detokenize{history/tools.png}}
+	}
+	\caption{Tools and development environment setup (\url{https://github.com/ThePhD/lepix/issues/7}).}
+	\label{fig:tools}
+\end{figure}
+
+\section{Project Log}
+
+Asides from issues being closed and comments being made, the best project log that shows how I did is the git commit log for all the branches, included below. It was generated from git using the command \lstinline|git --no-pager log --graph --abbrev-commit --decorate --date=relative --all|.
+
+\begin{lstlisting}[language=bash]
+* commit 5d983f7 (HEAD -> master, origin/master, origin/HEAD)
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   27 minutes ago
+| 
+|     Final clean implementation of bottom-type type derivation for function returns, good literals, and overloading
+|  
+* commit e323adc
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   22 hours ago
+| 
+|     overloading tests among other things
+|  
+* commit 714d07f
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 days ago
+| 
+|     last pdfs and reports and readme update
+|  
+* commit aa558db
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 days ago
+| 
+|     remove temporaries and debug print statements
+|  
+* commit a7e8fa2 (origin/feature/semantic, feature/semantic)
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 days ago
+| 
+|     Buh.
+|  
+* commit 816bad8
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   4 days ago
+| 
+|     All I have left....
+|  
+* commit ecbdf74
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   4 days ago
+| 
+|     We're so close to the end. Don't give up. Trust in yourself, and fight for what was right...
+|  
+* commit fb3b94d
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   8 days ago
+| 
+|     It finally builds... the basics of the Semantic AST, finally more or less in place...!
+|  
+* commit c00e2ab
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   2 weeks ago
+| 
+|     Beef up the semantic AST and fully complete the pretty printer for it.
+|  
+* commit 817f6b8
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 weeks ago
+| 
+|     Ensure lowercase acceptance as well.
+|  
+* commit 79fc476
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 weeks ago
+| 
+|     Fixing up the parser for integer literals and other more useful things.
+|  
+* commit 2bfb992
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 weeks ago
+| 
+|     scanner and parser are up to snuff
+|  
+* commit 77847d7
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 weeks ago
+| 
+|     handle extra cases in the parser for increment, decrement, and assignment-ops
+|  
+* commit 92ee4d6
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 weeks ago
+| 
+|     Beat up the parser lots.
+|    
+*   commit 4eb1aeb
+|\  Merge: 5efaebe 989e1d2
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Merge branch 'master' into feature/semantic
+| |     
+| *   commit 989e1d2
+| |\  Merge: 9ccd7e0 bebe5ad
+| | | Author: Jackie Lin <jackielin13@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| | |    
+| * | commit 9ccd7e0
+| | | Author: Jackie Lin <jackielin13@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     tests
+| | |    
+* | | commit 5efaebe
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     [ci skip] heavily modify the parser to handle type qualifications, improve the AST, and begin to consider scoping rules
+| | |    
+* | | commit 6c4629a
+| |/  Author: ThePhD <phdofthehouse@gmail.com>
+|/|   Date:   3 weeks ago
+| |   
+| |       [ci skip] commit so I can jump back to helping on master
+| |   
+* | commit bebe5ad (origin/testing/travis, testing/travis)
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     REALLY fuck you, python3
+| |   
+* | commit d5cb6ef
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Fuck you too, python3
+| |   
+* | commit fc38fe8
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     specifically invoke python3 because environments are stupid?
+| |   
+* | commit a10dfaa
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     51 builds later, it should work...
+| |   
+* | commit 38f438b
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     ensure only python 3 is available on the system
+| |   
+* | commit 7eb9368
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Only need one of either --rm or -d
+| |   
+* | commit d2f844f
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Proper travis ci with safety net for made directories for tests
+| |   
+* | commit aebffd0
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     make sure the shell is configured with eval opam...
+| |   
+* | commit cc6dca8
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     This is getting a tad tiresome, but it's my fault for not having a good handle on travis-ci
+| |   
+* | commit cbbbe02
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Proper escaping?
+| |   
+* | commit df0a2f1
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     escaped operators
+| |   
+* | commit 48edeca
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Party with the cd comms
+| |   
+* | commit 14788e0
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     "Docker never dies!" (Sleep infinity)
+| |   
+* | commit 35af11a
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Attemping without heredoc and just docker exec...
+| |   
+* | commit d9d03ee
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     No -c on bash when using heredoc
+| |   
+* | commit 2f6003c
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Attempting to make docker behave better?
+| |   
+* | commit 9d0cf03
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     explicit printing
+| |   
+* | commit c6e8299
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     Fix the tests because I'm bad at writing python code, weee
+| |   
+* | commit f27c410
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   3 weeks ago
+| | 
+| |     blot out the Semantic Stuff until its time
+| |     
+* |   commit 71c87ad
+|\ \  Merge: b032732 b55ae1c
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     Merge branch 'feature/semantic' into testing/travis
+| | |     
+| | |     # Conflicts:
+| | |     #	.travis.yml
+| | |    
+| * | commit b55ae1c
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     default llvm fails because Opam is a heaping pile of shit
+| | |    
+| * | commit 7a13678
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     Attempt to properly propogate bash errors and fix travis files
+| | |    
+| * | commit 2ae921c
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     update test harness
+| | |    
+| * | commit 81fb441
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     semantic analyizer start
+| | |    
+| * | commit a9011e3 (origin/feature/preprocessor, feature/preprocessor)
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     fix gitignore
+| | |    
+| * | commit 11b86f8
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     Full preprocessor implementation
+| | |    
+| * | commit 63a06f6
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   3 weeks ago
+| | | 
+| | |     update gitignore
+| | |    
+* | | commit b032732
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   4 weeks ago
+| | | 
+| | |     Go fuck yourself, travis, and your rules against tabs
+| | |    
+* | | commit 75b8679
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   4 weeks ago
+| | | 
+| | |     Let's try this again...
+| | |    
+* | | commit 1e827e2
+|/ /  Author: ThePhD <phdofthehouse@gmail.com>
+| |   Date:   4 weeks ago
+| |   
+| |       messing around with docker
+| |   
+* | commit 01adc38
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     One more missing package from depext
+| |   
+* | commit 8fa39e9
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     package names were wrong
+| |   
+* | commit 337c74b
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     source script to propogate errors better
+| |     autoshit and mcrap tools need to be there
+| |   
+* | commit 871197c
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     travis gooo
+| |   
+* | commit 868dc82
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     assume yes for ALL cases...
+| |   
+* | commit 81d341a
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     say yes, all the time
+| |   
+* | commit b4dba58
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     update ignore
+| |   
+* | commit 5176344
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     update properly
+| |   
+* | commit e9fb2af
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Keeep trying with docker....
+| |   
+* | commit 7b41eef
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Poking at things 'till it works...
+| |   
+* | commit f4c7c3b
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Properly bind the mount volume with the -v command, then swap into it
+| |   
+* | commit d6b090f
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     poke at env to understand what's going on
+| |   
+* | commit 667d0d1
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     travis_run file and friends
+| |   
+* | commit 2e8aab2
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     try it from a file now...
+| |   
+* | commit 83afd3b
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     super duper docker
+| |   
+* | commit 78f655d
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Goddamn tabs
+| |   
+* | commit cca9cd2
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     update travis work
+| |   
+* | commit c0e85a3
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Use a different language to attempt to stay out of the python shell
+| |   
+* | commit 9e00c5f
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     update tests file and travis CI yaml file
+| |   
+* | commit 8b71e6d
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Add .travis file to start CI
+| |   
+* | commit 0f25039 (origin/feature/codegen, feature/codegen)
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Testing fixture
+| |   
+* | commit e200757
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Example code for linking an external library. Various small changes to the driver of lepix and the codegen in preparation for the Semantic Analyzer and the AST.
+| |     We still need something to preprocess source code... another regular parser, perhaps?
+| |   
+* | commit f6a208d
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     Re-raise any bad errors we don't know how to catch
+| |   
+* | commit 6b73260
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   4 weeks ago
+| | 
+| |     CARAT DIAGNOSTICS YEEEAAH
+| |   
+* | commit 07c1a08
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     better polyfill code
+| |   
+* | commit cf4f1a5
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Better options parser, again, mostly for the sake of writing clearer, better code
+| |   
+* | commit c50176d
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     properly guard additions to sub
+| |   
+* | commit 9c6eca8
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     More functional string_split
+| |   
+* | commit 251c6ea
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     "cleaner" polyfill...?
+| |   
+* | commit 058cd89
+|/  Author: ThePhD <phdofthehouse@gmail.com>
+|   Date:   5 weeks ago
+|   
+|       goofing off with trying to write better functional code
+|  
+* commit f5cc25f
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     Full on driver and options implementation
+|     Polyfill layer to replace any missing batteries / core stuff
+|     IO layer for opening and writing to a file
+|  
+* commit e97a9c4
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     More comments, restructuring, and lexer-error handling.
+|  
+* commit 5933da5
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     We now have a driver that handles the code
+|     There is now an option to print out the token stream
+|     The lepix top level performs a basic amount of error handling now
+|     The parser and lexer now do a very thorough job of tracking line information; may want to propogate into the AST somehow
+|  
+* commit b60947a
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     It might be beneficial to mess with how the lexing and parsing are run through, so we can generate the proper line numbers and token lists.
+|     We should also look into reading from and writing to files, even if we don't have the Batteries library and other bits set up for this.
+|     One day...
+|  
+* commit 5fb47e1
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     counted arrays, namespace declarations and proper parallel binding declarations
+|  
+* commit ce06c8f
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     It works.
+|     Now I'm going to redo the whole goddamn AST and Parser so we can really get going...
+|  
+* commit 82b848f
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     Segmentation fault.
+|     S E G M E N T A T I O N F A U L T L A D I E S .
+|    
+*   commit c35d50d
+|\  Merge: 677d5bb c8e22b9
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Merge branch 'feature/codegen'
+| |   
+| * commit c8e22b9
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     skeleton of semantic analyzer
+| |   
+* | commit 677d5bb
+|/  Author: fennilin <jackielin13@gmail.com>
+|   Date:   5 weeks ago
+|   
+|       Create 11-17-16
+|  
+* commit f736ab5
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   5 weeks ago
+| 
+|     properly append qualified id to list
+|    
+*   commit 748f5c0
+|\  Merge: a347044 e120364
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Merge branch 'feature/codegen'
+| |     
+| |     # Conflicts:
+| |     #	.gitignore
+| |   
+| * commit e120364
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Allow for interwoven function and data declarations
+| |     Properly concatenate qualified IDs
+| |     Start on code generation (nothing actually appears)
+| |     Make sure top-level does not trigger semantic analyzer (its empty right now)
+| |   
+| * commit 018952e
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Array type now takes a number plus a type, rather than having a separate type for each one
+| |     scratch source example that can be modified and committed to any current contention for a person working on the compiler
+| |   
+| * commit e8b60ed
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     More ignore files and an empty main test.
+| |   
+| * commit f5dc624
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Remove built files (please don't commit these again...)
+| |   
+| * commit 6f0db16
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Clean up these commits...
+| |     
+| *   commit 9b1384b
+| |\  Merge: ae4b9f6 907c6b0
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   5 weeks ago
+| | | 
+| | |     Merge remote-tracking branch 'origin/master' into feature/codegen
+| | |     
+| | |     # Conflicts:
+| | |     #	source/parser.mly
+| | |     #	source/scanner.mll
+| | |    
+| * | commit ae4b9f6
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   5 weeks ago
+| | | 
+| | |     Add qualified ID handling (we will improve it later to handle arbitrarily long strings)
+| | |    
+* | | commit a347044
+| |/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+|/|   Date:   5 weeks ago
+| |   
+| |       Edited .gitignore to omit built files in the source directory
+| |   
+* | commit 907c6b0
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   5 weeks ago
+| | 
+| |     Added atomic statement blocks
+| |   
+* | commit 5956c1b
+|/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+|   Date:   5 weeks ago
+|   
+|       Simple parallel blocks (without atomic sections) and array literals now work in Parser+AST
+|  
+* commit 7cc276a
+| Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| Date:   5 weeks ago
+| 
+|     AST complete with mildly-pretty printing
+|  
+* commit d1dcd73
+| Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| Date:   5 weeks ago
+| 
+|     JK function declarations work too LOL
+|  
+* commit f810dd3
+| Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| Date:   5 weeks ago
+| 
+|     Almost done with AST and pretty printing for all language constructs. Only function and variable decls to go
+|  
+* commit 71a6fcb
+| Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| Date:   5 weeks ago
+| 
+|     Added simple top level. Edited ast, parser and lexer but some errors remain. Pretty printing needs to be set up.
+|  
+* commit d29fa01
+| Author: Fatima <fatimakoli14@gmail.com>
+| Date:   6 weeks ago
+| 
+|     Parallelblock and jump statements added
+|    
+*   commit 772f3b9
+|\  Merge: e039350 2a939a4
+| | Author: Fatima <fatimakoli14@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| |   
+| * commit 2a939a4
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     Deleted intermediate files and yacc output
+| |   
+| * commit 80e8614
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     Parser simplified. Multiple expression grammar rules collapsed into single rule
+| |     
+| *   commit 7fd0c99
+| |\  Merge: bb3f3bb 1dcf3f5
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   6 weeks ago
+| | | 
+| | |     Merge remote-tracking branch 'origin/master'
+| | |    
+| * | commit bb3f3bb
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   6 weeks ago
+| | | 
+| | |     Makin' a bootstrapper....
+| | |    
+| * | commit ec7f5dc
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   6 weeks ago
+| | | 
+| | |     example LLVM code for the Linux architecture.
+| | |    
+* | | commit e039350
+| |/  Author: Fatima <fatimakoli14@gmail.com>
+|/|   Date:   6 weeks ago
+| |   
+| |       Completed-needs to be tested
+| |   
+* | commit 1dcf3f5
+| | Author: Fatima <fatimakoli14@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     Pretty printer started and array nodes added
+| |     
+* |   commit aad0d34
+|\ \  Merge: f093c1a 4fe3fa3
+| | | Author: Fatima <fatimakoli14@gmail.com>
+| | | Date:   6 weeks ago
+| | | 
+| | |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| | |    
+| * | commit 4fe3fa3
+| |/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| |   Date:   6 weeks ago
+| |   
+| |       Added empty files for semantic checker and codegen
+| |   
+| * commit 4660520
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     floating point hello world and other examples as well
+| |   
+| * commit e87ca95
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     example code in C for many of the hello worlds and basic examples
+| |   
+| * commit 32bb043
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     That's some thick LLVM IR...
+| |   
+| * commit 9b966c6
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     Perfect parallel_2d example
+| |   
+| * commit 6211aa9
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     It works, uguu.
+| |   
+| * commit a5dfc40
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   6 weeks ago
+| | 
+| |     Additional hello world and the beginnings of a fleshed out parallel looping structure
+| |   
+* | commit f093c1a
+|/  Author: Fatima <fatimakoli14@gmail.com>
+|   Date:   7 weeks ago
+|   
+|       edited ast
+|  
+* commit ad02f05
+| Author: Gabrielle A Taylor <gat2118@columbia.edu>
+| Date:   7 weeks ago
+| 
+|     Simple C threading program, sums 2d array vertically
+|  
+* commit cd6f557
+| Author: Gabrielle A Taylor <gat2118@columbia.edu>
+| Date:   7 weeks ago
+| 
+|     Simple C threading program that sums 2d array
+|  
+* commit f9e1a85
+| Author: Gabrielle A Taylor <gat2118@columbia.edu>
+| Date:   7 weeks ago
+| 
+|     Simple C threading program
+|  
+* commit 2e71b8e
+| Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| Date:   7 weeks ago
+| 
+|     Added top level file (lepix.ml) and deleted intermediate files from lex and yacc
+|    
+*   commit 6d409f9
+|\  Merge: 542ee64 dbf4809
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   7 weeks ago
+| | 
+| |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| |   
+| * commit dbf4809
+| | Author: fennilin <jackielin13@gmail.com>
+| | Date:   7 weeks ago
+| | 
+| |     Create 11-03-16
+| |   
+* | commit 542ee64
+|/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+|   Date:   7 weeks ago
+|   
+|       Added missing tokens to parser
+|  
+* commit b47e043
+| Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| Date:   7 weeks ago
+| 
+|     All rules added to parser. No S/R or R/R conflicts. Need to defined entry point for compiler (i.e. 'main')
+|    
+*   commit 980e2a3
+|\  Merge: 0ecdb5f f6283ac
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| |     
+| |     Edited parser.mly
+| |   
+| * commit f6283ac
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     preprocessor is still eluding me with a parse error. Need to get more info about this.
+| |   
+| * commit 847c13c
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     smaller array size, return value at end of main function
+| |   
+| * commit 4592035
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     fix my dumb math
+| |   
+* | commit 0ecdb5f
+|/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+|   Date:   8 weeks ago
+|   
+|       Implemented parser for all expression types. No shift reduce errors
+|  
+* commit b38b568
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   8 weeks ago
+| 
+|     ignore intermediate files
+|  
+* commit 458c07e
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   8 weeks ago
+| 
+|     parallel example and preprocessor code
+|    
+*   commit a1129c4
+|\  Merge: b46b06f 2b3d9d7
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     Merge branch 'master' into feature/preprocessor
+| |     
+| |     # Conflicts:
+| |     #	.gitignore
+| |   
+| * commit 2b3d9d7
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     update toplevel display file
+| |   
+| * commit aba7a94
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     updated specification source files
+| |   
+| * commit 35483aa
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     Toplevel PDFs we can link to.
+| |   
+| * commit 42168dd
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     final specificaiton before submission
+| |   
+| * commit e29b45e
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     update specification commit and ignore files
+| |   
+| * commit 8b811a3
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   8 weeks ago
+| | 
+| |     update specification
+| |   
+| * commit cb1e9f1
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     Added appropriate rules for integer and float literals in expr grammar in parser.mly
+| |     
+| *   commit f1c2181
+| |\  Merge: a53a16f 8bee3d7
+| | | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | | Date:   9 weeks ago
+| | | 
+| | |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| | |     
+| | |     Merging
+| | |    
+| * | commit a53a16f
+| | | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | | Date:   9 weeks ago
+| | | 
+| | |     Added type, loops, conditionals and array access grammars to parser
+| | |    
+* | | commit b46b06f
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   8 weeks ago
+| | | 
+| | |     update specification
+| | |    
+* | | commit 5740bf0
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   9 weeks ago
+| | | 
+| | |     Not quite there yet. Need to ask about it.
+| | |    
+* | | commit 8e666f1
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   9 weeks ago
+| | | 
+| | |     the skeleton of the preprocessor for all of this stuff
+| | |    
+* | | commit 3cb13fa
+| |/  Author: ThePhD <phdofthehouse@gmail.com>
+|/|   Date:   9 weeks ago
+| |   
+| |       begin preparing the bootstrap.py
+| |   
+* | commit 8bee3d7 (origin/specification, specification)
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     specification updates
+| |   
+* | commit c3d3fb9
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     re-add specification to align git submodules without breaking anything
+| |   
+* | commit 25a2e7d
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     remove specification source since it was bugged
+| |   
+* | commit 96a20b7
+|/  Author: ThePhD <phdofthehouse@gmail.com>
+|   Date:   9 weeks ago
+|   
+|       update git modules
+|    
+*   commit daec995
+|\  Merge: 3d945dd d7811ca
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     Merge branch 'master' of https://github.com/ThePhD/lepix
+| |   
+| * commit d7811ca
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     remove old specification files
+| |   
+| * commit 604101b
+| | Author: ThePhD <phdofthehouse@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     make correct overleaf bridge in right place
+| |     
+| *   commit 5418373
+| |\  Merge: d539d38 bcea4f1
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   9 weeks ago
+| | | 
+| | |     Merge branch 'master' of github.com:ThePhD/lepix
+| | |     
+| | |     Fix deletion of everything
+| | |    
+| * | commit d539d38
+| | | Author: ThePhD <phdofthehouse@gmail.com>
+| | | Date:   9 weeks ago
+| | | 
+| | |     make overleaf bridge
+| | |    
+* | | commit 3d945dd
+| |/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+|/|   Date:   9 weeks ago
+| |   
+| |       Added rules for single line comments as well as for nesting multi-line comments
+| |   
+* | commit bcea4f1
+| | Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+| | Date:   9 weeks ago
+| | 
+| |     Added regex for floating pointer literals to scanner.mll
+| |   
+* | commit 36e9ae5
+|/  Author: Akshaan Kakar <akshaan.crackers@gmail.com>
+|   Date:   9 weeks ago
+|   
+|       Added augmented version of the MicroC scanner
+|  
+* commit f9d771a
+| Author: Fatima <fatimakoli14@gmail.com>
+| Date:   2 months ago
+| 
+|     Basic tokens added to Parser
+|  
+* commit 8174ed7
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     Remove SPIRV-LLVM setup.
+|  
+* commit bed07b3
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     As it stands... we will not be doing SPIRV stuff. Since the focus will JUST be on multicore, which can be done fine on the CPU itself.
+|  
+* commit 805e0c5
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     This commit allows for grammar basics.
+|     
+|     Need to figure out how to wrap threads in LLVM IR code.
+|  
+* commit de5101d
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     SPIRV-LLVM node
+|  
+* commit 83d693e
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     Submodule LLVM <-> SPIRV
+|  
+* commit 2a032f1
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     remove old lepix file name
+|  
+* commit 31a94b4
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     Spoopy language specification
+|  
+* commit 547718b
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+|     Skeleton files, to get ready to work.
+|  
+* commit 2497bbd
+| Author: ThePhD <phdofthehouse@gmail.com>
+| Date:   3 months ago
+| 
+| Purged.
+\end{lstlisting}
